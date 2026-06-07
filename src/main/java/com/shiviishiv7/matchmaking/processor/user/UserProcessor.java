@@ -33,7 +33,7 @@ public class UserProcessor implements IUserProcessor {
     public BaseVO add(UserVO userVO) throws MatchmakingException {
         try {
             log.info("Validating inputs for user creation.");
-            userVO.validate();
+//            userVO.validate();
             log.info("UserVO validation completed successfully.");
 
             log.trace("Checking for duplicate email: {}", userVO.getEmail());

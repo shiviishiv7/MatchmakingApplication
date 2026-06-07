@@ -50,5 +50,21 @@ public class MatchmakingApplication extends SpringBootServletInitializer impleme
 		user.setCreatedAt(LocalDateTime.now());
 		user.setUpdatedAt(LocalDateTime.now());
 		this.repository.save(user);
+		 user = new User();
+		user.setCognitoSub("c1739d4a-a0a1-70c2-dce1-59e4a8a60a35");
+		user.setEmail("peneno4903@dosbee.com");
+		user.setFirstName("abc");
+		user.setLastName("User");
+		user.setBio("Test User");
+		user.setGender(Gender.MALE);
+		user.setIndustry("Software");
+		user.setTimezone("Asia/Kolkata");
+		 c = new Company();
+		c.setId(UUID.randomUUID());
+		user.setCompanyId(UUID.randomUUID().toString());
+		user.setStatus(UserStatus.MATCHED);
+		user.setCreatedAt(LocalDateTime.now());
+		user.setUpdatedAt(LocalDateTime.now());
+		this.repository.save(user);
 	}
 }
