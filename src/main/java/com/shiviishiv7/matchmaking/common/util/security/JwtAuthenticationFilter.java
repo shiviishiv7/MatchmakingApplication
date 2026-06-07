@@ -37,8 +37,14 @@ public class JwtAuthenticationFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
         String authorizationHeader = httpRequest.getHeader("Authorization");
+         String token = authorizationHeader;
+        if ((authorizationHeader == null || authorizationHeader.isBlank())
+                && ((HttpServletRequest) request).getRequestURI().startsWith("/ws")) {
+           authorizationHeader =   token = request.getParameter("token");
+        }
 
-        String origin = httpRequest.getHeader("Origin"); 
+        String origin = httpRequest.getHeader("Origin");
+
 
 
         log.info("========== Incoming Request ==========");
@@ -68,7 +74,7 @@ log.info("======================================");
 
         try {
             log.info("Authorization header present. Extracting token...");
-            String token = authorizationHeader.trim(); // Trim any unwanted spaces
+
 
 //            if (originSource.startsWith("Testpaper7")) {
 //                    log.error("Origin source does not start with Testpaper7");

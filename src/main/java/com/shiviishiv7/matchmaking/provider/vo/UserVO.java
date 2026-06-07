@@ -68,7 +68,7 @@ public class UserVO {
         vo.setEmail(user.getEmail());
         vo.setFirstName(user.getFirstName());
         vo.setLastName(user.getLastName());
-        vo.setCompanyId(user.getCompany() != null ? user.getCompany().getId() : null);
+//        vo.setCompanyId(user.getCompany() != null ? user.getCompany().getId() : null);
         vo.setGender(user.getGender());
         vo.setDateOfBirth(user.getDateOfBirth());
         vo.setTimezone(user.getTimezone());

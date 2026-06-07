@@ -46,6 +46,6 @@ public class Company extends BaseEntity {
     @Builder.Default
     private Boolean isActive = true;            // admin can deactivate a company
 
-    @OneToMany(mappedBy = "company", fetch = FetchType.LAZY)
-    private List<User> users;
+//    @OneToMany(mappedBy = "company", fetch = FetchType.LAZY)
+//    private List<User> users;
 }

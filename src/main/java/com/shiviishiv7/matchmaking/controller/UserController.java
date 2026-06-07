@@ -60,9 +60,9 @@ public class UserController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/by-email", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/by-email/{email}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public ResponseEntity<BaseVO> getByEmail(@RequestParam(required = true) String email) throws MatchmakingException {
+    public ResponseEntity<BaseVO> getByEmail(@PathVariable String email) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
         log.info("Request received to fetch user with email: {} by sub: {}", email, sub);
 

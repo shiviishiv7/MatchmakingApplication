@@ -51,7 +51,7 @@ public class UserProcessor implements IUserProcessor {
 
             log.trace("Saving user record for email: {}", userVO.getEmail());
             User user = userVO.fromVO();
-            user.setCompany(optionalCompany.get());
+//            user.setCompany(optionalCompany.get());
             user = userRepository.save(user);
             log.info("User record saved successfully for email: {}", user.getEmail());
 
@@ -84,16 +84,16 @@ public class UserProcessor implements IUserProcessor {
             User userFromDB = userFromDBOptional.get();
             log.trace("User found for ID: {}. Applying updates.", userVO.getId());
 
-            if (userVO.getCompanyId() != null && !userVO.getCompanyId().equals(
-                    userFromDB.getCompany() != null ? userFromDB.getCompany().getId() : null)) {
-                log.trace("Company change requested. Fetching new company for ID: {}", userVO.getCompanyId());
-                Optional<Company> optionalCompany = companyRepository.findById(userVO.getCompanyId());
-                if (optionalCompany.isEmpty()) {
-                    log.error("ALERT_FOR_ERROR: Company not found for ID: {}", userVO.getCompanyId());
-                    throw new MatchmakingException("Company does not exist", DATA_NOT_FOUND);
-                }
-                userFromDB.setCompany(optionalCompany.get());
-            }
+//            if (userVO.getCompanyId() != null && !userVO.getCompanyId().equals(
+//                    userFromDB.getCompany() != null ? userFromDB.getCompany().getId() : null)) {
+//                log.trace("Company change requested. Fetching new company for ID: {}", userVO.getCompanyId());
+//                Optional<Company> optionalCompany = companyRepository.findById(userVO.getCompanyId());
+//                if (optionalCompany.isEmpty()) {
+//                    log.error("ALERT_FOR_ERROR: Company not found for ID: {}", userVO.getCompanyId());
+//                    throw new MatchmakingException("Company does not exist", DATA_NOT_FOUND);
+//                }
+//                userFromDB.setCompany(optionalCompany.get());
+//            }
 
             userFromDB.setFirstName(userVO.getFirstName());
             userFromDB.setLastName(userVO.getLastName());

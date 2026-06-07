@@ -18,4 +18,6 @@ public interface IInstantMatchProcessor {
      * Removes them from the LOOKING set and waiting queue.
      */
     void stopLooking(UUID userId) throws MatchmakingException;
+
+    void v2(String sub);
 }

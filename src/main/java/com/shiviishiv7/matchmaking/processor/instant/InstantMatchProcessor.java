@@ -56,6 +56,7 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
     public void startLooking(UUID userId) throws MatchmakingException {
         try {
             log.info("User {} started looking for an instant match.", userId);
+//            messagingTemplate.convertAndSendToUser(userSub, "/queue/match", notification);
 
             Optional<User> optionalUser = userRepository.findById(userId);
             if (optionalUser.isEmpty()) {
@@ -130,6 +131,11 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
         }
     }
 
+    @Override
+    public void v2(String sub) {
+        messagingTemplate.convertAndSendToUser(sub, "/queue/match", "hi hello");
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────
 
     private void createInstantMatchAndNotify(User userA, User userB, double score) {
@@ -193,9 +199,9 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
             if (!aPrefs.getPreferredIndustries().isEmpty()
                     && b.getIndustry() != null
                     && !aPrefs.getPreferredIndustries().contains(b.getIndustry())) return false;
-            if (Boolean.FALSE.equals(aPrefs.getSameCompanyAllowed())
-                    && a.getCompany() != null && b.getCompany() != null
-                    && a.getCompany().getId().equals(b.getCompany().getId())) return false;
+//            if (Boolean.FALSE.equals(aPrefs.getSameCompanyAllowed())
+//                    && a.getCompany() != null && b.getCompany() != null
+//                    && a.getCompany().getId().equals(b.getCompany().getId())) return false;
             if (timezoneOffsetHours(a, b) > aPrefs.getMaxTimezoneOffsetHours()) return false;
         }
 
@@ -206,9 +212,9 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
             if (!bPrefs.getPreferredIndustries().isEmpty()
                     && a.getIndustry() != null
                     && !bPrefs.getPreferredIndustries().contains(a.getIndustry())) return false;
-            if (Boolean.FALSE.equals(bPrefs.getSameCompanyAllowed())
-                    && a.getCompany() != null && b.getCompany() != null
-                    && a.getCompany().getId().equals(b.getCompany().getId())) return false;
+//            if (Boolean.FALSE.equals(bPrefs.getSameCompanyAllowed())
+//                    && a.getCompany() != null && b.getCompany() != null
+//                    && a.getCompany().getId().equals(b.getCompany().getId())) return false;
             if (timezoneOffsetHours(a, b) > bPrefs.getMaxTimezoneOffsetHours()) return false;
         }
 

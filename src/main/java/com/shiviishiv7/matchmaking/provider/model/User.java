@@ -49,10 +49,9 @@ public class User extends BaseEntity {
     @Column(name = "last_name", length = 80)
     private String lastName;
 
-    // ── Company ───────────────────────────────────────────────────────────
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id", nullable = false)
-    private Company company;
+
+    @Column(name = "company_id", nullable = false)
+    private String companyId;
 
     // ── Profile attributes (used in matching) ────────────────────────────
     @Enumerated(EnumType.STRING)
