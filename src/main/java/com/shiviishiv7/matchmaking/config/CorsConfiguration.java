@@ -15,7 +15,10 @@ import java.util.List;
 public class CorsConfiguration {
 
     private static final List<String> ALLOWED_ORIGINS = Arrays.asList(
-            "http://localhost:4200"
+            "http://localhost:4200",                                      // local dev
+            "https://main.d10sxmiyt52yv8.amplifyapp.com",               // AWS Amplify
+            "https://shallweconnect.online",                             // production domain
+            "https://www.shallweconnect.online"                          // www
     );
 
     @Bean
