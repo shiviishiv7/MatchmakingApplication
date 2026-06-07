@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: matchmaking
+
+  datasource:
+    url: jdbc:h2:mem:matchmaking;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+
+  flyway:
+    enabled: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+thirdparty:
+  clearbit:
+    autocomplete-url: https://autocomplete.clearbit.com/v1/companies/suggest
+
+webrtc:
+  stun:
+    url: ${STUN_URL:stun:stun.l.google.com:19302}
+  turn:
+    url: ${TURN_URL:turn:relay.metered.ca:80}
+    username: ${TURN_USERNAME:changeme}
+    credential: ${TURN_CREDENTIAL:changeme}
