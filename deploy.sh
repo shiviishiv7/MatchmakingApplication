@@ -43,6 +43,13 @@ echo "Copied to $TOMCAT_WEBAPPS/$DEPLOY_NAME"
 
 sudo systemctl start tomcat
 
+# ── Update Nginx config ───────────────────────────────────────────────────────
+echo ""
+echo "Updating Nginx config..."
+sudo cp nginx/matchmaking.conf /etc/nginx/conf.d/matchmaking.conf
+sudo nginx -t
+sudo systemctl reload nginx
+
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
 echo "[4/4] Deployment completed!"
