@@ -11,6 +11,7 @@
 	<groupId>com.shiviishiv7</groupId>
 	<artifactId>matchmaking</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>war</packaging>
 	<name/>
 	<description/>
 	<url/>
@@ -121,6 +122,7 @@
 	</dependencies>
 
 	<build>
+		<finalName>v1</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
