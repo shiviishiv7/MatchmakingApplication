@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "matchmaking-frontend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd /Users/shivji.prasad/Documents/mt/ft/matchmaking && npm run start:localhost"],
+      "port": 4200
+    }
+  ]
+}
