@@ -18,9 +18,6 @@ public class MeetingVO {
     private UUID id;
     private UUID matchId;
     private Integer roundNumber;
-    private String zoomMeetingId;
-    private String zoomJoinUrl;
-    private String zoomPassword;
     private LocalDateTime scheduledAt;
     private Integer durationMinutes;
     private MeetingStatus status;
@@ -43,9 +40,6 @@ public class MeetingVO {
         Meeting meeting = new Meeting();
         meeting.setId(id);
         meeting.setRoundNumber(roundNumber);
-        meeting.setZoomMeetingId(zoomMeetingId);
-        meeting.setZoomJoinUrl(zoomJoinUrl);
-        meeting.setZoomPassword(zoomPassword);
         meeting.setScheduledAt(scheduledAt);
         meeting.setDurationMinutes(durationMinutes);
         meeting.setStatus(status);
@@ -58,9 +52,6 @@ public class MeetingVO {
         vo.setId(meeting.getId());
         vo.setMatchId(meeting.getMatch() != null ? meeting.getMatch().getId() : null);
         vo.setRoundNumber(meeting.getRoundNumber());
-        vo.setZoomMeetingId(meeting.getZoomMeetingId());
-        vo.setZoomJoinUrl(meeting.getZoomJoinUrl());
-        vo.setZoomPassword(meeting.getZoomPassword());
         vo.setScheduledAt(meeting.getScheduledAt());
         vo.setDurationMinutes(meeting.getDurationMinutes());
         vo.setStatus(meeting.getStatus());

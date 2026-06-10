@@ -3,7 +3,9 @@ package com.shiviishiv7.matchmaking.common.enums;
 
 
 public enum MeetingStatus {
-    SCHEDULED,    // zoom link created, not yet happened
-    COMPLETED,    // meeting time has passed
-    CANCELLED     // cancelled before it happened
+    SCHEDULED,      // meeting created, waiting for scheduledAt day
+    WAITING_ROOM,   // scheduledAt reached, waiting for both users to join
+    IN_PROGRESS,    // WebRTC call is live between both peers
+    COMPLETED,      // call ended, moving to feedback
+    CANCELLED       // cancelled before it happened
 }

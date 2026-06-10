@@ -13,9 +13,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Meeting — one Zoom meeting within a Match.
+ * Meeting — one WebRTC meeting within a Match.
  * A Match with 3 rounds will have 3 Meeting rows,
- * each with its own Zoom link and feedback entries.
+ * each with its own scheduling and feedback entries.
  */
 @Entity
 @Table(name = "meetings", indexes = {
@@ -42,19 +42,6 @@ public class Meeting extends BaseEntity {
     // ── Round info ────────────────────────────────────────────────────────
     @Column(name = "round_number", nullable = false)
     private Integer roundNumber;                // 1, 2, 3 ...
-
-    // ── Zoom details ──────────────────────────────────────────────────────
-    @Column(name = "zoom_meeting_id", length = 50)
-    private String zoomMeetingId;               // Zoom's meeting ID
-
-    @Column(name = "zoom_join_url", length = 500)
-    private String zoomJoinUrl;                 // sent to both users
-
-    @Column(name = "zoom_start_url", length = 500)
-    private String zoomStartUrl;                // host URL (kept server-side only)
-
-    @Column(name = "zoom_password", length = 50)
-    private String zoomPassword;
 
     // ── Scheduling ────────────────────────────────────────────────────────
     @Column(name = "scheduled_at", nullable = true)

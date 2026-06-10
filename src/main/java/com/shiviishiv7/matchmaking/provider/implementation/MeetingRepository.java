@@ -15,12 +15,20 @@ public interface MeetingRepository extends JpaRepository<Meeting, UUID> {
 
     List<Meeting> findByMatchId(UUID matchId);
 
-    // Find meetings that have ended but not yet marked COMPLETED
-    // Used by scheduler to trigger feedback requests
+    // SCHEDULED meetings whose scheduledAt has arrived — ready to open the waiting room
     @Query("""
         SELECT m FROM Meeting m
         WHERE m.status = 'SCHEDULED'
-        AND m.scheduledAt < :cutoff
+        AND m.scheduledAt <= :now
     """)
-    List<Meeting> findCompletedButNotMarked(LocalDateTime cutoff);
+    List<Meeting> findReadyToOpenWaitingRoom(LocalDateTime now);
+
+    // WAITING_ROOM or IN_PROGRESS meetings whose duration has elapsed — ready to complete
+    @Query("""
+        SELECT m FROM Meeting m
+        WHERE m.status IN ('WAITING_ROOM', 'IN_PROGRESS')
+        AND m.scheduledAt IS NOT NULL
+        AND FUNCTION('TIMESTAMPADD', MINUTE, m.durationMinutes, m.scheduledAt) < :now
+    """)
+    List<Meeting> findExpiredActiveMeetings(LocalDateTime now);
 }
