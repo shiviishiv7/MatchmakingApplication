@@ -62,4 +62,25 @@ public class UserPreference extends BaseEntity {
     @Column(name = "same_company_allowed", nullable = false)
     @Builder.Default
     private Boolean sameCompanyAllowed = false; // default: no intra-company matches
+
+    // ── Company preference ────────────────────────────────────────────────
+    @Column(name = "preferred_company", length = 200)
+    private String preferredCompany;            // null = no preference
+
+    // ── Education preference ──────────────────────────────────────────────
+    @Column(name = "preferred_college", length = 200)
+    private String preferredCollege;            // null = no preference
+
+    // ── Location preference ───────────────────────────────────────────────
+    @Column(name = "preferred_zip", length = 20)
+    private String preferredZip;
+
+    @Column(name = "preferred_city", length = 100)
+    private String preferredCity;
+
+    @Column(name = "preferred_state", length = 100)
+    private String preferredState;
+
+    @Column(name = "preferred_country", length = 100)
+    private String preferredCountry;
 }

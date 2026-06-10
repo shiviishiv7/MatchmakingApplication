@@ -16,13 +16,32 @@ public class UserPreferenceVO {
 
     private UUID id;
     private UUID userId;
+
+    // ── Age ───────────────────────────────────────────────────────────────
     private Integer minAge;
     private Integer maxAge;
+
+    // ── Gender ────────────────────────────────────────────────────────────
     private Gender preferredGender;
+
+    // ── Industry ──────────────────────────────────────────────────────────
     private List<String> preferredIndustries;
+
+    // ── Timezone ──────────────────────────────────────────────────────────
     private Integer maxTimezoneOffsetHours;
+
+    // ── Company ───────────────────────────────────────────────────────────
     private Boolean sameCompanyAllowed;
-    private String location;
+    private String preferredCompany;
+
+    // ── Education ─────────────────────────────────────────────────────────
+    private String preferredCollege;
+
+    // ── Location ──────────────────────────────────────────────────────────
+    private String preferredZip;
+    private String preferredCity;
+    private String preferredState;
+    private String preferredCountry;
 
     public boolean validate() {
         if (userId == null) {
@@ -46,6 +65,12 @@ public class UserPreferenceVO {
         preference.setPreferredIndustries(preferredIndustries);
         preference.setMaxTimezoneOffsetHours(maxTimezoneOffsetHours);
         preference.setSameCompanyAllowed(sameCompanyAllowed);
+        preference.setPreferredCompany(preferredCompany);
+        preference.setPreferredCollege(preferredCollege);
+        preference.setPreferredZip(preferredZip);
+        preference.setPreferredCity(preferredCity);
+        preference.setPreferredState(preferredState);
+        preference.setPreferredCountry(preferredCountry);
         return preference;
     }
 
@@ -59,6 +84,12 @@ public class UserPreferenceVO {
         vo.setPreferredIndustries(preference.getPreferredIndustries());
         vo.setMaxTimezoneOffsetHours(preference.getMaxTimezoneOffsetHours());
         vo.setSameCompanyAllowed(preference.getSameCompanyAllowed());
+        vo.setPreferredCompany(preference.getPreferredCompany());
+        vo.setPreferredCollege(preference.getPreferredCollege());
+        vo.setPreferredZip(preference.getPreferredZip());
+        vo.setPreferredCity(preference.getPreferredCity());
+        vo.setPreferredState(preference.getPreferredState());
+        vo.setPreferredCountry(preference.getPreferredCountry());
         return vo;
     }
 }
