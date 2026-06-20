@@ -49,7 +49,7 @@ public class MatchmakingApplication extends SpringBootServletInitializer impleme
 		user.setStatus(UserStatus.MATCHED);
 		user.setCreatedAt(LocalDateTime.now());
 		user.setUpdatedAt(LocalDateTime.now());
-		this.repository.save(user);
+//		this.repository.save(user);
 		 user = new User();
 		user.setCognitoSub("c1739d4a-a0a1-70c2-dce1-59e4a8a60a35");
 		user.setEmail("peneno4903@dosbee.com");
@@ -65,6 +65,6 @@ public class MatchmakingApplication extends SpringBootServletInitializer impleme
 		user.setStatus(UserStatus.MATCHED);
 		user.setCreatedAt(LocalDateTime.now());
 		user.setUpdatedAt(LocalDateTime.now());
-		this.repository.save(user);
+//		this.repository.save(user);
 	}
 }

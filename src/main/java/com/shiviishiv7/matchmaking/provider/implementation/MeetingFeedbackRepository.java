@@ -13,9 +13,9 @@ public interface MeetingFeedbackRepository extends JpaRepository<MeetingFeedback
 
     List<MeetingFeedback> findByMeetingId(String meetingId);
 
-    Optional<MeetingFeedback> findByMeetingIdAndUserId(String meetingId, String userId);
+//    Optional<MeetingFeedback> findByMeetingIdAndUserId(String meetingId, String userId);
 
-    boolean existsByMeetingIdAndUserId(String meetingId, String userId);
+    boolean existsByMeetingIdAndCognitoSub(String meetingId, String cognitoSub);
 
     long countByMeetingId(String meetingId);
 }

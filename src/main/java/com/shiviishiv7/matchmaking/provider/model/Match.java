@@ -15,11 +15,7 @@ import java.util.List;
  * maxRounds caps the loop to prevent infinite recurring meetings.
  */
 @Entity
-@Table(name = "matches", indexes = {
-        @Index(name = "idx_match_user_a", columnList = "user_a_id"),
-        @Index(name = "idx_match_user_b", columnList = "user_b_id"),
-        @Index(name = "idx_match_status", columnList = "status")
-})
+@Table(name = "matches")
 @Getter
 @Setter
 @NoArgsConstructor

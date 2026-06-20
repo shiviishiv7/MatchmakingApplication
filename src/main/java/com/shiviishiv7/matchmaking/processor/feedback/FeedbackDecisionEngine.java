@@ -54,7 +54,7 @@ public class FeedbackDecisionEngine {
 
             List<MeetingFeedback> feedbacks = meetingFeedbackRepository.findByMeetingId(meetingId);
             String meetingId1 = feedbacks.get(0).getMeetingId();
-            Optional<Match> optionalMatch = matchRepository.findActiveMatchForUser(meetingId);
+            Optional<Match> optionalMatch = null;// matchRepository.findByMee(meetingId);
             Match match = optionalMatch.get();
 
             FeedbackResponse responseA = feedbacks.get(0).getResponse();

@@ -38,11 +38,11 @@ public class UserProcessor implements IUserProcessor {
     public BaseVO add(UserVO userVO) throws MatchmakingException {
         try {
             log.info("Validating inputs for user creation.{}", userVO.toString());
-//            userVO.validate();
+            userVO.validate();
             log.info("UserVO validation completed successfully.");
 
             log.trace("Checking for duplicate email: {}", userVO.getEmail());
-            if (userRepository.existsByEmail(userVO.getEmail())) {
+            if (userRepository.existsByCognitoSub(userVO.getCognitoSub())) {
                 log.error("ALERT_FOR_ERROR: Duplicate email found: {}", userVO.getEmail());
                 throw new MatchmakingException("User with email already exists", DUPLICATE_RECORD);
             }

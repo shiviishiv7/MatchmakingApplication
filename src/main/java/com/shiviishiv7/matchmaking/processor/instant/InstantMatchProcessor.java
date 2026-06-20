@@ -20,11 +20,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.Period;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 
 import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus.DATA_NOT_FOUND;
@@ -69,7 +66,7 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
             // Mark as looking so others can find this user too
             userPresenceService.markAsLooking(userId);
 
-            Optional<UserPreference> myPrefsOpt = userPreferenceRepository.findByUserId(userId);
+            Optional<UserPreference> myPrefsOpt = userPreferenceRepository.findByCognitoSub(userId);
 
             // Find a compatible online user
             Set<String> lookingUserIds = userPresenceService.getAllLookingUserIds();
@@ -77,17 +74,16 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
             double bestScore = -1;
 
             for (String candidateIdStr : lookingUserIds) {
-                UUID candidateId = UUID.fromString(candidateIdStr);
-                if (candidateId.equals(userId)) continue;
+                if (candidateIdStr.equals(userId)) continue;
 
-                Optional<User> candidateOpt = userRepository.findById(candidateId);
+                Optional<User> candidateOpt = userRepository.findById(Integer.valueOf(candidateIdStr));
                 if (candidateOpt.isEmpty()) continue;
                 User candidate = candidateOpt.get();
 
                 // Skip if already matched before
                 if (matchRepository.existsByCognitoSubAAndCognitoSubB(userId, candidateOpt.get().getCognitoSub())) continue;
 
-                Optional<UserPreference> theirPrefsOpt = userPreferenceRepository.findByUserId(String.valueOf(candidateId));
+                Optional<UserPreference> theirPrefsOpt = userPreferenceRepository.findByCognitoSub(String.valueOf(candidateIdStr));
 
                 if (!isCompatible(currentUser, myPrefsOpt.orElse(null),
                                   candidate, theirPrefsOpt.orElse(null))) continue;

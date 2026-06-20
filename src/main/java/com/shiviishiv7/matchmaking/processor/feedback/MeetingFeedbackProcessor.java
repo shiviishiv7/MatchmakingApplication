@@ -60,7 +60,7 @@ public class MeetingFeedbackProcessor implements IMeetingFeedbackProcessor {
             }
 
             log.trace("Checking for duplicate feedback for meeting ID: {} and user ID: {}", feedbackVO.getMeetingId(), feedbackVO.getUserId());
-            if (meetingFeedbackRepository.existsByMeetingIdAndUserId(feedbackVO.getMeetingId(), feedbackVO.getUserId())) {
+            if (meetingFeedbackRepository.existsByMeetingIdAndCognitoSub(feedbackVO.getMeetingId(), feedbackVO.getUserId())) {
                 log.error("ALERT_FOR_ERROR: Feedback already submitted for meeting ID: {} by user ID: {}", feedbackVO.getMeetingId(), feedbackVO.getUserId());
                 throw new MatchmakingException("Feedback already submitted for this meeting by this user", DUPLICATE_RECORD);
             }

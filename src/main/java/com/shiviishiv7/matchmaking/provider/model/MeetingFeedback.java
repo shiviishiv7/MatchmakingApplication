@@ -47,8 +47,8 @@ public class MeetingFeedback extends BaseEntity {
     @Column(name = "meetingId", nullable = false)
     private String meetingId;
 
-    @Column(name = "cognitoSubA", nullable = false)
-    private String cognitoSubA;
+    @Column(name = "cognitoSub", nullable = false)
+    private String cognitoSub;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "response", nullable = false, length = 20)

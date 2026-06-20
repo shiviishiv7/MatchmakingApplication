@@ -16,7 +16,9 @@ public interface MatchRepository extends JpaRepository<Match, Integer> {
 
     List<Match> findByStatus(MatchStatus status);
 
-    Optional<Match> findActiveMatchForUser(String userId);
+    Optional<Match> findMatchByCognitoSubA(String cognitoSubA);
+
+    Optional<Match> findMatchByCognitoSubAOrCognitoSubB(String cognitoSubA, String cognitoSubB);
 
     boolean existsByCognitoSubAAndCognitoSubB(String cognitoSubA, String cognitoSubB);
 }

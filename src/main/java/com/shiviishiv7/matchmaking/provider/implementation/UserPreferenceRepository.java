@@ -10,8 +10,8 @@ import java.util.Optional;
 @Repository
 public interface UserPreferenceRepository extends JpaRepository<UserPreference, Integer> {
 
-    Optional<UserPreference> findByUserId(String userId);
+    Optional<UserPreference> findByCognitoSub(String userId);
 
-    boolean existsByUserId(String userId);
+//    boolean existsByUserId(String userId);
     boolean existsByCognitoSub(String userId);
 }

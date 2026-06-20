@@ -21,23 +21,14 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     boolean existsByEmail(String email);
 
+    boolean existsByCognitoSub(String cognitoSub);
+
     // Fetch all users in the pool — the matching scheduler uses this
     @Query("SELECT u FROM User u WHERE u.status = :status AND u.isActive = true")
     List<User> findAllByStatus(UserStatus status);
 
-    // Fetch pool users excluding a specific user (used to find candidates)
-    @Query("""
-        SELECT u FROM User u
-        WHERE u.status = 'IN_POOL'
-        AND u.isActive = true
-        AND u.id != :excludeUserId
-        AND u.id NOT IN (
-            SELECT m.userB.id FROM Match m WHERE m.userA.id = :excludeUserId
-            UNION
-            SELECT m.userA.id FROM Match m WHERE m.userB.id = :excludeUserId
-        )
-    """)
-    List<User> findCandidatesFor(String excludeUserId);
 
-    Optional<User> findById(UUID candidateId);
+//    List<User> findCandidatesFor(String excludeUserId);
+
+    Optional<User> findById(Integer candidateId);
 }

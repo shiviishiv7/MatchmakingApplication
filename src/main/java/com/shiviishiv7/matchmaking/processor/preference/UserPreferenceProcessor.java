@@ -107,7 +107,7 @@ public class UserPreferenceProcessor implements IUserPreferenceProcessor {
     public BaseVO getByUserId(String userId) throws MatchmakingException {
         try {
             log.info("Fetching user preference for user ID: {}", userId);
-            Optional<UserPreference> optionalPreference = userPreferenceRepository.findByUserId(userId);
+            Optional<UserPreference> optionalPreference = userPreferenceRepository.findByCognitoSub(userId);
             if (optionalPreference.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: Preference not found for user ID: {}", userId);
                 throw new MatchmakingException("User preference does not exist", DATA_NOT_FOUND);

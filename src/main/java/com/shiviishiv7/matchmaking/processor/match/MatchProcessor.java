@@ -98,7 +98,7 @@ public class MatchProcessor implements IMatchProcessor {
     public BaseVO getActiveMatchForUser(String userId) throws MatchmakingException {
         try {
             log.info("Fetching active match for user ID: {}", userId);
-            Optional<Match> optionalMatch = matchRepository.findActiveMatchForUser(userId);
+            Optional<Match> optionalMatch = matchRepository.findMatchByCognitoSubAOrCognitoSubB(userId,userId);
             if (optionalMatch.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: No active match found for user ID: {}", userId);
                 throw new MatchmakingException("No active match found for this user", DATA_NOT_FOUND);
