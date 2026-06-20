@@ -31,6 +31,7 @@ public class UserVO {
     private String profilePictureUrl;
     private UserStatus status;
     private Boolean isActive;
+    private String cognitoSub;
 //    private List<String> interests;
 
     public boolean validate() {
@@ -51,6 +52,7 @@ public class UserVO {
         user.setId(id);
         user.setEmail(email);
         user.setFirstName(firstName);
+        user.setCognitoSub(cognitoSub);
         user.setLastName(lastName);
         user.setGender(gender);
         user.setDateOfBirth(dateOfBirth);
