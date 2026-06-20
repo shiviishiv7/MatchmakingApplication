@@ -19,7 +19,7 @@ import org.springframework.web.client.RestTemplate;
 public class RedditProxyController {
 
     private static final String REDDIT_BASE  = "https://www.reddit.com/r/";
-    private static final String USER_AGENT   = "ShallWeConnect/1.0 (matchmaking app; contact: admin@shallweconnect.online)";
+    private static final String USER_AGENT   = "web:com.shallweconnect.matchmaking:1.0 (by /u/shallweconnect)";
 
     private final RestTemplate restTemplate = new RestTemplate();
 
