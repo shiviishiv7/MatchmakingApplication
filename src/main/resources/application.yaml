@@ -3,23 +3,18 @@ spring:
     name: matchmaking
 
   datasource:
-    url: jdbc:h2:mem:matchmaking;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+    url: jdbc:mysql://database-2.chasis6a0sx0.ap-south-1.rds.amazonaws.com:3306/matchmaking?useSSL=true&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: admin
+    password: databaseis100%SECURE
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
 
   flyway:
