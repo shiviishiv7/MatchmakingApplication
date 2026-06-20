@@ -19,7 +19,7 @@ import java.time.LocalDate;
  * only what is needed for matching and display.
  */
 @Entity
-@Table(name = "USER")
+@Table(name = "\"USER\"")
 @Getter
 @Setter
 @NoArgsConstructor
