@@ -25,13 +25,5 @@ public abstract class BaseEntity {
     @LastModifiedDate
     @Column(name = "updatedAt")
     private LocalDateTime updatedAt;
-
-    @CreatedDate
-    @Column(name = "createdBy", nullable = false, updatable = false)
-    private LocalDateTime createdBy;
-
-    @LastModifiedDate
-    @Column(name = "updatedBy")
-    private LocalDateTime updatedBy;
 }
 

@@ -62,6 +62,7 @@ public class UserPreferenceVO {
     public UserPreference fromVO() {
         UserPreference preference = new UserPreference();
         preference.setId(id);
+        preference.setCognitoSub(cognitoSub);
         preference.setMinAge(minAge);
         preference.setMaxAge(maxAge);
         preference.setPreferredGender(preferredGender);

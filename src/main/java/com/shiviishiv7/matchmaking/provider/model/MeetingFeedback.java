@@ -25,11 +25,11 @@ import lombok.*;
 @Table(name = "meeting_feedback",
         uniqueConstraints = @UniqueConstraint(
                 name = "uq_feedback_meeting_user",
-                columnNames = {"meeting_id", "user_id"}   // one feedback per user per meeting
+                columnNames = {"meetingId", "cognitoSub"}
         ),
         indexes = {
-                @Index(name = "idx_feedback_meeting", columnList = "meeting_id"),
-                @Index(name = "idx_feedback_user",    columnList = "user_id")
+                @Index(name = "idx_feedback_meeting", columnList = "meetingId"),
+                @Index(name = "idx_feedback_user",    columnList = "cognitoSub")
         }
 )
 @Getter

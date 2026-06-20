@@ -1,5 +1,6 @@
 package com.shiviishiv7.matchmaking.processor.instant;
 
+import com.shiviishiv7.matchmaking.common.enums.Gender;
 import com.shiviishiv7.matchmaking.common.enums.MatchStatus;
 import com.shiviishiv7.matchmaking.common.enums.MeetingType;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
@@ -66,7 +67,7 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
             // Mark as looking so others can find this user too
             userPresenceService.markAsLooking(userId);
 
-            Optional<UserPreference> myPrefsOpt = userPreferenceRepository.findByCognitoSub(userId);
+            Optional<UserPreference> myPrefsOpt = userPreferenceRepository.findByCognitoSub(currentUser.getCognitoSub());
 
             // Find a compatible online user
             Set<String> lookingUserIds = userPresenceService.getAllLookingUserIds();
@@ -81,9 +82,9 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
                 User candidate = candidateOpt.get();
 
                 // Skip if already matched before
-                if (matchRepository.existsByCognitoSubAAndCognitoSubB(userId, candidateOpt.get().getCognitoSub())) continue;
+                if (matchRepository.existsByCognitoSubAAndCognitoSubB(currentUser.getCognitoSub(), candidate.getCognitoSub())) continue;
 
-                Optional<UserPreference> theirPrefsOpt = userPreferenceRepository.findByCognitoSub(String.valueOf(candidateIdStr));
+                Optional<UserPreference> theirPrefsOpt = userPreferenceRepository.findByCognitoSub(candidate.getCognitoSub());
 
                 if (!isCompatible(currentUser, myPrefsOpt.orElse(null),
                                   candidate, theirPrefsOpt.orElse(null))) continue;
@@ -189,30 +190,21 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
         int ageA = computeAge(a);
         int ageB = computeAge(b);
 
+        boolean sameCompany = a.getCompanyId() != null
+                && a.getCompanyId().equals(b.getCompanyId());
+
         // Check A's preferences against B
         if (aPrefs != null) {
             if (aPrefs.getPreferredGender() != null && !aPrefs.getPreferredGender().equals(b.getGender())) return false;
             if (ageB < aPrefs.getMinAge() || ageB > aPrefs.getMaxAge()) return false;
-//            if (!aPrefs.getPreferredIndustries().isEmpty()
-//                    && b.getIndustry() != null
-//                    && !aPrefs.getPreferredIndustries().contains(b.getIndustry())) return false;
-////            if (Boolean.FALSE.equals(aPrefs.getSameCompanyAllowed())
-////                    && a.getCompany() != null && b.getCompany() != null
-////                    && a.getCompany().getId().equals(b.getCompany().getId())) return false;
-//            if (timezoneOffsetHours(a, b) > aPrefs.getMaxTimezoneOffsetHours()) return false;
+            if (Boolean.FALSE.equals(aPrefs.getSameCompanyAllowed()) && sameCompany) return false;
         }
 
         // Check B's preferences against A
         if (bPrefs != null) {
             if (bPrefs.getPreferredGender() != null && !bPrefs.getPreferredGender().equals(a.getGender())) return false;
             if (ageA < bPrefs.getMinAge() || ageA > bPrefs.getMaxAge()) return false;
-//            if (!bPrefs.getPreferredIndustries().isEmpty()
-//                    && a.getIndustry() != null
-//                    && !bPrefs.getPreferredIndustries().contains(a.getIndustry())) return false;
-////            if (Boolean.FALSE.equals(bPrefs.getSameCompanyAllowed())
-////                    && a.getCompany() != null && b.getCompany() != null
-////                    && a.getCompany().getId().equals(b.getCompany().getId())) return false;
-//            if (timezoneOffsetHours(a, b) > bPrefs.getMaxTimezoneOffsetHours()) return false;
+            if (Boolean.FALSE.equals(bPrefs.getSameCompanyAllowed()) && sameCompany) return false;
         }
 
         return true;
@@ -220,35 +212,55 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
 
     /**
      * Scores a candidate 0.0–1.0. Higher = better fit.
-     * Currently based on timezone proximity and industry match.
+     *
+     * Weight breakdown (must sum to 1.0):
+     *   Baseline .............. 0.2  (every compatible pair gets this)
+     *   Gender preference ..... 0.4  (0.2 per direction — A→B and B→A)
+     *   Age proximity ......... 0.4  (0.2 per direction — A's pref for B and B's pref for A)
+     *
+     * To add a new signal in the future (e.g. location, company):
+     *   1. Add a private scorer method returning 0.0–1.0
+     *   2. Add a weighted line below, redistributing weights to keep total = 1.0
+     *   3. Add the hard-rejection check in isCompatible() if needed
      */
     private double computeScore(User a, UserPreference aPrefs, User b, UserPreference bPrefs) {
-        double score = 0.5; // baseline
+        double score = 0.2; // baseline
 
-        int tzOffset = timezoneOffsetHours(a, b);
-        if (tzOffset == 0) score += 0.3;
-        else if (tzOffset <= 2) score += 0.2;
-        else if (tzOffset <= 4) score += 0.1;
+        // Gender preference (0.2 per direction = 0.4 total)
+        score += genderScore(b.getGender(), aPrefs) * 0.2;
+        score += genderScore(a.getGender(), bPrefs) * 0.2;
 
-//        if (a.getIndustry() != null && a.getIndustry().equals(b.getIndustry())) score += 0.2;
+        // Age proximity (0.2 per direction = 0.4 total)
+        score += ageProximityScore(computeAge(b), aPrefs) * 0.2;
+        score += ageProximityScore(computeAge(a), bPrefs) * 0.2;
+
+        // Future signals go here, e.g.:
+        // score += locationScore(a, b, aPrefs) * 0.X;
 
         return Math.min(score, 1.0);
     }
 
-    private int computeAge(User user) {
-        if (user.getDateOfBirth() == null) return 0;
-        return Period.between(user.getDateOfBirth(), LocalDate.now()).getYears();
+    // Returns 1.0 if gender matches preference, 0.5 if no preference set, 0.0 if mismatch.
+    private double genderScore(Gender candidateGender, UserPreference prefs) {
+        if (prefs == null || prefs.getPreferredGender() == null) return 0.5;
+        return prefs.getPreferredGender().equals(candidateGender) ? 1.0 : 0.0;
     }
 
-    private int timezoneOffsetHours(User a, User b) {
-        try {
-//            if (a.getTimezone() == null || b.getTimezone() == null) return 0;
-//            ZoneOffset offsetA = ZoneId.of(a.getTimezone()).getRules().getStandardOffset(java.time.Instant.now());
-//            ZoneOffset offsetB = ZoneId.of(b.getTimezone()).getRules().getStandardOffset(java.time.Instant.now());
-//            return Math.abs((offsetA.getTotalSeconds() - offsetB.getTotalSeconds()) / 3600);
-            return 100;
-        } catch (Exception ex) {
-            return 0;
+    // Returns 0.0–1.0: 1.0 = age at center of preferred range, 0.0 = at boundary, 0.5 = no preference.
+    private double ageProximityScore(int age, UserPreference prefs) {
+        if (prefs == null) return 0.5;
+        int min = prefs.getMinAge() != null ? prefs.getMinAge() : 18;
+        int max = prefs.getMaxAge() != null ? prefs.getMaxAge() : 60;
+        if (max <= min) return 0.5;
+        double center = (min + max) / 2.0;
+        double halfRange = (max - min) / 2.0;
+        return Math.max(0.0, 1.0 - (Math.abs(age - center) / halfRange));
+    }
+
+    private int computeAge(User user) {
+        if (user.getDateOfBirth() != null) {
+            return Period.between(user.getDateOfBirth(), LocalDate.now()).getYears();
         }
+        return user.getAge();
     }
 }

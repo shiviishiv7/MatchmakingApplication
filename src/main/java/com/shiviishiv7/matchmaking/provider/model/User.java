@@ -10,8 +10,6 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Objects;
 
 
 /**
@@ -95,31 +93,27 @@ public class User extends BaseEntity {
 //            joinColumns = @JoinColumn(name = "user_id"))
 //    @Column(name = "interest", length = 80)
 //    private List<String> interests;             // e.g. ["hiking", "cooking", "travel"]
-public User fromVO(UserVO vo) {
-    if (vo == null) {
-        return null;
+    public User fromVO(UserVO vo) {
+        if (vo == null) {
+            return null;
+        }
+        this.setId(vo.getId());
+        this.setCognitoSub(vo.getCognitoSub());
+        this.setEmail(vo.getEmail());
+        this.setFirstName(vo.getFirstName());
+        this.setLastName(vo.getLastName());
+        if (ObjectUtils.isNotEmpty(vo.getAddressVO()) && ObjectUtils.isNotEmpty(vo.getAddressVO().getId())) {
+            this.setAddressId(vo.getAddressVO().getId().toString());
+        }
+        this.setCompanyId(vo.getCompanyId());
+        this.setGender(vo.getGender());
+        this.setDateOfBirth(vo.getDateOfBirth());
+        this.setAge(vo.getAge());
+        this.setStatus(vo.getStatus());
+        this.setIsActive(vo.getIsActive());
+        return this;
     }
-    this.setId(vo.getId());
-    this.setCognitoSub(vo.getCognitoSub());
-    this.setEmail(vo.getEmail());
-    this.setFirstName(vo.getFirstName());
-    this.setLastName(vo.getLastName());
-    if (ObjectUtils.isEmpty(vo.getAddressVO()) && ObjectUtils.isNotEmpty(vo.getAddressVO().getId())){
-        this.setAddressId(vo.getAddressVO().getId().toString());
-    }
-    this.setCompanyId(vo.getCompanyId());
-    this.setGender(vo.getGender());
-    this.setDateOfBirth(vo.getDateOfBirth());
-    this.setAge(vo.getAge());
-    this.setStatus(vo.getStatus());
-    this.setIsActive(vo.getIsActive());
-    return this;
-}
 
-    /**
-     * Maps this User entity instance state out into a clean UserVO contract layout.
-     * @return A newly built UserVO configuration tracking state values
-     */
     public UserVO toVO() {
         UserVO vo = new UserVO();
         vo.setId(this.getId());
@@ -127,9 +121,6 @@ public User fromVO(UserVO vo) {
         vo.setEmail(this.getEmail());
         vo.setFirstName(this.getFirstName());
         vo.setLastName(this.getLastName());
-        if (ObjectUtils.isEmpty(vo.getAddressVO()) && ObjectUtils.isNotEmpty(vo.getAddressVO().getId())){
-            this.setAddressId(vo.getAddressVO().getId().toString());
-        }
         vo.setCompanyId(this.getCompanyId());
         vo.setGender(this.getGender());
         vo.setDateOfBirth(this.getDateOfBirth());

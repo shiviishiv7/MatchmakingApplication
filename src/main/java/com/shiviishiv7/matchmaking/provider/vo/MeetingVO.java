@@ -44,6 +44,7 @@ public class MeetingVO {
     public Meeting fromVO() {
         Meeting meeting = new Meeting();
         meeting.setId(id);
+        meeting.setMatchId(matchId);
         meeting.setRoundNumber(roundNumber);
         meeting.setScheduledAt(scheduledAt);
         meeting.setDurationMinutes(durationMinutes);

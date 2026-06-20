@@ -35,6 +35,8 @@ public class MeetingFeedbackVO {
     public MeetingFeedback fromVO() {
         MeetingFeedback feedback = new MeetingFeedback();
         feedback.setId(id);
+        feedback.setMeetingId(meetingId);
+        feedback.setCognitoSub(userId);
         feedback.setResponse(response);
         feedback.setNotes(notes);
         return feedback;
@@ -43,8 +45,8 @@ public class MeetingFeedbackVO {
     public MeetingFeedbackVO toVO(MeetingFeedback feedback) {
         MeetingFeedbackVO vo = new MeetingFeedbackVO();
         vo.setId(feedback.getId());
-//        vo.setMeetingId(feedback.getMeeting() != null ? feedback.getMeeting().getId() : null);
-//        vo.setUserId(feedback.getUser() != null ? feedback.getUser().getId() : null);
+        vo.setMeetingId(feedback.getMeetingId());
+        vo.setUserId(feedback.getCognitoSub());
         vo.setResponse(feedback.getResponse());
         vo.setNotes(feedback.getNotes());
         return vo;

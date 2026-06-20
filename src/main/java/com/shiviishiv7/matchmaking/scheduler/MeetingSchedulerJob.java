@@ -52,7 +52,7 @@ public class MeetingSchedulerJob {
             try {
                 meeting.setStatus(MeetingStatus.WAITING_ROOM);
                 meetingRepository.save(meeting);
-                Optional<Match> optionalMatch = matchRepository.findById(meeting.getId());
+                Optional<Match> optionalMatch = matchRepository.findById(Integer.valueOf(meeting.getMatchId()));
                 Match match = optionalMatch.get();
 
                 if (match == null) continue;
