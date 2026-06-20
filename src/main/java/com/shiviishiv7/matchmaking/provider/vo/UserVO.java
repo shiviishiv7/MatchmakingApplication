@@ -22,7 +22,7 @@ public class UserVO {
     private String email;
     private String firstName;
     private String lastName;
-    private UUID companyId;
+    private String companyId;
     private Gender gender;
     private LocalDate dateOfBirth;
     private String timezone;
@@ -60,6 +60,7 @@ public class UserVO {
         user.setProfilePictureUrl(profilePictureUrl);
         user.setStatus(status);
         user.setIsActive(isActive);
+        user.setCompanyId(companyId);
 //        user.setInterests(interests);
         return user;
     }
