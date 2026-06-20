@@ -28,7 +28,8 @@ public class SecurityConfig {
                     "/swagger-ui/**",               // Swagger UI
                     "/swagger-ui.html",
                     "/v3/api-docs/**",              // OpenAPI JSON/YAML
-                    "/v3/api-docs.yaml"
+                    "/v3/api-docs.yaml",
+                    "/reddit/**"                    // Reddit proxy — public, no auth needed
                 ).permitAll()
                 .anyRequest().permitAll()           // open during dev — tighten before prod
             );
