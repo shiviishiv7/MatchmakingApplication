@@ -6,6 +6,7 @@ import com.shiviishiv7.matchmaking.common.enums.UserStatus;
 import com.shiviishiv7.matchmaking.provider.model.User;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
+@ToString
 public class UserVO {
 
     private UUID id;

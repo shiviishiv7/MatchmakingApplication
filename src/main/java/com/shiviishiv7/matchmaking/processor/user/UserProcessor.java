@@ -32,7 +32,7 @@ public class UserProcessor implements IUserProcessor {
     @Override
     public BaseVO add(UserVO userVO) throws MatchmakingException {
         try {
-            log.info("Validating inputs for user creation.");
+            log.info("Validating inputs for user creation.{}", userVO.toString());
 //            userVO.validate();
             log.info("UserVO validation completed successfully.");
 
