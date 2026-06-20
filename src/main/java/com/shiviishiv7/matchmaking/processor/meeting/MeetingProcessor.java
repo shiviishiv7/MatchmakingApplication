@@ -14,12 +14,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus.*;
+
+// UserRepository is needed to resolve the peer for upcoming meetings
 
 @Component
 @Transactional
@@ -139,6 +142,34 @@ public class MeetingProcessor implements IMeetingProcessor {
         } catch (Exception ex) {
             log.error("ALERT_FOR_ERROR: Error occurred while marking meeting completed. Error: {}", ex.getMessage(), ex);
             throw new MatchmakingException("Error occurred while updating meeting: " + ex.getMessage(), UNKNOWN_EXCEPTION);
+        }
+    }
+
+    @Override
+    public BaseVO getUpcomingMeetings(String sub) throws MatchmakingException {
+        try {
+            log.info("Fetching upcoming meetings for user sub: {}", sub);
+            List<Meeting> meetings = meetingRepository.findUpcomingForUser(sub, LocalDateTime.now());
+
+            List<MeetingVO> result = meetings.stream().map(m -> {
+                MeetingVO vo = new MeetingVO().toVO(m);
+                // Resolve the peer — the other participant in the match
+                var match = m.getMatch();
+                if (match != null) {
+                    boolean iAmA = match.getUserA().getCognitoSub().equals(sub);
+                    var peer = iAmA ? match.getUserB() : match.getUserA();
+                    vo.setPeerFirstName(peer.getFirstName());
+                    vo.setPeerLastName(peer.getLastName());
+                    vo.setPeerCognitoSub(peer.getCognitoSub());
+                }
+                return vo;
+            }).collect(Collectors.toList());
+
+            log.info("Found {} upcoming meetings for user {}", result.size(), sub);
+            return new BaseVO(SUCCESS, "Upcoming meetings fetched", "Upcoming meetings fetched", result);
+        } catch (Exception ex) {
+            log.error("ALERT_FOR_ERROR: Error fetching upcoming meetings. Error: {}", ex.getMessage(), ex);
+            throw new MatchmakingException("Error fetching upcoming meetings: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
 }

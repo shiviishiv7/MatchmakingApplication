@@ -23,6 +23,11 @@ public class MeetingVO {
     private MeetingStatus status;
     private MeetingType meetingType;
 
+    // Peer info — populated by getUpcomingMeetings
+    private String peerFirstName;
+    private String peerLastName;
+    private String peerCognitoSub;
+
     public boolean validate() {
         if (matchId == null) {
             throw new IllegalArgumentException("Match ID cannot be null");

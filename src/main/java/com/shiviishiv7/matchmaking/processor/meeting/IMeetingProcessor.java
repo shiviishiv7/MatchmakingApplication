@@ -15,4 +15,6 @@ public interface IMeetingProcessor {
     BaseVO getAllForMatch(UUID matchId) throws MatchmakingException;
 
     BaseVO markCompleted(UUID id) throws MatchmakingException;
+
+    BaseVO getUpcomingMeetings(String sub) throws MatchmakingException;
 }

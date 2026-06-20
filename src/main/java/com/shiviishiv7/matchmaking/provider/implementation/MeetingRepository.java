@@ -31,4 +31,15 @@ public interface MeetingRepository extends JpaRepository<Meeting, UUID> {
         AND FUNCTION('TIMESTAMPADD', MINUTE, m.durationMinutes, m.scheduledAt) < :now
     """)
     List<Meeting> findExpiredActiveMeetings(LocalDateTime now);
+
+    // Upcoming SCHEDULED meetings for a user (as either party in the match)
+    @Query("""
+        SELECT m FROM Meeting m
+        JOIN m.match ma
+        WHERE m.status = 'SCHEDULED'
+        AND m.scheduledAt > :now
+        AND (ma.userA.cognitoSub = :sub OR ma.userB.cognitoSub = :sub)
+        ORDER BY m.scheduledAt ASC
+    """)
+    List<Meeting> findUpcomingForUser(String sub, LocalDateTime now);
 }

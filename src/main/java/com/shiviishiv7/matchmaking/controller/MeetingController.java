@@ -60,6 +60,15 @@ public class MeetingController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    @RequestMapping(value = "/upcoming", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<BaseVO> getUpcoming() throws MatchmakingException {
+        String sub = securityUtility.getAuthenticatedUserSub();
+        log.info("Request received to fetch upcoming meetings for sub: {}", sub);
+        BaseVO response = meetingProcessor.getUpcomingMeetings(sub);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
     @RequestMapping(value = "/complete/{id}", method = RequestMethod.POST, produces = "application/json")
     @ResponseBody
     public ResponseEntity<BaseVO> markCompleted(@PathVariable("id") UUID id) throws MatchmakingException {
