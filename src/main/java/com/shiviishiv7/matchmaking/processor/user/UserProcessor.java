@@ -43,11 +43,11 @@ public class UserProcessor implements IUserProcessor {
             }
 
             log.trace("Fetching company for ID: {}", userVO.getCompanyId());
-            Optional<Company> optionalCompany = companyRepository.findById(userVO.getCompanyId());
-            if (optionalCompany.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: Company not found for ID: {}", userVO.getCompanyId());
-                throw new MatchmakingException("Company does not exist", DATA_NOT_FOUND);
-            }
+//            Optional<Company> optionalCompany = companyRepository.findById(userVO.getCompanyId());
+//            if (optionalCompany.isEmpty()) {
+//                log.error("ALERT_FOR_ERROR: Company not found for ID: {}", userVO.getCompanyId());
+//                throw new MatchmakingException("Company does not exist", DATA_NOT_FOUND);
+//            }
 
             log.trace("Saving user record for email: {}", userVO.getEmail());
             User user = userVO.fromVO();
