@@ -44,16 +44,6 @@ public class JwtAuthenticationFilter implements Filter {
         }
 
         String origin = httpRequest.getHeader("Origin");
-
-
-
-        log.info("========== Incoming Request ==========");
-log.info("Method      : {}", httpRequest.getMethod());
-log.info("URL         : {}", httpRequest.getRequestURL());
-log.info("Origin      : {}", origin != null ? origin : "NOT PROVIDED");
-
-log.info("Auth Header : {}", authorizationHeader != null ? "PRESENT" : "MISSING");
-log.info("======================================");
         applyCorsHeaders(httpResponse, origin); // ← first thing we do
 
         // Allow OPTIONS requests to pass through without authentication
@@ -70,6 +60,25 @@ log.info("======================================");
             log.warn("Authorization header is missing or blank.");
             sendUnauthorizedResponse(httpRequest, httpResponse, "Authorization header is missing.");
             return;
+        }
+
+        // --- NEW BYPASS CODE FOR YOUR LAMBDA ---
+        // Change this string to your actual environment secret variable or hardcoded master key
+        String masterSecretKey = "Backend-Internal-Secret-Key-123XYZ";
+
+        if (token.equals(masterSecretKey)) {
+            log.info("System level bypass: Internal lambda request detected via master token.");
+
+            // Set mock details for your system context so your application logic doesn't break
+            httpRequest.setAttribute("authenticatedUser", "SYSTEM_LAMBDA");
+
+            CurrentUserDetails curr = new CurrentUserDetails();
+            curr.setUsername("SYSTEM_LAMBDA");
+            CurrentUserContext.setCurrentUser(curr);
+
+            // Directly skip JWT decoding and proceed to /user/add controller
+            chain.doFilter(request, response);
+            return; // Exit filter block here
         }
 
         try {
