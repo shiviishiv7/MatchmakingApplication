@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+
 import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus.DATA_NOT_FOUND;
 import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus.UNKNOWN_EXCEPTION;
 
@@ -53,12 +54,12 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
     private SimpMessagingTemplate messagingTemplate;
 
     @Override
-    public void startLooking(UUID userId) throws MatchmakingException {
+    public void startLooking(String userId) throws MatchmakingException {
         try {
             log.info("User {} started looking for an instant match.", userId);
 //            messagingTemplate.convertAndSendToUser(userSub, "/queue/match", notification);
 
-            Optional<User> optionalUser = userRepository.findById(userId);
+            Optional<User> optionalUser = userRepository.findById(Integer.valueOf(userId));
             if (optionalUser.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: User not found for ID: {}", userId);
                 throw new MatchmakingException("User does not exist", DATA_NOT_FOUND);
@@ -84,9 +85,9 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
                 User candidate = candidateOpt.get();
 
                 // Skip if already matched before
-                if (matchRepository.existsMatchBetween(userId, candidateId)) continue;
+                if (matchRepository.existsByCognitoSubAAndCognitoSubB(userId, candidateOpt.get().getCognitoSub())) continue;
 
-                Optional<UserPreference> theirPrefsOpt = userPreferenceRepository.findByUserId(candidateId);
+                Optional<UserPreference> theirPrefsOpt = userPreferenceRepository.findByUserId(String.valueOf(candidateId));
 
                 if (!isCompatible(currentUser, myPrefsOpt.orElse(null),
                                   candidate, theirPrefsOpt.orElse(null))) continue;
@@ -120,7 +121,7 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
     }
 
     @Override
-    public void stopLooking(UUID userId) throws MatchmakingException {
+    public void stopLooking(String userId) throws MatchmakingException {
         try {
             log.info("User {} stopped looking for a match.", userId);
             userPresenceService.markAsNotLooking(userId);
@@ -140,14 +141,14 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
 
     private void createInstantMatchAndNotify(User userA, User userB, double score) {
         // Remove both from looking / waiting
-        userPresenceService.markAsNotLooking(userA.getId());
-        userPresenceService.markAsNotLooking(userB.getId());
-        waitingQueueService.dequeue(userA.getId());
-        waitingQueueService.dequeue(userB.getId());
+        userPresenceService.markAsNotLooking(String.valueOf(userA.getId()));
+        userPresenceService.markAsNotLooking(String.valueOf(userB.getId()));
+        waitingQueueService.dequeue(String.valueOf(userA.getId()));
+        waitingQueueService.dequeue(String.valueOf(userB.getId()));
 
         Match match = Match.builder()
-                .userA(userA)
-                .userB(userB)
+                .cognitoSubA(userA.getCognitoSub())
+                .cognitoSubB(userB.getCognitoSub())
                 .status(MatchStatus.MEETING_SCHEDULED)
                 .compatibilityScore(score)
                 .meetingType(MeetingType.INSTANT)
@@ -163,7 +164,7 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
                 .matchId(matchId)
                 .matchedUserId(userB.getId().toString())
                 .matchedUserName(userB.getFirstName() + " " + userB.getLastName())
-                .matchedUserProfilePic(userB.getProfilePictureUrl())
+//                .matchedUserProfilePic(userB.getProfilePictureUrl())
                 .compatibilityScore(score)
                 .message("Great news! We found a match. Your meeting is starting now.")
                 .build());
@@ -173,7 +174,7 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
                 .matchId(matchId)
                 .matchedUserId(userA.getId().toString())
                 .matchedUserName(userA.getFirstName() + " " + userA.getLastName())
-                .matchedUserProfilePic(userA.getProfilePictureUrl())
+//                .matchedUserProfilePic(userA.getProfilePictureUrl())
                 .compatibilityScore(score)
                 .message("Great news! We found a match. Your meeting is starting now.")
                 .build());
@@ -196,26 +197,26 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
         if (aPrefs != null) {
             if (aPrefs.getPreferredGender() != null && !aPrefs.getPreferredGender().equals(b.getGender())) return false;
             if (ageB < aPrefs.getMinAge() || ageB > aPrefs.getMaxAge()) return false;
-            if (!aPrefs.getPreferredIndustries().isEmpty()
-                    && b.getIndustry() != null
-                    && !aPrefs.getPreferredIndustries().contains(b.getIndustry())) return false;
-//            if (Boolean.FALSE.equals(aPrefs.getSameCompanyAllowed())
-//                    && a.getCompany() != null && b.getCompany() != null
-//                    && a.getCompany().getId().equals(b.getCompany().getId())) return false;
-            if (timezoneOffsetHours(a, b) > aPrefs.getMaxTimezoneOffsetHours()) return false;
+//            if (!aPrefs.getPreferredIndustries().isEmpty()
+//                    && b.getIndustry() != null
+//                    && !aPrefs.getPreferredIndustries().contains(b.getIndustry())) return false;
+////            if (Boolean.FALSE.equals(aPrefs.getSameCompanyAllowed())
+////                    && a.getCompany() != null && b.getCompany() != null
+////                    && a.getCompany().getId().equals(b.getCompany().getId())) return false;
+//            if (timezoneOffsetHours(a, b) > aPrefs.getMaxTimezoneOffsetHours()) return false;
         }
 
         // Check B's preferences against A
         if (bPrefs != null) {
             if (bPrefs.getPreferredGender() != null && !bPrefs.getPreferredGender().equals(a.getGender())) return false;
             if (ageA < bPrefs.getMinAge() || ageA > bPrefs.getMaxAge()) return false;
-            if (!bPrefs.getPreferredIndustries().isEmpty()
-                    && a.getIndustry() != null
-                    && !bPrefs.getPreferredIndustries().contains(a.getIndustry())) return false;
-//            if (Boolean.FALSE.equals(bPrefs.getSameCompanyAllowed())
-//                    && a.getCompany() != null && b.getCompany() != null
-//                    && a.getCompany().getId().equals(b.getCompany().getId())) return false;
-            if (timezoneOffsetHours(a, b) > bPrefs.getMaxTimezoneOffsetHours()) return false;
+//            if (!bPrefs.getPreferredIndustries().isEmpty()
+//                    && a.getIndustry() != null
+//                    && !bPrefs.getPreferredIndustries().contains(a.getIndustry())) return false;
+////            if (Boolean.FALSE.equals(bPrefs.getSameCompanyAllowed())
+////                    && a.getCompany() != null && b.getCompany() != null
+////                    && a.getCompany().getId().equals(b.getCompany().getId())) return false;
+//            if (timezoneOffsetHours(a, b) > bPrefs.getMaxTimezoneOffsetHours()) return false;
         }
 
         return true;
@@ -233,7 +234,7 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
         else if (tzOffset <= 2) score += 0.2;
         else if (tzOffset <= 4) score += 0.1;
 
-        if (a.getIndustry() != null && a.getIndustry().equals(b.getIndustry())) score += 0.2;
+//        if (a.getIndustry() != null && a.getIndustry().equals(b.getIndustry())) score += 0.2;
 
         return Math.min(score, 1.0);
     }
@@ -245,10 +246,11 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
 
     private int timezoneOffsetHours(User a, User b) {
         try {
-            if (a.getTimezone() == null || b.getTimezone() == null) return 0;
-            ZoneOffset offsetA = ZoneId.of(a.getTimezone()).getRules().getStandardOffset(java.time.Instant.now());
-            ZoneOffset offsetB = ZoneId.of(b.getTimezone()).getRules().getStandardOffset(java.time.Instant.now());
-            return Math.abs((offsetA.getTotalSeconds() - offsetB.getTotalSeconds()) / 3600);
+//            if (a.getTimezone() == null || b.getTimezone() == null) return 0;
+//            ZoneOffset offsetA = ZoneId.of(a.getTimezone()).getRules().getStandardOffset(java.time.Instant.now());
+//            ZoneOffset offsetB = ZoneId.of(b.getTimezone()).getRules().getStandardOffset(java.time.Instant.now());
+//            return Math.abs((offsetA.getTotalSeconds() - offsetB.getTotalSeconds()) / 3600);
+            return 100;
         } catch (Exception ex) {
             return 0;
         }

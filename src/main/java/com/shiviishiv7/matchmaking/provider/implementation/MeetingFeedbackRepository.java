@@ -6,16 +6,16 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+
 
 @Repository
-public interface MeetingFeedbackRepository extends JpaRepository<MeetingFeedback, UUID> {
+public interface MeetingFeedbackRepository extends JpaRepository<MeetingFeedback, Integer> {
 
-    List<MeetingFeedback> findByMeetingId(UUID meetingId);
+    List<MeetingFeedback> findByMeetingId(String meetingId);
 
-    Optional<MeetingFeedback> findByMeetingIdAndUserId(UUID meetingId, UUID userId);
+    Optional<MeetingFeedback> findByMeetingIdAndUserId(String meetingId, String userId);
 
-    boolean existsByMeetingIdAndUserId(UUID meetingId, UUID userId);
+    boolean existsByMeetingIdAndUserId(String meetingId, String userId);
 
-    long countByMeetingId(UUID meetingId);
+    long countByMeetingId(String meetingId);
 }

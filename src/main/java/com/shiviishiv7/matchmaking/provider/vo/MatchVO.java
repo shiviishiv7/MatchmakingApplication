@@ -4,19 +4,21 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.shiviishiv7.matchmaking.common.enums.MatchStatus;
 import com.shiviishiv7.matchmaking.common.enums.MeetingType;
 import com.shiviishiv7.matchmaking.provider.model.Match;
+import jakarta.persistence.Column;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.UUID;
+
 
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MatchVO {
 
-    private UUID id;
-    private UUID userAId;
-    private UUID userBId;
+    private Integer id;
+
+    private String cognitoSubA;
+    private String cognitoSubB;
     private MatchStatus status;
     private Double compatibilityScore;
     private Integer roundCount;
@@ -24,13 +26,13 @@ public class MatchVO {
     private MeetingType meetingType;
 
     public boolean validate() {
-        if (userAId == null) {
+        if (cognitoSubA == null) {
             throw new IllegalArgumentException("User A ID cannot be null");
         }
-        if (userBId == null) {
+        if (cognitoSubB == null) {
             throw new IllegalArgumentException("User B ID cannot be null");
         }
-        if (userAId.equals(userBId)) {
+        if (cognitoSubB.equals(cognitoSubA)) {
             throw new IllegalArgumentException("User A and User B cannot be the same user");
         }
         return true;
@@ -50,8 +52,8 @@ public class MatchVO {
     public MatchVO toVO(Match match) {
         MatchVO vo = new MatchVO();
         vo.setId(match.getId());
-        vo.setUserAId(match.getUserA() != null ? match.getUserA().getId() : null);
-        vo.setUserBId(match.getUserB() != null ? match.getUserB().getId() : null);
+        vo.setCognitoSubB(match.getCognitoSubB());
+        vo.setCognitoSubA(match.getCognitoSubA());
         vo.setStatus(match.getStatus());
         vo.setCompatibilityScore(match.getCompatibilityScore());
         vo.setRoundCount(match.getRoundCount());

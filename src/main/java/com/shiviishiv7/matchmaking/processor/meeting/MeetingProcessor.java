@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+
 import java.util.stream.Collectors;
 
 import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus.*;
@@ -43,7 +43,7 @@ public class MeetingProcessor implements IMeetingProcessor {
             log.info("MeetingVO validation completed successfully.");
 
             log.trace("Fetching match for ID: {}", meetingVO.getMatchId());
-            Optional<Match> optionalMatch = matchRepository.findById(meetingVO.getMatchId());
+            Optional<Match> optionalMatch = matchRepository.findById(Integer.valueOf(meetingVO.getMatchId()));
             if (optionalMatch.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: Match not found for ID: {}", meetingVO.getMatchId());
                 throw new MatchmakingException("Match does not exist", DATA_NOT_FOUND);
@@ -51,7 +51,7 @@ public class MeetingProcessor implements IMeetingProcessor {
 
             log.trace("Saving meeting record for match ID: {}", meetingVO.getMatchId());
             Meeting meeting = meetingVO.fromVO();
-            meeting.setMatch(optionalMatch.get());
+//            meeting.setMatch(optionalMatch.get());
             meeting = meetingRepository.save(meeting);
             log.info("Meeting record saved successfully with ID: {}", meeting.getId());
 
@@ -73,10 +73,10 @@ public class MeetingProcessor implements IMeetingProcessor {
     }
 
     @Override
-    public BaseVO get(UUID id) throws MatchmakingException {
+    public BaseVO get(String id) throws MatchmakingException {
         try {
             log.info("Fetching meeting for ID: {}", id);
-            Optional<Meeting> optionalMeeting = meetingRepository.findById(id);
+            Optional<Meeting> optionalMeeting = meetingRepository.findById(Integer.valueOf(id));
             if (optionalMeeting.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: Meeting not found for ID: {}", id);
                 throw new MatchmakingException("Meeting does not exist", DATA_NOT_FOUND);
@@ -93,7 +93,7 @@ public class MeetingProcessor implements IMeetingProcessor {
     }
 
     @Override
-    public BaseVO getAllForMatch(UUID matchId) throws MatchmakingException {
+    public BaseVO getAllForMatch(String matchId) throws MatchmakingException {
         try {
             log.info("Fetching all meetings for match ID: {}", matchId);
             List<Meeting> meetings = meetingRepository.findByMatchId(matchId);
@@ -117,10 +117,10 @@ public class MeetingProcessor implements IMeetingProcessor {
     }
 
     @Override
-    public BaseVO markCompleted(UUID id) throws MatchmakingException {
+    public BaseVO markCompleted(String id) throws MatchmakingException {
         try {
             log.info("Marking meeting as completed for ID: {}", id);
-            Optional<Meeting> optionalMeeting = meetingRepository.findById(id);
+            Optional<Meeting> optionalMeeting = meetingRepository.findById(Integer.valueOf(id));
             if (optionalMeeting.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: Meeting not found for ID: {}", id);
                 throw new MatchmakingException("Meeting does not exist", DATA_NOT_FOUND);
@@ -154,14 +154,14 @@ public class MeetingProcessor implements IMeetingProcessor {
             List<MeetingVO> result = meetings.stream().map(m -> {
                 MeetingVO vo = new MeetingVO().toVO(m);
                 // Resolve the peer — the other participant in the match
-                var match = m.getMatch();
-                if (match != null) {
-                    boolean iAmA = match.getUserA().getCognitoSub().equals(sub);
-                    var peer = iAmA ? match.getUserB() : match.getUserA();
-                    vo.setPeerFirstName(peer.getFirstName());
-                    vo.setPeerLastName(peer.getLastName());
-                    vo.setPeerCognitoSub(peer.getCognitoSub());
-                }
+//                var match = m.getMatch();
+//                if (match != null) {
+//                    boolean iAmA = match.getUserA().getCognitoSub().equals(sub);
+//                    var peer = iAmA ? match.getUserB() : match.getUserA();
+//                    vo.setPeerFirstName(peer.getFirstName());
+//                    vo.setPeerLastName(peer.getLastName());
+//                    vo.setPeerCognitoSub(peer.getCognitoSub());
+//                }
                 return vo;
             }).collect(Collectors.toList());
 

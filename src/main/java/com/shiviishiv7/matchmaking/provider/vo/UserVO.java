@@ -10,7 +10,7 @@ import lombok.ToString;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
+
 
 @Getter
 @Setter
@@ -18,20 +18,22 @@ import java.util.UUID;
 @ToString
 public class UserVO {
 
-    private UUID id;
+    private Integer id;
     private String email;
     private String firstName;
     private String lastName;
     private String companyId;
     private Gender gender;
     private LocalDate dateOfBirth;
-    private String timezone;
-    private String industry;
-    private String bio;
-    private String profilePictureUrl;
+    private AddressVO addressVO;
+//    private String timezone;
+//    private String industry;
+//    private String bio;
+//    private String profilePictureUrl;
     private UserStatus status;
     private Boolean isActive;
     private String cognitoSub;
+    private int age;
 //    private List<String> interests;
 
     public boolean validate() {
@@ -41,48 +43,9 @@ public class UserVO {
         if (firstName == null || firstName.isEmpty()) {
             throw new IllegalArgumentException("First name cannot be empty");
         }
-        if (companyId == null) {
-            throw new IllegalArgumentException("Company ID cannot be null");
-        }
+//        if (companyId == null) {
+//            throw new IllegalArgumentException("Company ID cannot be null");
+//        }
         return true;
-    }
-
-    public User fromVO() {
-        User user = new User();
-        user.setId(id);
-        user.setEmail(email);
-        user.setFirstName(firstName);
-        user.setCognitoSub(cognitoSub);
-        user.setLastName(lastName);
-        user.setGender(gender);
-        user.setDateOfBirth(dateOfBirth);
-        user.setTimezone(timezone);
-        user.setIndustry(industry);
-        user.setBio(bio);
-        user.setProfilePictureUrl(profilePictureUrl);
-        user.setStatus(status);
-        user.setIsActive(isActive);
-        user.setCompanyId(companyId);
-//        user.setInterests(interests);
-        return user;
-    }
-
-    public UserVO toVO(User user) {
-        UserVO vo = new UserVO();
-        vo.setId(user.getId());
-        vo.setEmail(user.getEmail());
-        vo.setFirstName(user.getFirstName());
-        vo.setLastName(user.getLastName());
-//        vo.setCompanyId(user.getCompany() != null ? user.getCompany().getId() : null);
-        vo.setGender(user.getGender());
-        vo.setDateOfBirth(user.getDateOfBirth());
-        vo.setTimezone(user.getTimezone());
-        vo.setIndustry(user.getIndustry());
-        vo.setBio(user.getBio());
-        vo.setProfilePictureUrl(user.getProfilePictureUrl());
-        vo.setStatus(user.getStatus());
-        vo.setIsActive(user.getIsActive());
-//        vo.setInterests(user.getInterests());
-        return vo;
     }
 }

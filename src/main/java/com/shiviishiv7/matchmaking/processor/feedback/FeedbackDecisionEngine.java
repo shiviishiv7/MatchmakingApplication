@@ -18,7 +18,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
+
 
 import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus.UNKNOWN_EXCEPTION;
 
@@ -41,7 +42,7 @@ public class FeedbackDecisionEngine {
      * If both users have submitted feedback for the meeting, evaluates the outcome
      * and transitions the match state accordingly.
      */
-    public void evaluate(UUID meetingId) throws MatchmakingException {
+    public void evaluate(String meetingId) throws MatchmakingException {
         try {
             long feedbackCount = meetingFeedbackRepository.countByMeetingId(meetingId);
             if (feedbackCount < 2) {
@@ -52,8 +53,9 @@ public class FeedbackDecisionEngine {
             log.info("Both feedbacks received for meeting ID: {}. Evaluating decision.", meetingId);
 
             List<MeetingFeedback> feedbacks = meetingFeedbackRepository.findByMeetingId(meetingId);
-            Meeting meeting = feedbacks.get(0).getMeeting();
-            Match match = meeting.getMatch();
+            String meetingId1 = feedbacks.get(0).getMeetingId();
+            Optional<Match> optionalMatch = matchRepository.findActiveMatchForUser(meetingId);
+            Match match = optionalMatch.get();
 
             FeedbackResponse responseA = feedbacks.get(0).getResponse();
             FeedbackResponse responseB = feedbacks.get(1).getResponse();
@@ -92,7 +94,7 @@ public class FeedbackDecisionEngine {
 
             // Schedule the next meeting 7 days from now (Zoom link populated separately)
             Meeting nextMeeting = Meeting.builder()
-                    .match(match)
+                    .matchId(match.getId().toString())
                     .roundNumber(nextRound + 1)
                     .scheduledAt(LocalDateTime.now().plusDays(7))
                     .durationMinutes(30)

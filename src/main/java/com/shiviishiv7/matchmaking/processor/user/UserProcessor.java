@@ -2,19 +2,24 @@ package com.shiviishiv7.matchmaking.processor.user;
 
 import com.shiviishiv7.matchmaking.common.enums.UserStatus;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
+import com.shiviishiv7.matchmaking.provider.implementation.AddressRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.CompanyRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.UserRepository;
+import com.shiviishiv7.matchmaking.provider.model.Address;
 import com.shiviishiv7.matchmaking.provider.model.Company;
 import com.shiviishiv7.matchmaking.provider.model.User;
+import com.shiviishiv7.matchmaking.provider.vo.AddressVO;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import com.shiviishiv7.matchmaking.provider.vo.UserVO;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.UUID;
+
 
 import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus.*;
 
@@ -27,7 +32,7 @@ public class UserProcessor implements IUserProcessor {
     private UserRepository userRepository;
 
     @Autowired
-    private CompanyRepository companyRepository;
+    private AddressRepository addressRepository;
 
     @Override
     public BaseVO add(UserVO userVO) throws MatchmakingException {
@@ -50,12 +55,19 @@ public class UserProcessor implements IUserProcessor {
 //            }
 
             log.trace("Saving user record for email: {}", userVO.getEmail());
-            User user = userVO.fromVO();
+                User user = new User();
+                user.fromVO(userVO);
+
 //            user.setCompany(optionalCompany.get());
             user = userRepository.save(user);
             log.info("User record saved successfully for email: {}", user.getEmail());
 
-            return new BaseVO(SUCCESS, "User record saved", "User record saved", new UserVO().toVO(user));
+            UserVO vo = user.toVO();
+            if (StringUtils.isNotEmpty(user.getAddressId())){
+                Address byCognitoSub = addressRepository.findByCognitoSub(user.getCognitoSub());
+                vo.setAddressVO(byCognitoSub.toVO());
+            }
+            return new BaseVO(SUCCESS, "User record saved", "User record saved", vo);
         } catch (MatchmakingException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -81,9 +93,19 @@ public class UserProcessor implements IUserProcessor {
                 throw new MatchmakingException("User does not exist", DATA_NOT_FOUND);
             }
 
+
             User userFromDB = userFromDBOptional.get();
             log.trace("User found for ID: {}. Applying updates.", userVO.getId());
 
+            User user = userFromDBOptional.get();
+            AddressVO addressVO = null;
+
+            if (StringUtils.isNotEmpty(user.getAddressId())){
+                Address byCognitoSub = addressRepository.findByCognitoSub(user.getCognitoSub());
+                Address address = byCognitoSub.fromVO(userVO.getAddressVO());
+                Address save = addressRepository.save(address);
+                addressVO = save.toVO();
+            }
 //            if (userVO.getCompanyId() != null && !userVO.getCompanyId().equals(
 //                    userFromDB.getCompany() != null ? userFromDB.getCompany().getId() : null)) {
 //                log.trace("Company change requested. Fetching new company for ID: {}", userVO.getCompanyId());
@@ -99,10 +121,10 @@ public class UserProcessor implements IUserProcessor {
             userFromDB.setLastName(userVO.getLastName());
             userFromDB.setGender(userVO.getGender());
             userFromDB.setDateOfBirth(userVO.getDateOfBirth());
-            userFromDB.setTimezone(userVO.getTimezone());
-            userFromDB.setIndustry(userVO.getIndustry());
-            userFromDB.setBio(userVO.getBio());
-            userFromDB.setProfilePictureUrl(userVO.getProfilePictureUrl());
+//            userFromDB.setTimezone(userVO.getTimezone());
+//            userFromDB.setIndustry(userVO.getIndustry());
+//            userFromDB.setBio(userVO.getBio());
+//            userFromDB.setProfilePictureUrl(userVO.getProfilePictureUrl());
 //            userFromDB.setInterests(userVO.getInterests());
             if (userVO.getStatus() != null) {
                 userFromDB.setStatus(userVO.getStatus());
@@ -120,9 +142,13 @@ public class UserProcessor implements IUserProcessor {
             }
 
             userFromDB = userRepository.save(userFromDB);
+            UserVO vo = userFromDB.toVO();
             log.info("User record updated successfully for ID: {}", userFromDB.getId());
+            if (ObjectUtils.isNotEmpty(addressVO)){
+                vo.setAddressVO(addressVO);
+            }
 
-            return new BaseVO(SUCCESS, "User record updated", "User record updated", new UserVO().toVO(userFromDB));
+            return new BaseVO(SUCCESS, "User record updated", "User record updated", vo);
         } catch (MatchmakingException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -132,17 +158,24 @@ public class UserProcessor implements IUserProcessor {
     }
 
     @Override
-    public BaseVO get(UUID id) throws MatchmakingException {
+    public BaseVO get(String id) throws MatchmakingException {
         try {
             log.info("Fetching user for ID: {}", id);
-            Optional<User> optionalUser = userRepository.findById(id);
+            Optional<User> optionalUser = userRepository.findById(Integer.valueOf(id));
             if (optionalUser.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: User not found for ID: {}", id);
                 throw new MatchmakingException("User does not exist", DATA_NOT_FOUND);
             }
+            User user = optionalUser.get();
+            UserVO vo = user.toVO();
+            if (StringUtils.isNotEmpty(user.getAddressId())){
+                Address byCognitoSub = addressRepository.findByCognitoSub(user.getCognitoSub());
+                vo.setAddressVO(byCognitoSub.toVO());
+            }
+
 
             log.info("User found for ID: {}", id);
-            return new BaseVO(SUCCESS, "User record fetched", "User record fetched", new UserVO().toVO(optionalUser.get()));
+            return new BaseVO(SUCCESS, "User record fetched", "User record fetched", vo);
         } catch (MatchmakingException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -164,9 +197,15 @@ public class UserProcessor implements IUserProcessor {
                 log.error("ALERT_FOR_ERROR: User not found for email: {}", email);
                 throw new MatchmakingException("User does not exist", DATA_NOT_FOUND);
             }
+            User user = optionalUser.get();
+            UserVO vo = user.toVO();
+            if (StringUtils.isNotEmpty(user.getAddressId())){
+                Address byCognitoSub = addressRepository.findByCognitoSub(user.getCognitoSub());
+                vo.setAddressVO(byCognitoSub.toVO());
+            }
 
             log.info("User found for email: {}", email);
-            return new BaseVO(SUCCESS, "User record fetched", "User record fetched", new UserVO().toVO(optionalUser.get()));
+            return new BaseVO(SUCCESS, "User record fetched", "User record fetched", vo);
         } catch (MatchmakingException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -179,18 +218,15 @@ public class UserProcessor implements IUserProcessor {
         return user.getFirstName() != null && !user.getFirstName().isBlank()
                 && user.getLastName() != null && !user.getLastName().isBlank()
                 && user.getGender() != null
-                && user.getDateOfBirth() != null
-                && user.getTimezone() != null && !user.getTimezone().isBlank()
-                && user.getIndustry() != null && !user.getIndustry().isBlank()
-                && user.getBio() != null && !user.getBio().isBlank();
+                && user.getDateOfBirth() != null;
 //                && user.getInterests() != null && !user.getInterests().isEmpty();
     }
 
     @Override
-    public BaseVO delete(UUID id) throws MatchmakingException {
+    public BaseVO delete(String id) throws MatchmakingException {
         try {
             log.info("Deactivating user for ID: {}", id);
-            Optional<User> optionalUser = userRepository.findById(id);
+            Optional<User> optionalUser = userRepository.findById(Integer.valueOf(id));
             if (optionalUser.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: User not found for ID: {}", id);
                 throw new MatchmakingException("User does not exist", DATA_NOT_FOUND);

@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.UUID;
+
 
 import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus.*;
 
@@ -35,24 +35,23 @@ public class UserPreferenceProcessor implements IUserPreferenceProcessor {
             preferenceVO.validate();
             log.info("UserPreferenceVO validation completed successfully.");
 
-            log.trace("Fetching user for ID: {}", preferenceVO.getUserId());
-            Optional<User> optionalUser = userRepository.findById(preferenceVO.getUserId());
+            log.trace("Fetching user for ID: {}", preferenceVO.getCognitoSub());
+            Optional<User> optionalUser = userRepository.findByCognitoSub(preferenceVO.getCognitoSub());
             if (optionalUser.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: User not found for ID: {}", preferenceVO.getUserId());
+                log.error("ALERT_FOR_ERROR: User not found for ID: {}", preferenceVO.getCognitoSub());
                 throw new MatchmakingException("User does not exist", DATA_NOT_FOUND);
             }
 
-            log.trace("Checking for existing preference for user ID: {}", preferenceVO.getUserId());
-            if (userPreferenceRepository.existsByUserId(preferenceVO.getUserId())) {
-                log.error("ALERT_FOR_ERROR: Preference already exists for user ID: {}", preferenceVO.getUserId());
+            log.trace("Checking for existing preference for user ID: {}", preferenceVO.getCognitoSub());
+            if (userPreferenceRepository.existsByCognitoSub(preferenceVO.getCognitoSub())) {
+                log.error("ALERT_FOR_ERROR: Preference already exists for user ID: {}", preferenceVO.getCognitoSub());
                 throw new MatchmakingException("Preference already exists for this user. Use update instead.", DUPLICATE_RECORD);
             }
 
-            log.trace("Saving user preference for user ID: {}", preferenceVO.getUserId());
+            log.trace("Saving user preference for user ID: {}", preferenceVO.getCognitoSub());
             UserPreference preference = preferenceVO.fromVO();
-            preference.setUser(optionalUser.get());
             preference = userPreferenceRepository.save(preference);
-            log.info("User preference saved successfully for user ID: {}", preferenceVO.getUserId());
+            log.info("User preference saved successfully for user ID: {}", preferenceVO.getCognitoSub());
 
             return new BaseVO(SUCCESS, "User preference saved", "User preference record saved", new UserPreferenceVO().toVO(preference));
         } catch (MatchmakingException ex) {
@@ -86,8 +85,8 @@ public class UserPreferenceProcessor implements IUserPreferenceProcessor {
             preferenceFromDB.setMinAge(preferenceVO.getMinAge());
             preferenceFromDB.setMaxAge(preferenceVO.getMaxAge());
             preferenceFromDB.setPreferredGender(preferenceVO.getPreferredGender());
-            preferenceFromDB.setPreferredIndustries(preferenceVO.getPreferredIndustries());
-            preferenceFromDB.setMaxTimezoneOffsetHours(preferenceVO.getMaxTimezoneOffsetHours());
+//            preferenceFromDB.setPreferredIndustries(preferenceVO.getPreferredIndustries());
+//            preferenceFromDB.setMaxTimezoneOffsetHours(preferenceVO.getMaxTimezoneOffsetHours());
             if (preferenceVO.getSameCompanyAllowed() != null) {
                 preferenceFromDB.setSameCompanyAllowed(preferenceVO.getSameCompanyAllowed());
             }
@@ -105,7 +104,7 @@ public class UserPreferenceProcessor implements IUserPreferenceProcessor {
     }
 
     @Override
-    public BaseVO getByUserId(UUID userId) throws MatchmakingException {
+    public BaseVO getByUserId(String userId) throws MatchmakingException {
         try {
             log.info("Fetching user preference for user ID: {}", userId);
             Optional<UserPreference> optionalPreference = userPreferenceRepository.findByUserId(userId);

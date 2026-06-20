@@ -6,16 +6,16 @@ import com.shiviishiv7.matchmaking.provider.model.MeetingFeedback;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.UUID;
+
 
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MeetingFeedbackVO {
 
-    private UUID id;
-    private UUID meetingId;
-    private UUID userId;
+    private Integer id;
+    private String meetingId;
+    private String userId;
     private FeedbackResponse response;
     private String notes;
 
@@ -43,8 +43,8 @@ public class MeetingFeedbackVO {
     public MeetingFeedbackVO toVO(MeetingFeedback feedback) {
         MeetingFeedbackVO vo = new MeetingFeedbackVO();
         vo.setId(feedback.getId());
-        vo.setMeetingId(feedback.getMeeting() != null ? feedback.getMeeting().getId() : null);
-        vo.setUserId(feedback.getUser() != null ? feedback.getUser().getId() : null);
+//        vo.setMeetingId(feedback.getMeeting() != null ? feedback.getMeeting().getId() : null);
+//        vo.setUserId(feedback.getUser() != null ? feedback.getUser().getId() : null);
         vo.setResponse(feedback.getResponse());
         vo.setNotes(feedback.getNotes());
         return vo;

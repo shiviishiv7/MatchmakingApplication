@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+
 import java.util.stream.Collectors;
 
 import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus.*;
@@ -38,31 +38,31 @@ public class MatchProcessor implements IMatchProcessor {
             matchVO.validate();
             log.info("MatchVO validation completed successfully.");
 
-            log.trace("Fetching user A for ID: {}", matchVO.getUserAId());
-            Optional<User> optionalUserA = userRepository.findById(matchVO.getUserAId());
+            log.trace("Fetching user A for ID: {}", matchVO.getCognitoSubA());
+            Optional<User> optionalUserA = userRepository.findByCognitoSub(matchVO.getCognitoSubA());
             if (optionalUserA.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: User A not found for ID: {}", matchVO.getUserAId());
+                log.error("ALERT_FOR_ERROR: User A not found for ID: {}", matchVO.getCognitoSubA());
                 throw new MatchmakingException("User A does not exist", DATA_NOT_FOUND);
             }
 
-            log.trace("Fetching user B for ID: {}", matchVO.getUserBId());
-            Optional<User> optionalUserB = userRepository.findById(matchVO.getUserBId());
+            log.trace("Fetching user B for ID: {}", matchVO.getCognitoSubB());
+            Optional<User> optionalUserB = userRepository.findByCognitoSub(matchVO.getCognitoSubB());
             if (optionalUserB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: User B not found for ID: {}", matchVO.getUserBId());
+                log.error("ALERT_FOR_ERROR: User B not found for ID: {}", matchVO.getCognitoSubB());
                 throw new MatchmakingException("User B does not exist", DATA_NOT_FOUND);
             }
 
-            log.trace("Checking if match already exists between users {} and {}", matchVO.getUserAId(), matchVO.getUserBId());
-            if (matchRepository.existsMatchBetween(matchVO.getUserAId(), matchVO.getUserBId())) {
-                log.error("ALERT_FOR_ERROR: Match already exists between users {} and {}", matchVO.getUserAId(), matchVO.getUserBId());
+            log.trace("Checking if match already exists between users {} and {}", matchVO.getCognitoSubA(), matchVO.getCognitoSubB());
+            if (matchRepository.existsByCognitoSubAAndCognitoSubB(matchVO.getCognitoSubA(), matchVO.getCognitoSubB())) {
+                log.error("ALERT_FOR_ERROR: Match already exists between users {} and {}", matchVO.getCognitoSubA(), matchVO.getCognitoSubB());
                 throw new MatchmakingException("A match already exists between these users", DUPLICATE_RECORD);
             }
 
             log.trace("Saving match record.");
             Match match = matchVO.fromVO();
-            match.setUserA(optionalUserA.get());
-            match.setUserB(optionalUserB.get());
-            match = matchRepository.save(match);
+            match.setCognitoSubA(optionalUserA.get().getCognitoSub());
+            match.setCognitoSubB(optionalUserB.get().getCognitoSub());
+             match = matchRepository.save(match);
             log.info("Match record saved successfully with ID: {}", match.getId());
 
             return new BaseVO(SUCCESS, "Match record saved", "Match record saved", new MatchVO().toVO(match));
@@ -75,10 +75,10 @@ public class MatchProcessor implements IMatchProcessor {
     }
 
     @Override
-    public BaseVO get(UUID id) throws MatchmakingException {
+    public BaseVO get(String id) throws MatchmakingException {
         try {
             log.info("Fetching match for ID: {}", id);
-            Optional<Match> optionalMatch = matchRepository.findById(id);
+            Optional<Match> optionalMatch = matchRepository.findById(Integer.valueOf(id));
             if (optionalMatch.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: Match not found for ID: {}", id);
                 throw new MatchmakingException("Match does not exist", DATA_NOT_FOUND);
@@ -95,7 +95,7 @@ public class MatchProcessor implements IMatchProcessor {
     }
 
     @Override
-    public BaseVO getActiveMatchForUser(UUID userId) throws MatchmakingException {
+    public BaseVO getActiveMatchForUser(String userId) throws MatchmakingException {
         try {
             log.info("Fetching active match for user ID: {}", userId);
             Optional<Match> optionalMatch = matchRepository.findActiveMatchForUser(userId);
@@ -151,10 +151,10 @@ public class MatchProcessor implements IMatchProcessor {
     }
 
     @Override
-    public BaseVO end(UUID id) throws MatchmakingException {
+    public BaseVO end(String id) throws MatchmakingException {
         try {
             log.info("Ending match for ID: {}", id);
-            Optional<Match> optionalMatch = matchRepository.findById(id);
+            Optional<Match> optionalMatch = matchRepository.findById(Integer.valueOf(id));
             if (optionalMatch.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: Match not found for ID: {}", id);
                 throw new MatchmakingException("Match does not exist", DATA_NOT_FOUND);

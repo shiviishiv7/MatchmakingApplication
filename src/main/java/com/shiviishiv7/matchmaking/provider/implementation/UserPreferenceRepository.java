@@ -5,12 +5,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
-import java.util.UUID;
+
 
 @Repository
-public interface UserPreferenceRepository extends JpaRepository<UserPreference, UUID> {
+public interface UserPreferenceRepository extends JpaRepository<UserPreference, Integer> {
 
-    Optional<UserPreference> findByUserId(UUID userId);
+    Optional<UserPreference> findByUserId(String userId);
 
-    boolean existsByUserId(UUID userId);
+    boolean existsByUserId(String userId);
+    boolean existsByCognitoSub(String userId);
 }

@@ -13,7 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/meeting-feedback")
@@ -40,7 +40,7 @@ public class MeetingFeedbackController {
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public ResponseEntity<BaseVO> get(@PathVariable("id") UUID id) throws MatchmakingException {
+    public ResponseEntity<BaseVO> get(@PathVariable("id") String id) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
         log.info("Request received to fetch feedback with ID: {} by sub: {}", id, sub);
 
@@ -51,7 +51,7 @@ public class MeetingFeedbackController {
 
     @RequestMapping(value = "/meeting/{meetingId}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public ResponseEntity<BaseVO> getAllForMeeting(@PathVariable("meetingId") UUID meetingId) throws MatchmakingException {
+    public ResponseEntity<BaseVO> getAllForMeeting(@PathVariable("meetingId") String meetingId) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
         log.info("Request received to fetch all feedbacks for meeting ID: {} by sub: {}", meetingId, sub);
 

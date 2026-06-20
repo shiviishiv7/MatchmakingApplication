@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+
 import java.util.stream.Collectors;
 
 import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus.*;
@@ -93,10 +93,10 @@ public class CompanyProcessor implements ICompanyProcessor {
     }
 
     @Override
-    public BaseVO get(UUID id) throws MatchmakingException {
+    public BaseVO get(String id) throws MatchmakingException {
         try {
             log.info("Fetching company for ID: {}", id);
-            Optional<Company> optionalCompany = companyRepository.findById(id);
+            Optional<Company> optionalCompany = companyRepository.findById(Integer.valueOf(id));
             if (optionalCompany.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: Company not found for ID: {}", id);
                 throw new MatchmakingException("Company does not exist", DATA_NOT_FOUND);
@@ -165,10 +165,10 @@ public class CompanyProcessor implements ICompanyProcessor {
     }
 
     @Override
-    public BaseVO delete(UUID id) throws MatchmakingException {
+    public BaseVO delete(String id) throws MatchmakingException {
         try {
             log.info("Deleting company for ID: {}", id);
-            Optional<Company> optionalCompany = companyRepository.findById(id);
+            Optional<Company> optionalCompany = companyRepository.findById(Integer.valueOf(id));
             if (optionalCompany.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: Company not found for ID: {}", id);
                 throw new MatchmakingException("Company does not exist", DATA_NOT_FOUND);

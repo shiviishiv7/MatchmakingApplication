@@ -13,7 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/match")
@@ -31,16 +31,16 @@ public class MatchController {
     @ResponseBody
     public ResponseEntity<BaseVO> add(@RequestBody MatchVO matchVO) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("Request received to create match between userA: {} and userB: {} by sub: {}", matchVO.getUserAId(), matchVO.getUserBId(), sub);
+        log.info("Request received to create match between userA: {} and userB: {} by sub: {}", matchVO.getCognitoSubA(), matchVO.getCognitoSubB(), sub);
 
         BaseVO response = matchProcessor.add(matchVO);
-        log.info("Successfully created match between userA: {} and userB: {} by sub: {}", matchVO.getUserAId(), matchVO.getUserBId(), sub);
+        log.info("Successfully created match between userA: {} and userB: {} by sub: {}", matchVO.getCognitoSubA(), matchVO.getCognitoSubB(), sub);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public ResponseEntity<BaseVO> get(@PathVariable("id") UUID id) throws MatchmakingException {
+    public ResponseEntity<BaseVO> get(@PathVariable("id") String id) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
         log.info("Request received to fetch match with ID: {} by sub: {}", id, sub);
 
@@ -51,7 +51,7 @@ public class MatchController {
 
     @RequestMapping(value = "/active/user/{userId}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public ResponseEntity<BaseVO> getActiveMatchForUser(@PathVariable("userId") UUID userId) throws MatchmakingException {
+    public ResponseEntity<BaseVO> getActiveMatchForUser(@PathVariable("userId") String userId) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
         log.info("Request received to fetch active match for user ID: {} by sub: {}", userId, sub);
 
@@ -73,7 +73,7 @@ public class MatchController {
 
     @RequestMapping(value = "/end/{id}", method = RequestMethod.POST, produces = "application/json")
     @ResponseBody
-    public ResponseEntity<BaseVO> end(@PathVariable("id") UUID id) throws MatchmakingException {
+    public ResponseEntity<BaseVO> end(@PathVariable("id") String id) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
         log.info("Request received to end match with ID: {} by sub: {}", id, sub);
 

@@ -4,7 +4,7 @@ import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import com.shiviishiv7.matchmaking.provider.vo.UserPreferenceVO;
 
-import java.util.UUID;
+
 
 public interface IUserPreferenceProcessor {
 
@@ -12,5 +12,5 @@ public interface IUserPreferenceProcessor {
 
     BaseVO update(UserPreferenceVO preferenceVO) throws MatchmakingException;
 
-    BaseVO getByUserId(UUID userId) throws MatchmakingException;
+    BaseVO getByUserId(String userId) throws MatchmakingException;
 }

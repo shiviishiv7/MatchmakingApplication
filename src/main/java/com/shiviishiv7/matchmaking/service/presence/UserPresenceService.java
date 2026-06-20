@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.UUID;
+
 
 /**
  * Tracks users currently on the "find a match" screen using a Redis Set.
@@ -22,17 +22,17 @@ public class UserPresenceService {
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
-    public void markAsLooking(UUID userId) {
+    public void markAsLooking(String userId) {
         redisTemplate.opsForSet().add(LOOKING_KEY, userId.toString());
         log.info("User {} marked as LOOKING.", userId);
     }
 
-    public void markAsNotLooking(UUID userId) {
+    public void markAsNotLooking(String userId) {
         redisTemplate.opsForSet().remove(LOOKING_KEY, userId.toString());
         log.info("User {} removed from LOOKING set.", userId);
     }
 
-    public boolean isLooking(UUID userId) {
+    public boolean isLooking(String userId) {
         Boolean result = redisTemplate.opsForSet().isMember(LOOKING_KEY, userId.toString());
         return Boolean.TRUE.equals(result);
     }

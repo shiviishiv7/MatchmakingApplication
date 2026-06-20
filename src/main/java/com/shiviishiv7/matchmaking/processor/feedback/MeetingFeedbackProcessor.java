@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+
 import java.util.stream.Collectors;
 
 import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus.*;
@@ -46,14 +46,14 @@ public class MeetingFeedbackProcessor implements IMeetingFeedbackProcessor {
             log.info("MeetingFeedbackVO validation completed successfully.");
 
             log.trace("Fetching meeting for ID: {}", feedbackVO.getMeetingId());
-            Optional<Meeting> optionalMeeting = meetingRepository.findById(feedbackVO.getMeetingId());
+            Optional<Meeting> optionalMeeting = meetingRepository.findById(Integer.valueOf(feedbackVO.getMeetingId()));
             if (optionalMeeting.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: Meeting not found for ID: {}", feedbackVO.getMeetingId());
                 throw new MatchmakingException("Meeting does not exist", DATA_NOT_FOUND);
             }
 
             log.trace("Fetching user for ID: {}", feedbackVO.getUserId());
-            Optional<User> optionalUser = userRepository.findById(feedbackVO.getUserId());
+            Optional<User> optionalUser = userRepository.findById(Integer.valueOf(feedbackVO.getUserId()));
             if (optionalUser.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: User not found for ID: {}", feedbackVO.getUserId());
                 throw new MatchmakingException("User does not exist", DATA_NOT_FOUND);
@@ -67,13 +67,13 @@ public class MeetingFeedbackProcessor implements IMeetingFeedbackProcessor {
 
             log.trace("Saving meeting feedback record.");
             MeetingFeedback feedback = feedbackVO.fromVO();
-            feedback.setMeeting(optionalMeeting.get());
-            feedback.setUser(optionalUser.get());
+//            feedback.setMeeting(optionalMeeting.get());
+//            feedback.setUser(optionalUser.get());
             feedback = meetingFeedbackRepository.save(feedback);
             log.info("Meeting feedback saved successfully with ID: {}", feedback.getId());
 
             log.info("Triggering feedback decision engine for meeting ID: {}", feedbackVO.getMeetingId());
-            feedbackDecisionEngine.evaluate(feedbackVO.getMeetingId());
+//            feedbackDecisionEngine.evaluate(feedbackVO.getMeetingId());
 
             return new BaseVO(SUCCESS, "Feedback record saved", "Meeting feedback saved", new MeetingFeedbackVO().toVO(feedback));
         } catch (MatchmakingException ex) {
@@ -85,10 +85,10 @@ public class MeetingFeedbackProcessor implements IMeetingFeedbackProcessor {
     }
 
     @Override
-    public BaseVO get(UUID id) throws MatchmakingException {
+    public BaseVO get(String id) throws MatchmakingException {
         try {
             log.info("Fetching feedback for ID: {}", id);
-            Optional<MeetingFeedback> optionalFeedback = meetingFeedbackRepository.findById(id);
+            Optional<MeetingFeedback> optionalFeedback = meetingFeedbackRepository.findById(Integer.valueOf(id));
             if (optionalFeedback.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: Feedback not found for ID: {}", id);
                 throw new MatchmakingException("Feedback does not exist", DATA_NOT_FOUND);
@@ -105,7 +105,7 @@ public class MeetingFeedbackProcessor implements IMeetingFeedbackProcessor {
     }
 
     @Override
-    public BaseVO getAllForMeeting(UUID meetingId) throws MatchmakingException {
+    public BaseVO getAllForMeeting(String meetingId) throws MatchmakingException {
         try {
             log.info("Fetching all feedbacks for meeting ID: {}", meetingId);
             List<MeetingFeedback> feedbacks = meetingFeedbackRepository.findByMeetingId(meetingId);

@@ -13,7 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/meeting")
@@ -40,7 +40,7 @@ public class MeetingController {
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public ResponseEntity<BaseVO> get(@PathVariable("id") UUID id) throws MatchmakingException {
+    public ResponseEntity<BaseVO> get(@PathVariable("id") String id) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
         log.info("Request received to fetch meeting with ID: {} by sub: {}", id, sub);
 
@@ -51,7 +51,7 @@ public class MeetingController {
 
     @RequestMapping(value = "/match/{matchId}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public ResponseEntity<BaseVO> getAllForMatch(@PathVariable("matchId") UUID matchId) throws MatchmakingException {
+    public ResponseEntity<BaseVO> getAllForMatch(@PathVariable("matchId") String matchId) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
         log.info("Request received to fetch all meetings for match ID: {} by sub: {}", matchId, sub);
 
@@ -71,7 +71,7 @@ public class MeetingController {
 
     @RequestMapping(value = "/complete/{id}", method = RequestMethod.POST, produces = "application/json")
     @ResponseBody
-    public ResponseEntity<BaseVO> markCompleted(@PathVariable("id") UUID id) throws MatchmakingException {
+    public ResponseEntity<BaseVO> markCompleted(@PathVariable("id") String id) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
         log.info("Request received to mark meeting as completed for ID: {} by sub: {}", id, sub);
 

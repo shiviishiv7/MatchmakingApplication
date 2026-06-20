@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
-import java.util.UUID;
+
 
 /**
  * Runs every 30 seconds.
@@ -43,9 +43,9 @@ public class WaitingQueueMatcherJob {
 
             for (String userIdStr : waitingUserIds) {
                 try {
-                    UUID userId = UUID.fromString(userIdStr);
-                    waitingQueueService.dequeue(userId);
-                    instantMatchProcessor.startLooking(userId);
+//                    UUID userId = UUID.fromString(userIdStr);
+                    waitingQueueService.dequeue(userIdStr);
+                    instantMatchProcessor.startLooking(userIdStr);
                 } catch (Exception ex) {
                     log.error("ALERT_FOR_ERROR: WaitingQueueMatcherJob failed for user: {}. Error: {}", userIdStr, ex.getMessage(), ex);
                 }

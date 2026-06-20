@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.List;
-import java.util.UUID;
+
 
 /**
  * Match — a pairing between two users created by the matching engine.
@@ -28,18 +28,16 @@ import java.util.UUID;
 public class Match extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+    private Integer id;
 
     // ── The two matched users ─────────────────────────────────────────────
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_a_id", nullable = false)
-    private User userA;
+    @Column(name = "cognitoSubA", nullable = false)
+    private String cognitoSubA;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_b_id", nullable = false)
-    private User userB;
+    @Column(name = "cognitoSubB", nullable = false)
+    private String cognitoSubB;
 
     // ── Match lifecycle ───────────────────────────────────────────────────
     @Enumerated(EnumType.STRING)
@@ -47,26 +45,26 @@ public class Match extends BaseEntity {
     @Builder.Default
     private MatchStatus status = MatchStatus.PENDING;
 
-    @Column(name = "compatibility_score")
+    @Column(name = "compatibilityScore")
     private Double compatibilityScore;          // 0.0 to 1.0, computed at match time
 
     // ── How this match was initiated ──────────────────────────────────────
     @Enumerated(EnumType.STRING)
-    @Column(name = "meeting_type", nullable = false, length = 20)
+    @Column(name = "meetingType", nullable = false, length = 20)
     @Builder.Default
     private MeetingType meetingType = MeetingType.SCHEDULED;
 
     // ── Round tracking ────────────────────────────────────────────────────
-    @Column(name = "round_count", nullable = false)
+    @Column(name = "roundCount", nullable = false)
     @Builder.Default
     private Integer roundCount = 0;             // increments after each meeting
 
-    @Column(name = "max_rounds", nullable = false)
+    @Column(name = "maxRounds", nullable = false)
     @Builder.Default
     private Integer maxRounds = 3;              // from application.yml zoom.max-rounds
 
-    // ── Relationships ─────────────────────────────────────────────────────
-    @OneToMany(mappedBy = "match", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @OrderBy("scheduledAt ASC")
-    private List<Meeting> meetings;
+//    // ── Relationships ─────────────────────────────────────────────────────
+//    @OneToMany(mappedBy = "match", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+//    @OrderBy("scheduledAt ASC")
+//    private List<Meeting> meetings;
 }

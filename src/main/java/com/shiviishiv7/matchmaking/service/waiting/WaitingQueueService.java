@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.UUID;
+
 
 /**
  * Manages users who looked for an instant match but found no one.
@@ -23,18 +23,18 @@ public class WaitingQueueService {
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
-    public void enqueue(UUID userId) {
+    public void enqueue(String userId) {
         double score = System.currentTimeMillis();
         redisTemplate.opsForZSet().add(WAITING_KEY, userId.toString(), score);
         log.info("User {} added to waiting queue at score {}.", userId, score);
     }
 
-    public void dequeue(UUID userId) {
+    public void dequeue(String userId) {
         redisTemplate.opsForZSet().remove(WAITING_KEY, userId.toString());
         log.info("User {} removed from waiting queue.", userId);
     }
 
-    public boolean isWaiting(UUID userId) {
+    public boolean isWaiting(String userId) {
         Double score = redisTemplate.opsForZSet().score(WAITING_KEY, userId.toString());
         return score != null;
     }

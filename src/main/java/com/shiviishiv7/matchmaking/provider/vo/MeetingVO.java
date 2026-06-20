@@ -8,15 +8,15 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
+
 
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MeetingVO {
 
-    private UUID id;
-    private UUID matchId;
+    private Integer id;
+    private String matchId;
     private Integer roundNumber;
     private LocalDateTime scheduledAt;
     private Integer durationMinutes;
@@ -55,7 +55,7 @@ public class MeetingVO {
     public MeetingVO toVO(Meeting meeting) {
         MeetingVO vo = new MeetingVO();
         vo.setId(meeting.getId());
-        vo.setMatchId(meeting.getMatch() != null ? meeting.getMatch().getId() : null);
+        vo.setMatchId(meeting.getMatchId().toString());
         vo.setRoundNumber(meeting.getRoundNumber());
         vo.setScheduledAt(meeting.getScheduledAt());
         vo.setDurationMinutes(meeting.getDurationMinutes());

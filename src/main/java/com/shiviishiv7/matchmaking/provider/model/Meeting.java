@@ -10,7 +10,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
+
 
 /**
  * Meeting — one WebRTC meeting within a Match.
@@ -18,11 +18,7 @@ import java.util.UUID;
  * each with its own scheduling and feedback entries.
  */
 @Entity
-@Table(name = "meetings", indexes = {
-        @Index(name = "idx_meeting_match",  columnList = "match_id"),
-        @Index(name = "idx_meeting_status", columnList = "status"),
-        @Index(name = "idx_meeting_time",   columnList = "scheduled_at")
-})
+@Table(name = "MEETING")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -31,29 +27,27 @@ import java.util.UUID;
 public class Meeting extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "match_id", nullable = false)
-    private Match match;
+    private Integer id;
 
     // ── Round info ────────────────────────────────────────────────────────
-    @Column(name = "round_number", nullable = false)
+    @Column(name = "matchId", nullable = false)
+    private String matchId;                // 1, 2, 3 ...
+    @Column(name = "roundNumber", nullable = false)
     private Integer roundNumber;                // 1, 2, 3 ...
 
     // ── Scheduling ────────────────────────────────────────────────────────
-    @Column(name = "scheduled_at", nullable = true)
+    @Column(name = "scheduledAt", nullable = true)
     private LocalDateTime scheduledAt;
 
-    @Column(name = "duration_minutes", nullable = false)
+    @Column(name = "durationMinutes", nullable = false)
     @Builder.Default
     private Integer durationMinutes = 30;
 
     // ── Meeting type ──────────────────────────────────────────────────────
     @Enumerated(EnumType.STRING)
-    @Column(name = "meeting_type", nullable = false, length = 20)
+    @Column(name = "meetingType", nullable = false, length = 20)
     @Builder.Default
     private MeetingType meetingType = MeetingType.SCHEDULED;
 
@@ -63,7 +57,4 @@ public class Meeting extends BaseEntity {
     @Builder.Default
     private MeetingStatus status = MeetingStatus.SCHEDULED;
 
-    // ── Feedback ─────────────────────────────────────────────────────────
-    @OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<MeetingFeedback> feedbacks;
 }

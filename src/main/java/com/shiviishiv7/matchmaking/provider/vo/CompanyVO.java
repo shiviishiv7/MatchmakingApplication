@@ -5,14 +5,14 @@ import com.shiviishiv7.matchmaking.provider.model.Company;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.UUID;
+
 
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CompanyVO {
 
-    private UUID id;
+    private Integer id;
     private String name;
     private String domain;
     private String industry;

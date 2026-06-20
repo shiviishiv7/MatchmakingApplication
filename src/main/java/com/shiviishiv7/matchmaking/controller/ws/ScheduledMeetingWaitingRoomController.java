@@ -1,6 +1,7 @@
 package com.shiviishiv7.matchmaking.controller.ws;
 
 import com.shiviishiv7.matchmaking.common.enums.MeetingStatus;
+import com.shiviishiv7.matchmaking.provider.implementation.MatchRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.MeetingRepository;
 import com.shiviishiv7.matchmaking.provider.model.Match;
 import com.shiviishiv7.matchmaking.provider.model.Meeting;
@@ -17,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
+
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -37,7 +38,8 @@ import java.util.concurrent.TimeUnit;
 @Controller
 @Slf4j
 public class ScheduledMeetingWaitingRoomController {
-
+    @Autowired
+    private MatchRepository matchRepository;
     private static final String WAITING_KEY_PREFIX = "meeting:waiting:";
     // TTL matches typical max meeting duration — cleans up if both users never joined
     private static final long WAITING_ROOM_TTL_MINUTES = 60;
@@ -62,7 +64,7 @@ public class ScheduledMeetingWaitingRoomController {
             return;
         }
 
-        Optional<Meeting> optionalMeeting = meetingRepository.findById(UUID.fromString(meetingId));
+        Optional<Meeting> optionalMeeting = meetingRepository.findById(Integer.valueOf(meetingId));
         if (optionalMeeting.isEmpty()) {
             log.warn("WaitingRoom: meeting not found for ID: {}", meetingId);
             return;
@@ -75,9 +77,11 @@ public class ScheduledMeetingWaitingRoomController {
             return;
         }
 
-        Match match = meeting.getMatch();
-        String subA = match.getUserA().getCognitoSub();
-        String subB = match.getUserB().getCognitoSub();
+        Optional<Match> optionalMatch = matchRepository.findById(Integer.valueOf(meeting.getMatchId()));
+        Match match = optionalMatch.get();
+        String subA = match.getCognitoSubA();
+        String subB = match.getCognitoSubA();
+
         String matchId = match.getId().toString();
 
         // Record this user as present in Redis

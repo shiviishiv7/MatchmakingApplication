@@ -12,5 +12,5 @@ public class PoolUserVO {
     private String cognitoSub;   // used as the user identifier for WebRTC signaling
     private String firstName;
     private String lastName;
-    private String industry;
+//    private String industry;
 }

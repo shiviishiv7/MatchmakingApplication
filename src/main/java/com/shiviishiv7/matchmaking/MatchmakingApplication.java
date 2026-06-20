@@ -15,7 +15,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
+
 
 @SpringBootApplication
 @EnableScheduling
@@ -39,13 +39,13 @@ public class MatchmakingApplication extends SpringBootServletInitializer impleme
 		user.setEmail("shiviishiv7@gmail.com");
 		user.setFirstName("Shiv");
 		user.setLastName("User");
-		user.setBio("Test User");
+//		user.setBio("Test User");
 		user.setGender(Gender.MALE);
-		user.setIndustry("Software");
-		user.setTimezone("Asia/Kolkata");
+//		user.setIndustry("Software");
+//		user.setTimezone("Asia/Kolkata");
 		Company c = new Company();
-		c.setId(UUID.randomUUID());
-		user.setCompanyId(UUID.randomUUID().toString());
+//		c.setId(String.randomUUID());
+//		user.setCompanyId(String.randomUUID().toString());
 		user.setStatus(UserStatus.MATCHED);
 		user.setCreatedAt(LocalDateTime.now());
 		user.setUpdatedAt(LocalDateTime.now());
@@ -55,13 +55,13 @@ public class MatchmakingApplication extends SpringBootServletInitializer impleme
 		user.setEmail("peneno4903@dosbee.com");
 		user.setFirstName("abc");
 		user.setLastName("User");
-		user.setBio("Test User");
+//		user.setBio("Test User");
 		user.setGender(Gender.MALE);
-		user.setIndustry("Software");
-		user.setTimezone("Asia/Kolkata");
+//		user.setIndustry("Software");
+//		user.setTimezone("Asia/Kolkata");
 		 c = new Company();
-		c.setId(UUID.randomUUID());
-		user.setCompanyId(UUID.randomUUID().toString());
+//		c.setId(String.randomUUID());
+//		user.setCompanyId(String.randomUUID().toString());
 		user.setStatus(UserStatus.MATCHED);
 		user.setCreatedAt(LocalDateTime.now());
 		user.setUpdatedAt(LocalDateTime.now());

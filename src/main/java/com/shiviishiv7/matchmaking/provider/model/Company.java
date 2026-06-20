@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.List;
-import java.util.UUID;
+
 
 /**
  * Company — represents an employer.
@@ -26,9 +26,9 @@ import java.util.UUID;
 public class Company extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+    private Integer id;
 
     @Column(name = "name", nullable = false, length = 150)
     private String name;                        // e.g. "Google"

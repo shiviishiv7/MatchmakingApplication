@@ -61,8 +61,8 @@ public class MatchmakingWebSocketController {
         userPoolService.addUser(new PoolUserVO(
                 sub,
                 user.getFirstName(),
-                user.getLastName(),
-                user.getIndustry()
+                user.getLastName()
+//                user.getIndustry()
         ));
 
         // Send the available user list back to the joining user only

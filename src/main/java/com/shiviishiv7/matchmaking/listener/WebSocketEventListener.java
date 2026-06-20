@@ -10,7 +10,7 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
-import java.util.UUID;
+
 
 /**
  * Cleans up Redis presence and waiting queue when a WebSocket session drops
@@ -36,10 +36,10 @@ public class WebSocketEventListener {
         log.info("WebSocket disconnected for sub: {}", sub);
 
         try {
-            UUID userId = UUID.fromString(sub);
-            userPresenceService.markAsNotLooking(userId);
-            waitingQueueService.dequeue(userId);
-            log.info("Cleaned up presence and waiting queue for user: {}", userId);
+//            UUID userId = UUID.fromString(sub);
+            userPresenceService.markAsNotLooking(sub);
+            waitingQueueService.dequeue(sub);
+            log.info("Cleaned up presence and waiting queue for user: {}", sub);
         } catch (IllegalArgumentException ex) {
             log.warn("Could not parse sub as UUID on disconnect: {}", sub);
         } catch (Exception ex) {

@@ -8,7 +8,7 @@ import com.shiviishiv7.matchmaking.common.enums.FeedbackResponse;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.UUID;
+
 
 /**
  * MeetingFeedback — one user's response after one meeting.
@@ -40,17 +40,15 @@ import java.util.UUID;
 public class MeetingFeedback extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+    private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "meeting_id", nullable = false)
-    private Meeting meeting;
+    @Column(name = "meetingId", nullable = false)
+    private String meetingId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(name = "cognitoSubA", nullable = false)
+    private String cognitoSubA;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "response", nullable = false, length = 20)

@@ -7,7 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.List;
-import java.util.UUID;
+
 
 /**
  * UserPreference — what this user is looking for in a match.
@@ -24,39 +24,38 @@ import java.util.UUID;
 public class UserPreference extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+    private Integer id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
-    private User user;
+    @Column(name = "cognitoSub", nullable = false)
+    private String cognitoSub;
 
     // ── Age range preference ──────────────────────────────────────────────
-    @Column(name = "min_age")
+    @Column(name = "minAge")
     @Builder.Default
     private Integer minAge = 18;
 
-    @Column(name = "max_age")
+    @Column(name = "maxAge")
     @Builder.Default
     private Integer maxAge = 60;
 
     // ── Gender preference ─────────────────────────────────────────────────
     @Enumerated(EnumType.STRING)
-    @Column(name = "preferred_gender", length = 20)
+    @Column(name = "preferredGender", length = 20)
     private Gender preferredGender;             // null = no preference
 
-    // ── Industry preference ───────────────────────────────────────────────
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "preference_industries",
-            joinColumns = @JoinColumn(name = "preference_id"))
-    @Column(name = "industry", length = 100)
-    private List<String> preferredIndustries;   // empty = no preference
+//    // ── Industry preference ───────────────────────────────────────────────
+//    @ElementCollection(fetch = FetchType.LAZY)
+//    @CollectionTable(name = "preference_industries",
+//            joinColumns = @JoinColumn(name = "preference_id"))
+//    @Column(name = "industry", length = 100)
+//    private List<String> preferredIndustries;   // empty = no preference
 
-    // ── Timezone tolerance ────────────────────────────────────────────────
-    @Column(name = "max_timezone_offset_hours")
-    @Builder.Default
-    private Integer maxTimezoneOffsetHours = 5; // match within ±5 hours
+//    // ── Timezone tolerance ────────────────────────────────────────────────
+//    @Column(name = "max_timezone_offset_hours")
+//    @Builder.Default
+//    private Integer maxTimezoneOffsetHours = 5; // match within ±5 hours
 
     // ── Open to same company matches ──────────────────────────────────────
     @Column(name = "same_company_allowed", nullable = false)

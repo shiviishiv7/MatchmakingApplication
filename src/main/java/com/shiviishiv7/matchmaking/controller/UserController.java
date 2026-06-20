@@ -13,7 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/user")
@@ -51,7 +51,7 @@ public class UserController {
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public ResponseEntity<BaseVO> get(@PathVariable("id") UUID id) throws MatchmakingException {
+    public ResponseEntity<BaseVO> get(@PathVariable("id") String id) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
         log.info("Request received to fetch user with ID: {} by sub: {}", id, sub);
 
@@ -73,7 +73,7 @@ public class UserController {
 
     @RequestMapping(value = "/delete/{id}", method = RequestMethod.POST, produces = "application/json")
     @ResponseBody
-    public ResponseEntity<BaseVO> delete(@PathVariable("id") UUID id) throws MatchmakingException {
+    public ResponseEntity<BaseVO> delete(@PathVariable("id") String id) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
         log.info("Request received to delete user with ID: {} by sub: {}", id, sub);
 

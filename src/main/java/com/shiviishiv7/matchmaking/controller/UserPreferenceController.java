@@ -13,7 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/user-preference")
@@ -31,10 +31,10 @@ public class UserPreferenceController {
     @ResponseBody
     public ResponseEntity<BaseVO> add(@RequestBody UserPreferenceVO preferenceVO) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("Request received to add preference for user ID: {} by sub: {}", preferenceVO.getUserId(), sub);
+        log.info("Request received to add preference for user ID: {} by sub: {}", preferenceVO.getCognitoSub(), sub);
 
         BaseVO response = userPreferenceProcessor.add(preferenceVO);
-        log.info("Successfully added preference for user ID: {} by sub: {}", preferenceVO.getUserId(), sub);
+        log.info("Successfully added preference for user ID: {} by sub: {}", preferenceVO.getCognitoSub(), sub);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -51,7 +51,7 @@ public class UserPreferenceController {
 
     @RequestMapping(value = "/user/{userId}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
-    public ResponseEntity<BaseVO> getByUserId(@PathVariable("userId") UUID userId) throws MatchmakingException {
+    public ResponseEntity<BaseVO> getByUserId(@PathVariable("userId") String userId) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
         log.info("Request received to fetch preference for user ID: {} by sub: {}", userId, sub);
 

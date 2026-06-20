@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+
 
 @Component
 @Slf4j
@@ -50,12 +52,13 @@ public class MeetingSchedulerJob {
             try {
                 meeting.setStatus(MeetingStatus.WAITING_ROOM);
                 meetingRepository.save(meeting);
+                Optional<Match> optionalMatch = matchRepository.findById(meeting.getId());
+                Match match = optionalMatch.get();
 
-                Match match = meeting.getMatch();
                 if (match == null) continue;
 
-                String subA = match.getUserA().getCognitoSub();
-                String subB = match.getUserB().getCognitoSub();
+                String subA = match.getCognitoSubA();
+                String subB = match.getCognitoSubB();
 
                 MeetingNotificationVO notification = MeetingNotificationVO.waitingRoom(
                         meeting.getId().toString(),
@@ -98,7 +101,8 @@ public class MeetingSchedulerJob {
                 meetingRepository.save(meeting);
                 log.info("MeetingSchedulerJob: marked meeting ID: {} as COMPLETED.", meeting.getId());
 
-                Match match = meeting.getMatch();
+                Optional<Match> optionalMatch = matchRepository.findById(Integer.valueOf(meeting.getMatchId()));
+                Match match = optionalMatch.get();
                 if (match != null && match.getStatus() == MatchStatus.MEETING_SCHEDULED) {
                     match.setStatus(MatchStatus.AWAITING_FEEDBACK);
                     matchRepository.save(match);
