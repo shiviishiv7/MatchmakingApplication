@@ -4,10 +4,11 @@ import com.shiviishiv7.matchmaking.common.enums.Gender;
 import com.shiviishiv7.matchmaking.common.enums.MatchStatus;
 import com.shiviishiv7.matchmaking.common.enums.MeetingType;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
-import com.shiviishiv7.matchmaking.provider.implementation.MatchRepository;
+import com.shiviishiv7.matchmaking.provider.implementation.MatchResultRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.UserPreferenceRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.UserRepository;
-import com.shiviishiv7.matchmaking.provider.model.Match;
+
+import com.shiviishiv7.matchmaking.provider.model.MatchResult;
 import com.shiviishiv7.matchmaking.provider.model.User;
 import com.shiviishiv7.matchmaking.provider.model.UserPreference;
 import com.shiviishiv7.matchmaking.provider.vo.ws.MatchNotificationVO;
@@ -46,7 +47,7 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
     private UserPreferenceRepository userPreferenceRepository;
 
     @Autowired
-    private MatchRepository matchRepository;
+    private MatchResultRepository matchRepository;
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
@@ -143,12 +144,11 @@ public class InstantMatchProcessor implements IInstantMatchProcessor {
         waitingQueueService.dequeue(String.valueOf(userA.getId()));
         waitingQueueService.dequeue(String.valueOf(userB.getId()));
 
-        Match match = Match.builder()
+        MatchResult match = MatchResult.builder()
                 .cognitoSubA(userA.getCognitoSub())
                 .cognitoSubB(userB.getCognitoSub())
                 .status(MatchStatus.MEETING_SCHEDULED)
                 .compatibilityScore(score)
-                .meetingType(MeetingType.INSTANT)
                 .roundCount(1)
                 .maxRounds(3)
                 .build();

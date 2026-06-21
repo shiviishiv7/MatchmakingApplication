@@ -18,7 +18,7 @@ public class MatchResultVO {
     private String cognitoSubA;
     private String cognitoSubB;
     private MatchCategory matchCategory;
-    private Integer compatibilityScore;
+    private Double compatibilityScore;
     private String scoreBreakdown;
     private MatchStatus status;
     private Boolean isMutual;

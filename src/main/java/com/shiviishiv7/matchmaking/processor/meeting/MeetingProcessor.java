@@ -3,9 +3,10 @@ package com.shiviishiv7.matchmaking.processor.meeting;
 import com.shiviishiv7.matchmaking.common.enums.MatchStatus;
 import com.shiviishiv7.matchmaking.common.enums.MeetingStatus;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
-import com.shiviishiv7.matchmaking.provider.implementation.MatchRepository;
+import com.shiviishiv7.matchmaking.provider.implementation.MatchResultRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.MeetingRepository;
-import com.shiviishiv7.matchmaking.provider.model.Match;
+
+import com.shiviishiv7.matchmaking.provider.model.MatchResult;
 import com.shiviishiv7.matchmaking.provider.model.Meeting;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import com.shiviishiv7.matchmaking.provider.vo.MeetingVO;
@@ -33,7 +34,7 @@ public class MeetingProcessor implements IMeetingProcessor {
     private MeetingRepository meetingRepository;
 
     @Autowired
-    private MatchRepository matchRepository;
+    private MatchResultRepository matchRepository;
 
     @Override
     public BaseVO add(MeetingVO meetingVO) throws MatchmakingException {
@@ -43,7 +44,7 @@ public class MeetingProcessor implements IMeetingProcessor {
             log.info("MeetingVO validation completed successfully.");
 
             log.trace("Fetching match for ID: {}", meetingVO.getMatchId());
-            Optional<Match> optionalMatch = matchRepository.findById(Integer.valueOf(meetingVO.getMatchId()));
+            Optional<MatchResult> optionalMatch = matchRepository.findById(Integer.valueOf(meetingVO.getMatchId()));
             if (optionalMatch.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: Match not found for ID: {}", meetingVO.getMatchId());
                 throw new MatchmakingException("Match does not exist", DATA_NOT_FOUND);
@@ -56,7 +57,7 @@ public class MeetingProcessor implements IMeetingProcessor {
             log.info("Meeting record saved successfully with ID: {}", meeting.getId());
 
             // Transition match status to MEETING_SCHEDULED so the scheduler knows to watch it
-            Match match = optionalMatch.get();
+            MatchResult match = optionalMatch.get();
             if (match.getStatus() == MatchStatus.PENDING || match.getStatus() == MatchStatus.ANOTHER_ROUND) {
                 match.setStatus(MatchStatus.MEETING_SCHEDULED);
                 matchRepository.save(match);

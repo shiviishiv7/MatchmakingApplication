@@ -35,7 +35,7 @@ public class MatchResult extends BaseEntity {
     private MatchCategory matchCategory;
 
     @Column(name = "compatibilityScore")
-    private Integer compatibilityScore;            // 0-100
+    private Double compatibilityScore;            // 0-100
 
     @Column(name = "scoreBreakdown", columnDefinition = "JSON")
     private String scoreBreakdown;                 // JSON: {religion:20, caste:15, ...}
@@ -54,6 +54,10 @@ public class MatchResult extends BaseEntity {
 
     @Column(name = "actedAt")
     private LocalDateTime actedAt;
+    @Column(name = "roundCount")
+    private Integer roundCount;
+    @Column(name = "maxRounds")
+    private Integer maxRounds;
 
     public MatchResult fromVO(MatchResultVO vo) {
         if (vo == null) return null;
@@ -61,7 +65,7 @@ public class MatchResult extends BaseEntity {
         this.setCognitoSubA(vo.getCognitoSubA());
         this.setCognitoSubB(vo.getCognitoSubB());
         this.setMatchCategory(vo.getMatchCategory());
-        this.setCompatibilityScore(vo.getCompatibilityScore());
+        this.setCompatibilityScore(Double.valueOf(vo.getCompatibilityScore()));
         this.setScoreBreakdown(vo.getScoreBreakdown());
         this.setStatus(vo.getStatus());
         this.setIsMutual(vo.getIsMutual());
@@ -76,7 +80,7 @@ public class MatchResult extends BaseEntity {
         vo.setCognitoSubA(this.getCognitoSubA());
         vo.setCognitoSubB(this.getCognitoSubB());
         vo.setMatchCategory(this.getMatchCategory());
-        vo.setCompatibilityScore(this.getCompatibilityScore());
+        vo.setCompatibilityScore(this.compatibilityScore);
         vo.setScoreBreakdown(this.getScoreBreakdown());
         vo.setStatus(this.getStatus());
         vo.setIsMutual(this.getIsMutual());

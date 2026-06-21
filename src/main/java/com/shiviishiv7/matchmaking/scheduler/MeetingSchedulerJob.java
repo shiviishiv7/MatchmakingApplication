@@ -2,9 +2,10 @@ package com.shiviishiv7.matchmaking.scheduler;
 
 import com.shiviishiv7.matchmaking.common.enums.MatchStatus;
 import com.shiviishiv7.matchmaking.common.enums.MeetingStatus;
-import com.shiviishiv7.matchmaking.provider.implementation.MatchRepository;
+import com.shiviishiv7.matchmaking.provider.implementation.MatchResultRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.MeetingRepository;
-import com.shiviishiv7.matchmaking.provider.model.Match;
+
+import com.shiviishiv7.matchmaking.provider.model.MatchResult;
 import com.shiviishiv7.matchmaking.provider.model.Meeting;
 import com.shiviishiv7.matchmaking.provider.vo.ws.MeetingNotificationVO;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,7 @@ public class MeetingSchedulerJob {
     private MeetingRepository meetingRepository;
 
     @Autowired
-    private MatchRepository matchRepository;
+    private MatchResultRepository matchRepository;
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
@@ -52,8 +53,8 @@ public class MeetingSchedulerJob {
             try {
                 meeting.setStatus(MeetingStatus.WAITING_ROOM);
                 meetingRepository.save(meeting);
-                Optional<Match> optionalMatch = matchRepository.findById(Integer.valueOf(meeting.getMatchId()));
-                Match match = optionalMatch.get();
+                Optional<MatchResult> optionalMatch = matchRepository.findById(Integer.valueOf(meeting.getMatchId()));
+                MatchResult match = optionalMatch.get();
 
                 if (match == null) continue;
 
@@ -101,8 +102,8 @@ public class MeetingSchedulerJob {
                 meetingRepository.save(meeting);
                 log.info("MeetingSchedulerJob: marked meeting ID: {} as COMPLETED.", meeting.getId());
 
-                Optional<Match> optionalMatch = matchRepository.findById(Integer.valueOf(meeting.getMatchId()));
-                Match match = optionalMatch.get();
+                Optional<MatchResult> optionalMatch = matchRepository.findById(Integer.valueOf(meeting.getMatchId()));
+                MatchResult match = optionalMatch.get();
                 if (match != null && match.getStatus() == MatchStatus.MEETING_SCHEDULED) {
                     match.setStatus(MatchStatus.AWAITING_FEEDBACK);
                     matchRepository.save(match);

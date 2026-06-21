@@ -185,7 +185,7 @@ public class MatchingEngineProcessor {
                             .cognitoSubA(cognitoSubA)
                             .cognitoSubB(vo.getCognitoSubB())
                             .matchCategory(category)
-                            .compatibilityScore(vo.getCompatibilityScore())
+                            .compatibilityScore((double) vo.getCompatibilityScore())
                             .scoreBreakdown(vo.getScoreBreakdown())
                             .status(MatchStatus.PENDING)
                             .isMutual(false)

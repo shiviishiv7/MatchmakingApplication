@@ -1,14 +1,11 @@
 package com.shiviishiv7.matchmaking.processor.match;
 
+
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
+import com.shiviishiv7.matchmaking.provider.model.MatchResult;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
-import com.shiviishiv7.matchmaking.provider.vo.MatchVO;
-
-
 
 public interface IMatchProcessor {
-
-    BaseVO add(MatchVO matchVO) throws MatchmakingException;
 
     BaseVO get(String id) throws MatchmakingException;
 

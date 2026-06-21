@@ -1,9 +1,10 @@
 package com.shiviishiv7.matchmaking.controller.ws;
 
 import com.shiviishiv7.matchmaking.common.enums.MeetingStatus;
-import com.shiviishiv7.matchmaking.provider.implementation.MatchRepository;
+import com.shiviishiv7.matchmaking.provider.implementation.MatchResultRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.MeetingRepository;
-import com.shiviishiv7.matchmaking.provider.model.Match;
+
+import com.shiviishiv7.matchmaking.provider.model.MatchResult;
 import com.shiviishiv7.matchmaking.provider.model.Meeting;
 import com.shiviishiv7.matchmaking.provider.vo.ws.MeetingNotificationVO;
 import com.shiviishiv7.matchmaking.provider.vo.ws.WaitingRoomJoinVO;
@@ -39,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class ScheduledMeetingWaitingRoomController {
     @Autowired
-    private MatchRepository matchRepository;
+    private MatchResultRepository matchRepository;
     private static final String WAITING_KEY_PREFIX = "meeting:waiting:";
     // TTL matches typical max meeting duration — cleans up if both users never joined
     private static final long WAITING_ROOM_TTL_MINUTES = 60;
@@ -77,8 +78,8 @@ public class ScheduledMeetingWaitingRoomController {
             return;
         }
 
-        Optional<Match> optionalMatch = matchRepository.findById(Integer.valueOf(meeting.getMatchId()));
-        Match match = optionalMatch.get();
+        Optional<MatchResult> optionalMatch = matchRepository.findById(Integer.valueOf(meeting.getMatchId()));
+        MatchResult match = optionalMatch.get();
         String subA = match.getCognitoSubA();
         String subB = match.getCognitoSubA();
 

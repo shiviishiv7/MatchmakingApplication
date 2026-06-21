@@ -4,7 +4,8 @@ import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.common.security.MatchmakingSecurityUtility;
 import com.shiviishiv7.matchmaking.processor.match.IMatchProcessor;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
-import com.shiviishiv7.matchmaking.provider.vo.MatchVO;
+
+import com.shiviishiv7.matchmaking.provider.vo.MatchResultVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -27,16 +28,7 @@ public class MatchController {
     @Autowired
     private MatchmakingSecurityUtility securityUtility;
 
-    @RequestMapping(value = "/add", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
-    @ResponseBody
-    public ResponseEntity<BaseVO> add(@RequestBody MatchVO matchVO) throws MatchmakingException {
-        String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("Request received to create match between userA: {} and userB: {} by sub: {}", matchVO.getCognitoSubA(), matchVO.getCognitoSubB(), sub);
 
-        BaseVO response = matchProcessor.add(matchVO);
-        log.info("Successfully created match between userA: {} and userB: {} by sub: {}", matchVO.getCognitoSubA(), matchVO.getCognitoSubB(), sub);
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody

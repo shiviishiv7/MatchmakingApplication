@@ -1,4 +1,4 @@
-package com.shiviishiv7.matchmaking.provider.model;
+package com.shiviishiv7.matchmaking.processor;
 
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
 import com.shiviishiv7.matchmaking.common.enums.MatchStatus;
@@ -6,6 +6,7 @@ import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.processor.matchingengine.*;
 import com.shiviishiv7.matchmaking.provider.implementation.BlockListRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.MatchResultRepository;
+import com.shiviishiv7.matchmaking.provider.model.MatchResult;
 import com.shiviishiv7.matchmaking.provider.vo.MatchCandidateVO;
 import com.shiviishiv7.matchmaking.provider.vo.MatchDiscoveryRequestVO;
 import lombok.extern.slf4j.Slf4j;
@@ -182,7 +183,7 @@ public class MatchingEngine {
                             .cognitoSubA(userId)
                             .cognitoSubB(vo.getCognitoSubB())
                             .matchCategory(category)
-                            .compatibilityScore(vo.getCompatibilityScore())
+                            .compatibilityScore((double) vo.getCompatibilityScore())
                             .scoreBreakdown(vo.getScoreBreakdown())
                             .status(MatchStatus.PENDING)
                             .isMutual(false)

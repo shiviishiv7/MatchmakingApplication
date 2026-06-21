@@ -42,4 +42,9 @@ public interface MatchResultRepository extends JpaRepository<MatchResult, Intege
 
     boolean existsByCognitoSubAAndCognitoSubBAndMatchCategory(String cognitoSubA, String cognitoSubB, MatchCategory matchCategory);
 
+    Optional<MatchResult> findMatchByCognitoSubAOrCognitoSubB(String userId, String userId1);
+
+    boolean existsByCognitoSubAAndCognitoSubB(String cognitoSub, String cognitoSub1);
+
+    List<MatchResult> findByStatus(MatchStatus matchStatus);
 }
