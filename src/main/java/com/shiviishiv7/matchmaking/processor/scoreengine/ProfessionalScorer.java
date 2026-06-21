@@ -1,4 +1,4 @@
-package com.shiviishiv7.matchmaking.processor;
+package com.shiviishiv7.matchmaking.processor.scoreengine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;

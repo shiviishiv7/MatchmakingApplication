@@ -1,82 +1,44 @@
 package com.shiviishiv7.matchmaking.controller;
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
-import com.shiviishiv7.matchmaking.common.security.MatchmakingSecurityUtility;
 import com.shiviishiv7.matchmaking.processor.meeting.IMeetingProcessor;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import com.shiviishiv7.matchmaking.provider.vo.MeetingVO;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
-
 @RestController
-@RequestMapping("/meeting")
+@RequestMapping("/api/v1/meetings")
 @Slf4j
-@Tag(name = "Meeting", description = "Meeting scheduling and status management")
 public class MeetingController {
 
     @Autowired
     private IMeetingProcessor meetingProcessor;
 
-    @Autowired
-    private MatchmakingSecurityUtility securityUtility;
-
-    @RequestMapping(value = "/add", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
-    @ResponseBody
-    public ResponseEntity<BaseVO> add(@RequestBody MeetingVO meetingVO) throws MatchmakingException {
-        String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("Request received to schedule meeting for match ID: {} by sub: {}", meetingVO.getMatchId(), sub);
-
-        BaseVO response = meetingProcessor.add(meetingVO);
-        log.info("Successfully scheduled meeting for match ID: {} by sub: {}", meetingVO.getMatchId(), sub);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+    @PostMapping
+    public ResponseEntity<BaseVO> add(@RequestBody MeetingVO vo) throws MatchmakingException {
+        return ResponseEntity.ok(meetingProcessor.add(vo));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public ResponseEntity<BaseVO> get(@PathVariable("id") String id) throws MatchmakingException {
-        String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("Request received to fetch meeting with ID: {} by sub: {}", id, sub);
-
-        BaseVO response = meetingProcessor.get(id);
-        log.info("Successfully fetched meeting with ID: {} by sub: {}", id, sub);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+    @GetMapping("/{id}")
+    public ResponseEntity<BaseVO> get(@PathVariable String id) throws MatchmakingException {
+        return ResponseEntity.ok(meetingProcessor.get(id));
     }
 
-    @RequestMapping(value = "/match/{matchId}", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public ResponseEntity<BaseVO> getAllForMatch(@PathVariable("matchId") String matchId) throws MatchmakingException {
-        String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("Request received to fetch all meetings for match ID: {} by sub: {}", matchId, sub);
-
-        BaseVO response = meetingProcessor.getAllForMatch(matchId);
-        log.info("Successfully fetched all meetings for match ID: {} by sub: {}", matchId, sub);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+    @GetMapping("/match/{matchId}")
+    public ResponseEntity<BaseVO> getByMatch(@PathVariable String matchId) throws MatchmakingException {
+        return ResponseEntity.ok(meetingProcessor.getByMatchId(matchId));
     }
 
-    @RequestMapping(value = "/upcoming", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public ResponseEntity<BaseVO> getUpcoming() throws MatchmakingException {
-        String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("Request received to fetch upcoming meetings for sub: {}", sub);
-        BaseVO response = meetingProcessor.getUpcomingMeetings(sub);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+    @GetMapping("/user/{cognitoSub}/upcoming")
+    public ResponseEntity<BaseVO> getUpcoming(@PathVariable String cognitoSub) throws MatchmakingException {
+        return ResponseEntity.ok(meetingProcessor.getUpcomingForUser(cognitoSub));
     }
 
-    @RequestMapping(value = "/complete/{id}", method = RequestMethod.POST, produces = "application/json")
-    @ResponseBody
-    public ResponseEntity<BaseVO> markCompleted(@PathVariable("id") String id) throws MatchmakingException {
-        String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("Request received to mark meeting as completed for ID: {} by sub: {}", id, sub);
-
-        BaseVO response = meetingProcessor.markCompleted(id);
-        log.info("Successfully marked meeting as completed for ID: {} by sub: {}", id, sub);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<BaseVO> cancel(@PathVariable String id) throws MatchmakingException {
+        return ResponseEntity.ok(meetingProcessor.cancel(id));
     }
 }
