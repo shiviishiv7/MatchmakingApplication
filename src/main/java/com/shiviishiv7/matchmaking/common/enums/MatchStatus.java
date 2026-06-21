@@ -7,6 +7,11 @@ public enum MatchStatus {
     AWAITING_FEEDBACK,  // meeting done, waiting for both feedbacks
     ANOTHER_ROUND,      // both agreed to one more round
     COMPLETED,          // both liked — phone numbers shared
-    ENDED               // one or both not interested
+    ENDED,               // one or both not interested
+    LIKED,         // user expressed interest
+    SKIPPED,       // user passed
+    CONNECTED,     // both liked — mutual match
+    REPORTED,      // flagged by user
+    EXPIRED        // shown but user never acted (TTL passed)
 }
 

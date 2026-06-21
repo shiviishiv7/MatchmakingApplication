@@ -1,0 +1,18 @@
+package com.shiviishiv7.matchmaking.processor.userprofile;
+
+import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
+import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
+import com.shiviishiv7.matchmaking.provider.vo.GamingExtProfileVO;
+
+public interface IGamingExtProfileProcessor {
+
+    BaseVO add(GamingExtProfileVO vo) throws MatchmakingException;
+
+    BaseVO update(GamingExtProfileVO vo) throws MatchmakingException;
+
+    BaseVO getById(String id) throws MatchmakingException;
+
+    BaseVO getByUserId(String userId) throws MatchmakingException;
+
+    BaseVO delete(String id) throws MatchmakingException;
+}

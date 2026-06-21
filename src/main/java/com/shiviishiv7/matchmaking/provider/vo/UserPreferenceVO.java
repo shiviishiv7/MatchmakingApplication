@@ -1,7 +1,9 @@
 package com.shiviishiv7.matchmaking.provider.vo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.shiviishiv7.matchmaking.common.enums.DietaryHabit;
 import com.shiviishiv7.matchmaking.common.enums.Gender;
+import com.shiviishiv7.matchmaking.common.enums.Language;
 import com.shiviishiv7.matchmaking.provider.model.UserPreference;
 import jakarta.persistence.Column;
 import lombok.Getter;
@@ -23,22 +25,27 @@ public class UserPreferenceVO {
     // ── Age ───────────────────────────────────────────────────────────────
     private Integer minAge;
     private Integer maxAge;
+    private Integer minHeight;
+    private Integer maxHeight;
+    private List<DietaryHabit> dietaryHabit;
+    private List<Language> language;
 
     // ── Gender ────────────────────────────────────────────────────────────
     private Gender preferredGender;
 
     // ── Industry ──────────────────────────────────────────────────────────
-    private List<String> preferredIndustries;
+    private List<String> preferredIndustries; // matrimonia/dating/education/preparation
+    private String profession;
 
     // ── Timezone ──────────────────────────────────────────────────────────
     private Integer maxTimezoneOffsetHours;
 
     // ── Company ───────────────────────────────────────────────────────────
     private Boolean sameCompanyAllowed;
-    private String preferredCompany;
+    private List<String> preferredCompany;
 
     // ── Education ─────────────────────────────────────────────────────────
-    private String preferredCollege;
+    private List<String> preferredCollege;
 
     // ── Location ──────────────────────────────────────────────────────────
     private String preferredZip;
