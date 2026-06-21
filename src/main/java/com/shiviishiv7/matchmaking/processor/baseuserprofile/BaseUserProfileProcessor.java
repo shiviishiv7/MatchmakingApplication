@@ -1,9 +1,10 @@
-package com.shiviishiv7.matchmaking.processor.userprofile;
+package com.shiviishiv7.matchmaking.processor.baseuserprofile;
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.implementation.BaseUserProfileRepository;
 import com.shiviishiv7.matchmaking.provider.model.BaseUserProfile;
 
+import com.shiviishiv7.matchmaking.provider.model.User;
 import com.shiviishiv7.matchmaking.provider.vo.BaseUserProfileVO;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import jakarta.transaction.Transactional;
@@ -30,17 +31,17 @@ public class BaseUserProfileProcessor implements IBaseUserProfileProcessor {
             vo.validate();
             log.info("BaseUserProfileVO validation completed successfully.");
 
-            log.trace("Checking for duplicate base profile for userId: {}", vo.getUserId());
-            if (baseUserProfileRepository.existsByUserId(vo.getUserId())) {
-                log.error("ALERT_FOR_ERROR: Base profile already exists for userId: {}", vo.getUserId());
+            log.trace("Checking for duplicate base profile for userId: {}", vo.getCognitoSub());
+            if (baseUserProfileRepository.existsByCognitoSub(vo.getCognitoSub())) {
+                log.error("ALERT_FOR_ERROR: Base profile already exists for userId: {}", vo.getCognitoSub());
                 throw new MatchmakingException("Base profile already exists for this user", DUPLICATE_RECORD);
             }
 
-            log.trace("Saving base profile for userId: {}", vo.getUserId());
+            log.trace("Saving base profile for userId: {}", vo.getCognitoSub());
             BaseUserProfile profile = new BaseUserProfile();
             profile.fromVO(vo);
             profile = baseUserProfileRepository.save(profile);
-            log.info("Base profile saved successfully for userId: {}", profile.getUserId());
+            log.info("Base profile saved successfully for userId: {}", profile.getCognitoSub());
 
             return new BaseVO(SUCCESS, "Base profile created", "Base profile created", profile.toVO());
         } catch (MatchmakingException ex) {
@@ -157,5 +158,57 @@ public class BaseUserProfileProcessor implements IBaseUserProfileProcessor {
             log.error("ALERT_FOR_ERROR: Error occurred while deleting base profile. Error: {}", ex.getMessage(), ex);
             throw new MatchmakingException("Error occurred while deleting base profile: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
+    }
+    @Override
+    public BaseVO get(String id) throws MatchmakingException {
+        try {
+            log.info("Fetching user for ID: {}", id);
+            Optional<BaseUserProfile> optionalUser = baseUserProfileRepository.findById(Integer.valueOf(id));
+            if (optionalUser.isEmpty()) {
+                log.error("ALERT_FOR_ERROR: User not found for ID: {}", id);
+                throw new MatchmakingException("User does not exist", DATA_NOT_FOUND);
+            }
+            BaseUserProfileVO vo = optionalUser.get().toVO();
+            log.info("User found for ID: {}", id);
+            return new BaseVO(SUCCESS, "User record fetched", "User record fetched", vo);
+        } catch (MatchmakingException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.error("ALERT_FOR_ERROR: Error occurred while fetching user. Error: {}", ex.getMessage(), ex);
+            throw new MatchmakingException("Error occurred while fetching user: " + ex.getMessage(), UNKNOWN_EXCEPTION);
+        }
+    }
+
+    @Override
+    public BaseVO getByEmail(String email) throws MatchmakingException {
+        try {
+            log.info("Fetching user for email: {}", email);
+            if (email == null || email.isBlank()) {
+                throw new MatchmakingException("Email cannot be empty", VALIDATION_ERROR);
+            }
+
+            Optional<BaseUserProfile> optionalUser = baseUserProfileRepository.findByEmail(email);
+            if (optionalUser.isEmpty()) {
+                log.error("ALERT_FOR_ERROR: User not found for email: {}", email);
+                throw new MatchmakingException("User does not exist", DATA_NOT_FOUND);
+            }
+            BaseUserProfileVO vo = optionalUser.get().toVO();
+
+            log.info("User found for email: {}", email);
+            return new BaseVO(SUCCESS, "User record fetched", "User record fetched", vo);
+        } catch (MatchmakingException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.error("ALERT_FOR_ERROR: Error occurred while fetching user by email. Error: {}", ex.getMessage(), ex);
+            throw new MatchmakingException("Error occurred while fetching user: " + ex.getMessage(), UNKNOWN_EXCEPTION);
+        }
+    }
+
+    private boolean isProfileComplete(User user) {
+        return user.getFirstName() != null && !user.getFirstName().isBlank()
+                && user.getLastName() != null && !user.getLastName().isBlank()
+                && user.getGender() != null
+                && user.getDateOfBirth() != null;
+//                && user.getInterests() != null && !user.getInterests().isEmpty();
     }
 }

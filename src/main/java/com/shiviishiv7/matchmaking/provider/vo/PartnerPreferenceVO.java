@@ -37,6 +37,7 @@ public class PartnerPreferenceVO {
     private String manglikPref;
     private Boolean horoscopeMatchRequired;
     private String aboutPartner;
+    private String cognitoSub;
 
     public boolean validate() {
         if (ageMin != null && ageMax != null && ageMin > ageMax) throw new IllegalArgumentException("ageMin cannot exceed ageMax.");

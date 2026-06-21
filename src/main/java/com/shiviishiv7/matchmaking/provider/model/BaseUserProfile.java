@@ -9,7 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "baseUserProfiles")
+@Table(name = "BASE_USER_PROFILES")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class BaseUserProfile extends BaseEntity {
 
@@ -19,7 +19,9 @@ public class BaseUserProfile extends BaseEntity {
     private Integer id;
 
     @Column(name = "userId", nullable = false, unique = true)
-    private Integer userId;
+    private String cognitoSub;
+    @Column(name = "email", nullable = false, unique = true)
+    private String email;
 
     @Column(name = "displayName", nullable = false, length = 100)
     private String displayName;
@@ -76,7 +78,7 @@ public class BaseUserProfile extends BaseEntity {
     public BaseUserProfile fromVO(BaseUserProfileVO vo) {
         if (vo == null) return null;
         this.setId(vo.getId());
-        this.setUserId(vo.getUserId());
+        this.setCognitoSub(vo.getCognitoSub());
         this.setDisplayName(vo.getDisplayName());
         this.setDateOfBirth(vo.getDateOfBirth());
         this.setGender(vo.getGender());
@@ -99,7 +101,7 @@ public class BaseUserProfile extends BaseEntity {
     public BaseUserProfileVO toVO() {
         BaseUserProfileVO vo = new BaseUserProfileVO();
         vo.setId(this.getId());
-        vo.setUserId(this.getUserId());
+        vo.setCognitoSub(this.getCognitoSub());
         vo.setDisplayName(this.getDisplayName());
         vo.setDateOfBirth(this.getDateOfBirth());
         vo.setGender(this.getGender());

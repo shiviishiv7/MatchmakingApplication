@@ -1,4 +1,4 @@
-package com.shiviishiv7.matchmaking.processor.userprofile;
+package com.shiviishiv7.matchmaking.processor.categoryprofileregistry;
 
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;

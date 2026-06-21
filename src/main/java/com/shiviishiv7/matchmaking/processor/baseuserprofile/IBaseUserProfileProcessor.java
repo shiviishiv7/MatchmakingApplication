@@ -1,4 +1,4 @@
-package com.shiviishiv7.matchmaking.processor.userprofile;
+package com.shiviishiv7.matchmaking.processor.baseuserprofile;
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
@@ -15,4 +15,6 @@ public interface IBaseUserProfileProcessor {
     BaseVO getByUserId(String userId) throws MatchmakingException;
 
     BaseVO delete(String id) throws MatchmakingException;
+    BaseVO get(String id) throws MatchmakingException;
+    BaseVO getByEmail(String email) throws MatchmakingException;
 }

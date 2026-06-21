@@ -1,6 +1,7 @@
 package com.shiviishiv7.matchmaking.provider.implementation;
 
 import com.shiviishiv7.matchmaking.provider.model.BaseUserProfile;
+import com.shiviishiv7.matchmaking.provider.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.Optional;
@@ -10,7 +11,9 @@ public interface BaseUserProfileRepository extends JpaRepository<BaseUserProfile
 
     Optional<BaseUserProfile> findByUserId(Integer userId);
 
-    boolean existsByUserId(Integer userId);
+    boolean existsByCognitoSub(String cognitoSub);
 
     void deleteByUserId(Integer userId);
+
+    Optional<BaseUserProfile> findByEmail(String email);
 }

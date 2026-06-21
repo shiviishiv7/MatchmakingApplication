@@ -89,6 +89,8 @@ public class PartnerPreference extends BaseEntity {
 
     @Column(name = "aboutPartner", columnDefinition = "TEXT")
     private String aboutPartner;
+    @Column(name = "cognitoSub")
+    private String cognitoSub;
 
     public PartnerPreference fromVO(PartnerPreferenceVO vo) {
         if (vo == null) return null;

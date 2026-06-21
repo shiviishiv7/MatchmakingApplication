@@ -15,7 +15,7 @@ import lombok.ToString;
 public class BaseUserProfileVO {
 
     private Integer id;
-    private Integer userId;
+    private String cognitoSub;
     private String displayName;
     private LocalDate dateOfBirth;
     private Gender gender;
@@ -34,7 +34,7 @@ public class BaseUserProfileVO {
     private LocalDateTime lastActiveAt;
 
     public boolean validate() {
-        if (userId == null) throw new IllegalArgumentException("userId is required.");
+        if (cognitoSub == null) throw new IllegalArgumentException("userId is required.");
         if (displayName == null || displayName.trim().isEmpty()) throw new IllegalArgumentException("displayName is required.");
         if (dateOfBirth == null) throw new IllegalArgumentException("dateOfBirth is required.");
         if (gender == null) throw new IllegalArgumentException("gender is required.");

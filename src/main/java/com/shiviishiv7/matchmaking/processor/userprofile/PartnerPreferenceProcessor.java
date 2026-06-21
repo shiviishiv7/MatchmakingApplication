@@ -31,17 +31,17 @@ public class PartnerPreferenceProcessor implements IPartnerPreferenceProcessor {
             vo.validate();
             log.info("PartnerPreferenceVO validation completed successfully.");
 
-            log.trace("Checking for duplicate partner preference for userId: {}", vo.getUserId());
-            if (partnerPreferenceRepository.existsByUserId(vo.getUserId())) {
-                log.error("ALERT_FOR_ERROR: partner preference already exists for userId: {}", vo.getUserId());
+            log.trace("Checking for duplicate partner preference for userId: {}", vo.getCognitoSub());
+            if (partnerPreferenceRepository.existsByCognitoSub(vo.getCognitoSub())) {
+                log.error("ALERT_FOR_ERROR: partner preference already exists for userId: {}", vo.getCognitoSub());
                 throw new MatchmakingException("partner preference already exists for this user", DUPLICATE_RECORD);
             }
 
-            log.trace("Saving partner preference for userId: {}", vo.getUserId());
+            log.trace("Saving partner preference for userId: {}", vo.getCognitoSub());
             PartnerPreference profile = new PartnerPreference();
             profile.fromVO(vo);
             profile = partnerPreferenceRepository.save(profile);
-            log.info("partner preference saved successfully for userId: {}", profile.getUserId());
+            log.info("partner preference saved successfully for userId: {}", profile.getCognitoSub());
 
             return new BaseVO(SUCCESS, "partner preference created", "partner preference created", profile.toVO());
         } catch (MatchmakingException ex) {
@@ -132,7 +132,7 @@ public class PartnerPreferenceProcessor implements IPartnerPreferenceProcessor {
     public BaseVO getByUserId(String userId) throws MatchmakingException {
         try {
             log.info("Fetching partner preference for userId: {}", userId);
-            Optional<PartnerPreference> fromDB = partnerPreferenceRepository.findByUserId(Integer.valueOf(userId));
+            Optional<PartnerPreference> fromDB = partnerPreferenceRepository.findByCognitoSub(userId);
             if (fromDB.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: partner preference not found for userId: {}", userId);
                 throw new MatchmakingException("partner preference does not exist for this user", DATA_NOT_FOUND);

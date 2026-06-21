@@ -8,9 +8,9 @@ import java.util.Optional;
 @Repository
 public interface PartnerPreferenceRepository extends JpaRepository<PartnerPreference, Integer> {
 
-    Optional<PartnerPreference> findByUserId(Integer userId);
+    Optional<PartnerPreference> findByCognitoSub(String cognitoSub);
 
-    boolean existsByUserId(Integer userId);
+    boolean existsByCognitoSub(String cognitoSub);
 
-    void deleteByUserId(Integer userId);
+    void deleteByCognitoSub(String cognitoSub);
 }
