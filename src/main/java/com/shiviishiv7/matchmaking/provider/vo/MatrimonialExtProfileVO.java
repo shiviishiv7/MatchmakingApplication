@@ -15,7 +15,7 @@ import lombok.ToString;
 public class MatrimonialExtProfileVO {
 
     private Integer id;
-    private Integer userId;
+    private String cognitoSubB;
     private String religion;
     private String caste;
     private String subCaste;
@@ -52,7 +52,7 @@ public class MatrimonialExtProfileVO {
     private PartnerPreferenceVO partnerPreferenceVO;
 
     public boolean validate() {
-        if (userId == null) throw new IllegalArgumentException("userId is required.");
+        if (cognitoSubB == null) throw new IllegalArgumentException("userId is required.");
         return true;
     }
 }

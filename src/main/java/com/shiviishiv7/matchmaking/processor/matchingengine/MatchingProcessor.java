@@ -1,4 +1,4 @@
-package com.shiviishiv7.matchmaking.processor.matchengine;
+package com.shiviishiv7.matchmaking.processor.matchingengine;
 
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
 import com.shiviishiv7.matchmaking.common.enums.MatchStatus;
@@ -25,36 +25,35 @@ import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus
 @Slf4j
 public class MatchingProcessor implements IMatchingProcessor {
 
-    @Autowired private MatchingEngine matchingEngine;
+    @Autowired private MatchingEngineProcessor matchingEngineProcessor;
     @Autowired private MatchResultRepository matchResultRepository;
     @Autowired private BlockListRepository blockListRepository;
 
     @Override
     public BaseVO discover(MatchDiscoveryRequestVO request) throws MatchmakingException {
         try {
-            log.info("Discovery request for userId: {} category: {}", request.getUserId(), request.getMatchCategory());
+            log.info("Discovery request for userId: {} category: {}", request.getCognitoSubA(), request.getMatchCategory());
             request.validate();
 
-            List<MatchCandidateVO> results = matchingEngine.discover(request);
-            log.info("Discovery returned {} results for userId: {}", results.size(), request.getUserId());
+            List<MatchCandidateVO> results = matchingEngineProcessor.discover(request);
+            log.info("Discovery returned {} results for userId: {}", results.size(), request.getCognitoSubA());
 
             return new BaseVO(SUCCESS, "Discovery results fetched", "Discovery results fetched", results);
         } catch (MatchmakingException ex) {
             throw ex;
         } catch (Exception ex) {
             log.error("ALERT_FOR_ERROR: Error during discovery for userId: {}. Error: {}",
-                    request.getUserId(), ex.getMessage(), ex);
+                    request.getCognitoSubA(), ex.getMessage(), ex);
             throw new MatchmakingException("Error during discovery: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
 
     @Override
-    public BaseVO like(String userId, String candidateUserId, String matchCategory) throws MatchmakingException {
+    public BaseVO like(String cognitoSubA, String cognitoSubB, String matchCategory) throws MatchmakingException {
         try {
-            log.info("LIKE action: userId={} candidateUserId={} category={}", userId, candidateUserId, matchCategory);
+            log.info("LIKE action: userId={} candidateUserId={} category={}", cognitoSubA, cognitoSubB, matchCategory);
             MatchCategory category = MatchCategory.valueOf(matchCategory.toUpperCase());
-            matchingEngine.recordAction(
-                    Integer.valueOf(userId), Integer.valueOf(candidateUserId), category, MatchStatus.LIKED);
+            matchingEngineProcessor.recordAction(cognitoSubA,cognitoSubB, category, MatchStatus.LIKED);
             return new BaseVO(SUCCESS, "Like recorded", "Like recorded");
         } catch (MatchmakingException ex) {
             throw ex;
@@ -65,12 +64,11 @@ public class MatchingProcessor implements IMatchingProcessor {
     }
 
     @Override
-    public BaseVO skip(String userId, String candidateUserId, String matchCategory) throws MatchmakingException {
+    public BaseVO skip(String cognitoSubA, String cognitoSubB, String matchCategory) throws MatchmakingException {
         try {
-            log.info("SKIP action: userId={} candidateUserId={} category={}", userId, candidateUserId, matchCategory);
+            log.info("SKIP action: userId={} candidateUserId={} category={}", cognitoSubA, cognitoSubB, matchCategory);
             MatchCategory category = MatchCategory.valueOf(matchCategory.toUpperCase());
-            matchingEngine.recordAction(
-                    Integer.valueOf(userId), Integer.valueOf(candidateUserId), category, MatchStatus.SKIPPED);
+            matchingEngineProcessor.recordAction(cognitoSubA,cognitoSubB,category, MatchStatus.SKIPPED);
             return new BaseVO(SUCCESS, "Skip recorded", "Skip recorded");
         } catch (MatchmakingException ex) {
             throw ex;
@@ -86,8 +84,8 @@ public class MatchingProcessor implements IMatchingProcessor {
             log.info("Fetching connections for userId: {} category: {}", userId, matchCategory);
             MatchCategory category = MatchCategory.valueOf(matchCategory.toUpperCase());
             List<MatchResult> connections = matchResultRepository
-                    .findByUserIdAndMatchCategoryAndStatus(
-                            Integer.valueOf(userId), category, MatchStatus.CONNECTED);
+                    .findByCognitoSubAAndMatchCategoryAndStatus(
+                            (userId), category, MatchStatus.CONNECTED);
             List<MatchResultVO> voList = connections.stream()
                     .map(MatchResult::toVO)
                     .collect(Collectors.toList());

@@ -13,7 +13,7 @@ import lombok.ToString;
 public class ProfessionalExtProfileVO {
 
     private Integer id;
-    private Integer userId;
+    private String cognitoSub;
     private String currentRole;
     private String currentCompany;
     private Integer yearsOfExperience;
@@ -32,7 +32,7 @@ public class ProfessionalExtProfileVO {
     private String availabilitySlots;
 
     public boolean validate() {
-        if (userId == null) throw new IllegalArgumentException("userId is required.");
+        if (cognitoSub == null) throw new IllegalArgumentException("userId is required.");
         return true;
     }
 }

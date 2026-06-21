@@ -1,5 +1,6 @@
-package com.shiviishiv7.matchmaking.provider.model;
+package com.shiviishiv7.matchmaking.provider.model.profile;
 
+import com.shiviishiv7.matchmaking.provider.model.BaseEntity;
 import com.shiviishiv7.matchmaking.provider.vo.TravelExtProfileVO;
 import jakarta.persistence.*;
 import lombok.*;
@@ -14,8 +15,8 @@ public class TravelExtProfile extends BaseEntity {
     @Column(name = "id", updatable = false, nullable = false)
     private Integer id;
 
-    @Column(name = "userId", nullable = false, unique = true)
-    private Integer userId;
+    @Column(name = "cognitoSub", nullable = false, unique = true)
+    private String cognitoSub;
 
     @Column(name = "travelStyle", length = 50)
     private String travelStyle;
@@ -59,7 +60,7 @@ public class TravelExtProfile extends BaseEntity {
     public TravelExtProfile fromVO(TravelExtProfileVO vo) {
         if (vo == null) return null;
         this.setId(vo.getId());
-        this.setUserId(vo.getUserId());
+        this.setCognitoSub(vo.getCognitoSub());
         this.setTravelStyle(vo.getTravelStyle());
         this.setPreferredDestinations(vo.getPreferredDestinations());
         this.setBucketListPlaces(vo.getBucketListPlaces());
@@ -79,7 +80,7 @@ public class TravelExtProfile extends BaseEntity {
     public TravelExtProfileVO toVO() {
         TravelExtProfileVO vo = new TravelExtProfileVO();
         vo.setId(this.getId());
-        vo.setUserId(this.getUserId());
+        vo.setCognitoSub(this.getCognitoSub());
         vo.setTravelStyle(this.getTravelStyle());
         vo.setPreferredDestinations(this.getPreferredDestinations());
         vo.setBucketListPlaces(this.getBucketListPlaces());

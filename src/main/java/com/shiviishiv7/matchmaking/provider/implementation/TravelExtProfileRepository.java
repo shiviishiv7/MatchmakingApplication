@@ -1,6 +1,6 @@
 package com.shiviishiv7.matchmaking.provider.implementation;
 
-import com.shiviishiv7.matchmaking.provider.model.TravelExtProfile;
+import com.shiviishiv7.matchmaking.provider.model.profile.TravelExtProfile;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.Optional;
@@ -8,9 +8,9 @@ import java.util.Optional;
 @Repository
 public interface TravelExtProfileRepository extends JpaRepository<TravelExtProfile, Integer> {
 
-    Optional<TravelExtProfile> findByUserId(Integer userId);
+    Optional<TravelExtProfile> findByCognitoSub(String cognitoSub);
 
-    boolean existsByUserId(Integer userId);
+    boolean existsByCognitoSub(String cognitoSub);
 
-    void deleteByUserId(Integer userId);
+    void deleteByCognitoSub(String cognitoSub);
 }

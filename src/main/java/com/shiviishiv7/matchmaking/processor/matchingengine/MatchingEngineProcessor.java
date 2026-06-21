@@ -1,4 +1,4 @@
-package com.shiviishiv7.matchmaking.processor.matchengine;
+package com.shiviishiv7.matchmaking.processor.matchingengine;
 
 
 
@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus.VALIDATION_ERROR;
 
@@ -34,7 +33,7 @@ import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus
  */
 @Service
 @Slf4j
-public class MatchingEngine {
+public class MatchingEngineProcessor {
 
     private final Map<MatchCategory, CategoryScorer> scorerRegistry = new HashMap<>();
 
@@ -49,7 +48,7 @@ public class MatchingEngine {
      * Each scorer registers itself by its supported MatchCategory.
      */
     @Autowired
-    public MatchingEngine(List<CategoryScorer> scorers) {
+    public MatchingEngineProcessor(List<CategoryScorer> scorers) {
         for (CategoryScorer scorer : scorers) {
             scorerRegistry.put(scorer.supports(), scorer);
             log.info("Registered scorer for category: {}", scorer.supports());
@@ -61,7 +60,7 @@ public class MatchingEngine {
      * Returns a paginated, scored, deduplicated list of match candidates.
      */
     public List<MatchCandidateVO> discover(MatchDiscoveryRequestVO request) throws MatchmakingException {
-        Integer userId          = request.getUserId();
+        String userId          = request.getCognitoSubA();
         MatchCategory category  = request.getMatchCategory();
         int page                = request.getPage();
         int pageSize            = request.getPageSize();
@@ -78,10 +77,10 @@ public class MatchingEngine {
 
         // ── Build exclude list ────────────────────────────────────────────────
         // Exclude: already-seen candidates + blocked users
-        Set<Integer> seenIds    = matchResultRepository.findSeenCandidateIds(userId, category);
-        Set<Integer> blockedIds = blockListRepository.findAllBlockedUserIds(userId);
+        Set<String> seenIds    = matchResultRepository.findSeenCandidateIds(userId, category);
+        Set<String> blockedIds = blockListRepository.findAllBlockedUserIds(userId);
 
-        List<Integer> excludeIds = new ArrayList<>();
+        List<String> excludeIds = new ArrayList<>();
         excludeIds.addAll(seenIds);
         excludeIds.addAll(blockedIds);
 
@@ -89,7 +88,7 @@ public class MatchingEngine {
                 seenIds.size(), blockedIds.size(), userId);
 
         // ── Phase 1: Hard filter ──────────────────────────────────────────────
-        List<Integer> candidateIds = scorer.fetchCandidateIds(userId, excludeIds);
+        List<String> candidateIds = scorer.fetchCandidateIds(userId, excludeIds);
         log.info("Phase 1 complete: {} candidates after hard filter for userId: {}", candidateIds.size(), userId);
 
         if (candidateIds.isEmpty()) {
@@ -98,7 +97,7 @@ public class MatchingEngine {
 
         // ── Phase 2: Score each candidate ─────────────────────────────────────
         List<MatchCandidateVO> scored = new ArrayList<>();
-        for (Integer candidateId : candidateIds) {
+        for (String candidateId : candidateIds) {
             try {
                 MatchCandidateVO vo = scorer.score(userId, candidateId);
                 scored.add(vo);
@@ -131,18 +130,18 @@ public class MatchingEngine {
      * Called when a user acts on a match card (LIKED / SKIPPED).
      * If both users have LIKED each other → sets isMutual = true on both rows.
      */
-    public void recordAction(Integer userId, Integer candidateUserId,
+    public void recordAction(String cognitoSubA, String cognitoSubB,
                              MatchCategory category, MatchStatus action) throws MatchmakingException {
         log.info("Recording action: userId={} candidateUserId={} category={} action={}",
-                userId, candidateUserId, category, action);
+                cognitoSubA, cognitoSubB, category, action);
 
         MatchResult result = matchResultRepository
-                .findByUserIdAndCandidateUserIdAndMatchCategory(userId, candidateUserId, category)
+                .findByCognitoSubAAndCognitoSubBAndMatchCategory(cognitoSubA, cognitoSubB, category)
                 .orElseGet(() -> {
                     // Create on-the-fly if user acted without going through discovery (e.g. deep link)
                     MatchResult r = new MatchResult();
-                    r.setUserId(userId);
-                    r.setCandidateUserId(candidateUserId);
+                    r.setCognitoSubA(cognitoSubA);
+                    r.setCognitoSubB(cognitoSubB);
                     r.setMatchCategory(category);
                     r.setShownAt(LocalDateTime.now());
                     return r;
@@ -154,17 +153,17 @@ public class MatchingEngine {
 
         // Check for mutual like
         if (action == MatchStatus.LIKED) {
-            long mutualCount = matchResultRepository.countMutualLike(candidateUserId, userId, category);
+            long mutualCount = matchResultRepository.countMutualLike(cognitoSubB, cognitoSubA, category);
             if (mutualCount > 0) {
                 log.info("Mutual match detected! userId={} <-> candidateUserId={} category={}",
-                        userId, candidateUserId, category);
+                        cognitoSubA, cognitoSubB, category);
                 // Update both rows to isMutual = true
                 result.setIsMutual(true);
                 result.setStatus(MatchStatus.CONNECTED);
                 matchResultRepository.save(result);
 
                 matchResultRepository
-                        .findByUserIdAndCandidateUserIdAndMatchCategory(candidateUserId, userId, category)
+                        .findByCognitoSubAAndCognitoSubBAndMatchCategory(cognitoSubB, cognitoSubA, category)
                         .ifPresent(mirror -> {
                             mirror.setIsMutual(true);
                             mirror.setStatus(MatchStatus.CONNECTED);
@@ -176,15 +175,15 @@ public class MatchingEngine {
 
     // ── Private helpers ────────────────────────────────────────────────────────
 
-    private void persistShownResults(Integer userId, MatchCategory category,
+    private void persistShownResults(String cognitoSubA, MatchCategory category,
                                      List<MatchCandidateVO> results) {
         for (MatchCandidateVO vo : results) {
             try {
-                if (!matchResultRepository.existsByUserIdAndCandidateUserIdAndMatchCategory(
-                        userId, vo.getCandidateUserId(), category)) {
+                if (!matchResultRepository.existsByCognitoSubAAndCognitoSubBAndMatchCategory(
+                        cognitoSubA, vo.getCognitoSubB(), category)) {
                     MatchResult mr = MatchResult.builder()
-                            .userId(userId)
-                            .candidateUserId(vo.getCandidateUserId())
+                            .cognitoSubA(cognitoSubA)
+                            .cognitoSubB(vo.getCognitoSubB())
                             .matchCategory(category)
                             .compatibilityScore(vo.getCompatibilityScore())
                             .scoreBreakdown(vo.getScoreBreakdown())
@@ -196,7 +195,7 @@ public class MatchingEngine {
                 }
             } catch (Exception ex) {
                 log.warn("Could not persist match result for candidateUserId: {}. Error: {}",
-                        vo.getCandidateUserId(), ex.getMessage());
+                        vo.getCognitoSubB(), ex.getMessage());
             }
         }
     }

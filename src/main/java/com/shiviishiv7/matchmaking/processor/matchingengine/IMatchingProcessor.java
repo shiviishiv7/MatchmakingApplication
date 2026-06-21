@@ -1,4 +1,4 @@
-package com.shiviishiv7.matchmaking.processor.matchengine;
+package com.shiviishiv7.matchmaking.processor.matchingengine;
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;

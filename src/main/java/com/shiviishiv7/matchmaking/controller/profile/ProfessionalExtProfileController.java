@@ -1,4 +1,4 @@
-package com.shiviishiv7.matchmaking.controller;
+package com.shiviishiv7.matchmaking.controller.profile;
 
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
@@ -30,7 +30,7 @@ public class ProfessionalExtProfileController {
     @Operation(summary = "Create an extended professional networking profile card for a user")
     public ResponseEntity<BaseVO> add(@RequestBody ProfessionalExtProfileVO vo) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("REST request to add professional profile for userId: {} by sub context: {}", vo.getUserId(), sub);
+        log.info("REST request to add professional profile for userId: {} by sub context: {}", vo.getCognitoSub(), sub);
 
         BaseVO response = professionalProfileProcessor.add(vo);
         log.info("Successfully established extended professional networking parameters under sub context: {}", sub);

@@ -14,8 +14,7 @@ import java.time.LocalDateTime;
  * Updated when the user acts on it (liked, skipped, connected).
  */
 @Entity
-@Table(name = "matchResults",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"userId", "candidateUserId", "matchCategory"}))
+@Table(name = "MATCH_RESULT")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class MatchResult extends BaseEntity {
 
@@ -24,11 +23,12 @@ public class MatchResult extends BaseEntity {
     @Column(name = "id", updatable = false, nullable = false)
     private Integer id;
 
-    @Column(name = "userId", nullable = false)
-    private Integer userId;
+    // ── The two matched users ─────────────────────────────────────────────
+    @Column(name = "cognitoSubA", nullable = false)
+    private String cognitoSubA;
 
-    @Column(name = "candidateUserId", nullable = false)
-    private Integer candidateUserId;
+    @Column(name = "cognitoSubB", nullable = false)
+    private String cognitoSubB;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "matchCategory", nullable = false, length = 60)
@@ -58,8 +58,8 @@ public class MatchResult extends BaseEntity {
     public MatchResult fromVO(MatchResultVO vo) {
         if (vo == null) return null;
         this.setId(vo.getId());
-        this.setUserId(vo.getUserId());
-        this.setCandidateUserId(vo.getCandidateUserId());
+        this.setCognitoSubA(vo.getCognitoSubA());
+        this.setCognitoSubB(vo.getCognitoSubB());
         this.setMatchCategory(vo.getMatchCategory());
         this.setCompatibilityScore(vo.getCompatibilityScore());
         this.setScoreBreakdown(vo.getScoreBreakdown());
@@ -73,8 +73,8 @@ public class MatchResult extends BaseEntity {
     public MatchResultVO toVO() {
         MatchResultVO vo = new MatchResultVO();
         vo.setId(this.getId());
-        vo.setUserId(this.getUserId());
-        vo.setCandidateUserId(this.getCandidateUserId());
+        vo.setCognitoSubA(this.getCognitoSubA());
+        vo.setCognitoSubB(this.getCognitoSubB());
         vo.setMatchCategory(this.getMatchCategory());
         vo.setCompatibilityScore(this.getCompatibilityScore());
         vo.setScoreBreakdown(this.getScoreBreakdown());

@@ -1,4 +1,4 @@
-package com.shiviishiv7.matchmaking.controller;
+package com.shiviishiv7.matchmaking.controller.profile;
 
 
 
@@ -31,7 +31,7 @@ public class MatrimonialExtProfileController {
     @Operation(summary = "Create an extended high-intent matrimonial biodata track node for a user")
     public ResponseEntity<BaseVO> add(@RequestBody MatrimonialExtProfileVO vo) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("REST request to add matrimonial profile for userId: {} by sub context: {}", vo.getUserId(), sub);
+        log.info("REST request to add matrimonial profile for userId: {} by sub context: {}", vo.getCognitoSubB(), sub);
 
         BaseVO response = matrimonialProfileProcessor.add(vo);
         log.info("Successfully established extended matrimonial properties under sub context: {}", sub);

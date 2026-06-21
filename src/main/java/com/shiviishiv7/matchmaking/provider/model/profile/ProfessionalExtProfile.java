@@ -1,5 +1,6 @@
-package com.shiviishiv7.matchmaking.provider.model;
+package com.shiviishiv7.matchmaking.provider.model.profile;
 
+import com.shiviishiv7.matchmaking.provider.model.BaseEntity;
 import com.shiviishiv7.matchmaking.provider.vo.ProfessionalExtProfileVO;
 import jakarta.persistence.*;
 import lombok.*;
@@ -15,7 +16,7 @@ public class ProfessionalExtProfile extends BaseEntity {
     private Integer id;
 
     @Column(name = "userId", nullable = false, unique = true)
-    private Integer userId;
+    private String cognitoSub;
 
     @Column(name = "currentRole", length = 100)
     private String currentRole;
@@ -69,7 +70,7 @@ public class ProfessionalExtProfile extends BaseEntity {
     public ProfessionalExtProfile fromVO(ProfessionalExtProfileVO vo) {
         if (vo == null) return null;
         this.setId(vo.getId());
-        this.setUserId(vo.getUserId());
+        this.setCognitoSub(vo.getCognitoSub());
         this.setCurrentRole(vo.getCurrentRole());
         this.setCurrentCompany(vo.getCurrentCompany());
         this.setYearsOfExperience(vo.getYearsOfExperience());
@@ -92,7 +93,7 @@ public class ProfessionalExtProfile extends BaseEntity {
     public ProfessionalExtProfileVO toVO() {
         ProfessionalExtProfileVO vo = new ProfessionalExtProfileVO();
         vo.setId(this.getId());
-        vo.setUserId(this.getUserId());
+        vo.setCognitoSub(this.getCognitoSub());
         vo.setCurrentRole(this.getCurrentRole());
         vo.setCurrentCompany(this.getCurrentCompany());
         vo.setYearsOfExperience(this.getYearsOfExperience());

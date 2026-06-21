@@ -15,7 +15,7 @@ import lombok.ToString;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MatchCandidateVO {
 
-    private Integer candidateUserId;
+    private String cognitoSubB;
     private String displayName;
     private String profilePhotoUrl;
     private String tagline;

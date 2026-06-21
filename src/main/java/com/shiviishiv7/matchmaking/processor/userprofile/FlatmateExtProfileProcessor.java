@@ -2,7 +2,7 @@ package com.shiviishiv7.matchmaking.processor.userprofile;
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.implementation.FlatmateExtProfileRepository;
-import com.shiviishiv7.matchmaking.provider.model.FlatmateExtProfile;
+import com.shiviishiv7.matchmaking.provider.model.profile.FlatmateExtProfile;
 
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import com.shiviishiv7.matchmaking.provider.vo.FlatmateExtProfileVO;

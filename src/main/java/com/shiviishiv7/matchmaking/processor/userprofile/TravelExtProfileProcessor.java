@@ -2,7 +2,7 @@ package com.shiviishiv7.matchmaking.processor.userprofile;
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.implementation.TravelExtProfileRepository;
-import com.shiviishiv7.matchmaking.provider.model.TravelExtProfile;
+import com.shiviishiv7.matchmaking.provider.model.profile.TravelExtProfile;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import com.shiviishiv7.matchmaking.provider.vo.TravelExtProfileVO;
 
@@ -30,17 +30,17 @@ public class TravelExtProfileProcessor implements ITravelExtProfileProcessor {
             vo.validate();
             log.info("TravelExtProfileVO validation completed successfully.");
 
-            log.trace("Checking for duplicate travel profile for userId: {}", vo.getUserId());
-            if (travelExtProfileRepository.existsByUserId(vo.getUserId())) {
-                log.error("ALERT_FOR_ERROR: travel profile already exists for userId: {}", vo.getUserId());
+            log.trace("Checking for duplicate travel profile for userId: {}", vo.getCognitoSub());
+            if (travelExtProfileRepository.existsByCognitoSub(vo.getCognitoSub())) {
+                log.error("ALERT_FOR_ERROR: travel profile already exists for userId: {}", vo.getCognitoSub());
                 throw new MatchmakingException("travel profile already exists for this user", DUPLICATE_RECORD);
             }
 
-            log.trace("Saving travel profile for userId: {}", vo.getUserId());
+            log.trace("Saving travel profile for userId: {}", vo.getCognitoSub());
             TravelExtProfile profile = new TravelExtProfile();
             profile.fromVO(vo);
             profile = travelExtProfileRepository.save(profile);
-            log.info("travel profile saved successfully for userId: {}", profile.getUserId());
+            log.info("travel profile saved successfully for userId: {}", profile.getCognitoSub());
 
             return new BaseVO(SUCCESS, "travel profile created", "travel profile created", profile.toVO());
         } catch (MatchmakingException ex) {
@@ -120,7 +120,7 @@ public class TravelExtProfileProcessor implements ITravelExtProfileProcessor {
     public BaseVO getByUserId(String userId) throws MatchmakingException {
         try {
             log.info("Fetching travel profile for userId: {}", userId);
-            Optional<TravelExtProfile> fromDB = travelExtProfileRepository.findByUserId(Integer.valueOf(userId));
+            Optional<TravelExtProfile> fromDB = travelExtProfileRepository.findByCognitoSub(userId);
             if (fromDB.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: travel profile not found for userId: {}", userId);
                 throw new MatchmakingException("travel profile does not exist for this user", DATA_NOT_FOUND);

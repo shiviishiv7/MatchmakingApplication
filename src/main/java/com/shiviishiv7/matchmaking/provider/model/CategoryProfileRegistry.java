@@ -8,8 +8,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "categoryProfileRegistry",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"userId", "matchCategory"}))
+@Table(name = "categoryProfileRegistry")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class CategoryProfileRegistry extends BaseEntity {
 

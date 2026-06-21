@@ -2,7 +2,7 @@ package com.shiviishiv7.matchmaking.processor.userprofile;
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.implementation.GamingExtProfileRepository;
-import com.shiviishiv7.matchmaking.provider.model.GamingExtProfile;
+import com.shiviishiv7.matchmaking.provider.model.profile.GamingExtProfile;
 
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import com.shiviishiv7.matchmaking.provider.vo.GamingExtProfileVO;

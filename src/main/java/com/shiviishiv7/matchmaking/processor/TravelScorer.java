@@ -1,10 +1,12 @@
-package com.shiviishiv7.matchmaking.provider.model;
+package com.shiviishiv7.matchmaking.processor;
 
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
-import com.shiviishiv7.matchmaking.processor.matchengine.CategoryScorer;
+import com.shiviishiv7.matchmaking.processor.matchingengine.CategoryScorer;
 
 import com.shiviishiv7.matchmaking.provider.implementation.BaseUserProfileRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.TravelExtProfileRepository;
+import com.shiviishiv7.matchmaking.provider.model.profile.BaseUserProfile;
+import com.shiviishiv7.matchmaking.provider.model.profile.TravelExtProfile;
 import com.shiviishiv7.matchmaking.provider.vo.MatchCandidateVO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -38,19 +40,19 @@ public class TravelScorer implements CategoryScorer {
     public MatchCategory supports() { return MatchCategory.TRAVEL_TREKKING; }
 
     @Override
-    public List<Integer> fetchCandidateIds(Integer userId, List<Integer> excludeIds) {
+    public List<String> fetchCandidateIds(String userId, List<String> excludeIds) {
         return travelRepo.findAll().stream()
-            .filter(c -> !c.getUserId().equals(userId))
-            .filter(c -> excludeIds == null || !excludeIds.contains(c.getUserId()))
-            .map(TravelExtProfile::getUserId)
+            .filter(c -> !c.getCognitoSub().equals(userId))
+            .filter(c -> excludeIds == null || !excludeIds.contains(c.getCognitoSub()))
+            .map(TravelExtProfile::getCognitoSub)
             .collect(Collectors.toList());
     }
 
     @Override
-    public MatchCandidateVO score(Integer userId, Integer candidateUserId) {
-        TravelExtProfile me        = travelRepo.findByUserId(userId).orElseThrow();
-        TravelExtProfile candidate = travelRepo.findByUserId(candidateUserId).orElseThrow();
-        BaseUserProfile candBase   = baseProfileRepo.findByUserId(candidateUserId).orElseThrow();
+    public MatchCandidateVO score(String cognitoSubA, String cognitoSubB) {
+        TravelExtProfile me        = travelRepo.findByCognitoSub(cognitoSubA).orElseThrow();
+        TravelExtProfile candidate = travelRepo.findByCognitoSub(cognitoSubB).orElseThrow();
+        BaseUserProfile candBase   = baseProfileRepo.findByCognitoSub(cognitoSubB).orElseThrow();
 
         Map<String, Integer> breakdown = new LinkedHashMap<>();
         int total = 0;
@@ -77,15 +79,15 @@ public class TravelScorer implements CategoryScorer {
 
         total = Math.min(total, 100);
 
-        MatchCandidateVO vo = buildBaseVO(candidateUserId, candBase, total, MatchCategory.TRAVEL_TREKKING);
+        MatchCandidateVO vo = buildBaseVO(cognitoSubB, candBase, total, MatchCategory.TRAVEL_TREKKING);
         try { vo.setScoreBreakdown(objectMapper.writeValueAsString(breakdown)); } catch (Exception ignored) {}
-        vo.setCategorySnippet(buildSnippet(candidateUserId));
+        vo.setCategorySnippet(buildSnippet(cognitoSubB));
         return vo;
     }
 
     @Override
-    public String buildSnippet(Integer candidateUserId) {
-        TravelExtProfile p = travelRepo.findByUserId(candidateUserId).orElse(null);
+    public String buildSnippet(String candidateUserId) {
+        TravelExtProfile p = travelRepo.findByCognitoSub(candidateUserId).orElse(null);
         if (p == null) return "";
         List<String> parts = new ArrayList<>();
         if (StringUtils.isNotEmpty(p.getTravelStyle())) parts.add(p.getTravelStyle());
@@ -127,10 +129,10 @@ public class TravelScorer implements CategoryScorer {
         return mine.equalsIgnoreCase(theirs) ? 15 : 0;
     }
 
-    private MatchCandidateVO buildBaseVO(Integer candidateUserId, BaseUserProfile base,
+    private MatchCandidateVO buildBaseVO(String candidateUserId, BaseUserProfile base,
                                           int score, MatchCategory category) {
         MatchCandidateVO vo = new MatchCandidateVO();
-        vo.setCandidateUserId(candidateUserId);
+        vo.setCognitoSubB(candidateUserId);
         vo.setDisplayName(base.getDisplayName());
         vo.setProfilePhotoUrl(base.getProfilePhotoUrl());
         vo.setTagline(base.getTagline());

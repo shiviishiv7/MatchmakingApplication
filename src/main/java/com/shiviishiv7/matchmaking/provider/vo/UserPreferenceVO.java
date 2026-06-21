@@ -76,8 +76,8 @@ public class UserPreferenceVO {
 //        preference.setPreferredIndustries(preferredIndustries);
 //        preference.setMaxTimezoneOffsetHours(maxTimezoneOffsetHours);
         preference.setSameCompanyAllowed(sameCompanyAllowed);
-        preference.setPreferredCompany(preferredCompany);
-        preference.setPreferredCollege(preferredCollege);
+//        preference.setPreferredCompany(preferredCompany);
+//        preference.setPreferredCollege(preferredCollege);
         preference.setPreferredZip(preferredZip);
         preference.setPreferredCity(preferredCity);
         preference.setPreferredState(preferredState);
@@ -96,8 +96,8 @@ public class UserPreferenceVO {
 //        vo.setPreferredIndustries(preference.getPreferredIndustries());
 //        vo.setMaxTimezoneOffsetHours(preference.getMaxTimezoneOffsetHours());
         vo.setSameCompanyAllowed(preference.getSameCompanyAllowed());
-        vo.setPreferredCompany(preference.getPreferredCompany());
-        vo.setPreferredCollege(preference.getPreferredCollege());
+//        vo.setPreferredCompany(preference.getPreferredCompany());
+//        vo.setPreferredCollege(preference.getPreferredCollege());
         vo.setPreferredZip(preference.getPreferredZip());
         vo.setPreferredCity(preference.getPreferredCity());
         vo.setPreferredState(preference.getPreferredState());

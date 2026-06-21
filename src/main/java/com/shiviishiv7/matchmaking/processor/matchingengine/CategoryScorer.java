@@ -1,4 +1,4 @@
-package com.shiviishiv7.matchmaking.processor.matchengine;
+package com.shiviishiv7.matchmaking.processor.matchingengine;
 
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
 import com.shiviishiv7.matchmaking.provider.vo.MatchCandidateVO;
@@ -26,19 +26,19 @@ public interface CategoryScorer {
      *   - location (country/state) if preference set
      * Returns raw userIds — scoring happens next.
      */
-    List<Integer> fetchCandidateIds(Integer userId, List<Integer> excludeIds);
+    List<String> fetchCandidateIds(String userId, List<String> excludeIds);
 
     /**
      * Phase 2: score a single candidate against the requesting user.
      * Populates candidateVO.compatibilityScore and candidateVO.scoreBreakdown.
      * Returns the same VO with score filled in.
      */
-    MatchCandidateVO score(Integer userId, Integer candidateUserId);
+    MatchCandidateVO score(String userId, String candidateUserId);
 
     /**
      * Phase 2b: build the category-specific snippet string shown on discovery card.
      * e.g. for matrimonial: "Vegetarian · MBA · 12 LPA · Mumbai"
      *      for travel:      "Backpacker · 3 trips/yr · Europe fan"
      */
-    String buildSnippet(Integer candidateUserId);
+    String buildSnippet(String candidateUserId);
 }

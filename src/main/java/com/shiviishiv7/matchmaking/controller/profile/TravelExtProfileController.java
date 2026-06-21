@@ -1,4 +1,4 @@
-package com.shiviishiv7.matchmaking.controller;
+package com.shiviishiv7.matchmaking.controller.profile;
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.common.security.MatchmakingSecurityUtility;
@@ -29,7 +29,7 @@ public class TravelExtProfileController {
     @Operation(summary = "Create an extended travel preference profile for a user")
     public ResponseEntity<BaseVO> add(@RequestBody TravelExtProfileVO vo) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("REST request to add travel profile for userId: {} by sub context: {}", vo.getUserId(), sub);
+        log.info("REST request to add travel profile for userId: {} by sub context: {}", vo.getCognitoSub(), sub);
 
         BaseVO response = travelProfileProcessor.add(vo);
         log.info("Successfully established extended travel matching metrics under sub context: {}", sub);

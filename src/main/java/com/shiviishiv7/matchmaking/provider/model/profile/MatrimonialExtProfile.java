@@ -1,5 +1,7 @@
-package com.shiviishiv7.matchmaking.provider.model;
+package com.shiviishiv7.matchmaking.provider.model.profile;
 
+import com.shiviishiv7.matchmaking.provider.model.BaseEntity;
+import com.shiviishiv7.matchmaking.provider.model.PartnerPreference;
 import com.shiviishiv7.matchmaking.provider.vo.MatrimonialExtProfileVO;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,8 +19,8 @@ public class MatrimonialExtProfile extends BaseEntity {
     @Column(name = "id", updatable = false, nullable = false)
     private Integer id;
 
-    @Column(name = "userId", nullable = false, unique = true)
-    private Integer userId;
+    @Column(name = "cognitoSubB", nullable = false, unique = true)
+    private String cognitoSubB;
 
     @Column(name = "religion", length = 50)
     private String religion;
@@ -127,7 +129,7 @@ public class MatrimonialExtProfile extends BaseEntity {
     public MatrimonialExtProfile fromVO(MatrimonialExtProfileVO vo) {
         if (vo == null) return null;
         this.setId(vo.getId());
-        this.setUserId(vo.getUserId());
+        this.setCognitoSubB(vo.getCognitoSubB());
         this.setReligion(vo.getReligion());
         this.setCaste(vo.getCaste());
         this.setSubCaste(vo.getSubCaste());
@@ -167,7 +169,7 @@ public class MatrimonialExtProfile extends BaseEntity {
     public MatrimonialExtProfileVO toVO() {
         MatrimonialExtProfileVO vo = new MatrimonialExtProfileVO();
         vo.setId(this.getId());
-        vo.setUserId(this.getUserId());
+        vo.setCognitoSubB(this.getCognitoSubB());
         vo.setReligion(this.getReligion());
         vo.setCaste(this.getCaste());
         vo.setSubCaste(this.getSubCaste());

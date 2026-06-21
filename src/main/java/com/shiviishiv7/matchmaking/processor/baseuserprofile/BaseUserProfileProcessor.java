@@ -2,7 +2,7 @@ package com.shiviishiv7.matchmaking.processor.baseuserprofile;
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.implementation.BaseUserProfileRepository;
-import com.shiviishiv7.matchmaking.provider.model.BaseUserProfile;
+import com.shiviishiv7.matchmaking.provider.model.profile.BaseUserProfile;
 
 import com.shiviishiv7.matchmaking.provider.model.User;
 import com.shiviishiv7.matchmaking.provider.vo.BaseUserProfileVO;
@@ -123,7 +123,7 @@ public class BaseUserProfileProcessor implements IBaseUserProfileProcessor {
     public BaseVO getByUserId(String userId) throws MatchmakingException {
         try {
             log.info("Fetching base profile for userId: {}", userId);
-            Optional<BaseUserProfile> fromDB = baseUserProfileRepository.findByUserId(Integer.valueOf(userId));
+            Optional<BaseUserProfile> fromDB = baseUserProfileRepository.findByCognitoSub((userId));
             if (fromDB.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: Base profile not found for userId: {}", userId);
                 throw new MatchmakingException("Base profile does not exist for this user", DATA_NOT_FOUND);

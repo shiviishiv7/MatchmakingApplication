@@ -15,30 +15,31 @@ import java.util.Set;
 @Repository
 public interface MatchResultRepository extends JpaRepository<MatchResult, Integer> {
 
-    Optional<MatchResult> findByUserIdAndCandidateUserIdAndMatchCategory(
-            Integer userId, Integer candidateUserId, MatchCategory matchCategory);
+    Optional<MatchResult> findByCognitoSubAAndCognitoSubBAndMatchCategory(String cognitoSubA, String cognitoSubB, MatchCategory matchCategory);
 
-    List<MatchResult> findByUserIdAndMatchCategoryAndStatus(
-            Integer userId, MatchCategory matchCategory, MatchStatus status);
 
-    List<MatchResult> findByUserIdAndMatchCategory(Integer userId, MatchCategory matchCategory);
+    List<MatchResult> findByCognitoSubAAndMatchCategoryAndStatus(String cognitoSubA, MatchCategory matchCategory, MatchStatus status);
+
+    List<MatchResult> findByCognitoSubAAndMatchCategory(String cognitoSubA, MatchCategory matchCategory);
 
     /** All candidateUserIds this user has already seen for a given category */
-    @Query("SELECT m.candidateUserId FROM MatchResult m " +
-           "WHERE m.userId = :userId AND m.matchCategory = :category")
-    Set<Integer> findSeenCandidateIds(
-            @Param("userId") Integer userId,
+    @Query("SELECT m.cognitoSubB FROM MatchResult m " +
+           "WHERE m.cognitoSubA = :userId AND m.matchCategory = :category")
+    Set<String> findSeenCandidateIds(
+            @Param("userId") String userId,
             @Param("category") MatchCategory category);
 
     /** Check if both sides have LIKED each other — used to detect mutual match */
     @Query("SELECT COUNT(m) FROM MatchResult m " +
-           "WHERE m.userId = :userA AND m.candidateUserId = :userB " +
+           "WHERE m.cognitoSubA = :userA AND m.cognitoSubB = :userB " +
            "AND m.matchCategory = :category AND m.status = 'LIKED'")
     long countMutualLike(
-            @Param("userA") Integer userA,
-            @Param("userB") Integer userB,
+            @Param("userA") String userA,
+            @Param("userB") String userB,
             @Param("category") MatchCategory category);
 
-    boolean existsByUserIdAndCandidateUserIdAndMatchCategory(
-            Integer userId, Integer candidateUserId, MatchCategory matchCategory);
+
+
+    boolean existsByCognitoSubAAndCognitoSubBAndMatchCategory(String cognitoSubA, String cognitoSubB, MatchCategory matchCategory);
+
 }

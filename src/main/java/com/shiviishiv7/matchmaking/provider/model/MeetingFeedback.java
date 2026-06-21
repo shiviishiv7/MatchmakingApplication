@@ -22,16 +22,7 @@ import lombok.*;
  *   Either        + NOT_INTERESTED → ENDED
  */
 @Entity
-@Table(name = "meeting_feedback",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uq_feedback_meeting_user",
-                columnNames = {"meetingId", "cognitoSub"}
-        ),
-        indexes = {
-                @Index(name = "idx_feedback_meeting", columnList = "meetingId"),
-                @Index(name = "idx_feedback_user",    columnList = "cognitoSub")
-        }
-)
+@Table(name = "MEETING_FEEDBACK")
 @Getter
 @Setter
 @NoArgsConstructor

@@ -1,4 +1,4 @@
-package com.shiviishiv7.matchmaking.controller;
+package com.shiviishiv7.matchmaking.controller.profile;
 
 
 

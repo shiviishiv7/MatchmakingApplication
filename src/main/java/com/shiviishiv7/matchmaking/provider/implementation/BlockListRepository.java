@@ -16,7 +16,7 @@ public interface BlockListRepository extends JpaRepository<BlockList, Integer> {
     /** All IDs that userId has blocked OR that have blocked userId */
     @Query("SELECT b.blockedId FROM BlockList b WHERE b.blockerId = :userId " +
            "UNION SELECT b.blockerId FROM BlockList b WHERE b.blockedId = :userId")
-    Set<Integer> findAllBlockedUserIds(@Param("userId") Integer userId);
+    Set<String> findAllBlockedUserIds(@Param("userId") String userId);
 
     void deleteByBlockerIdAndBlockedId(Integer blockerId, Integer blockedId);
 }

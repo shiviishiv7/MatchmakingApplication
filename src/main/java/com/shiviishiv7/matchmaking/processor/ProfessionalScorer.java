@@ -1,11 +1,13 @@
-package com.shiviishiv7.matchmaking.provider.model;
+package com.shiviishiv7.matchmaking.processor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
-import com.shiviishiv7.matchmaking.processor.matchengine.CategoryScorer;
+import com.shiviishiv7.matchmaking.processor.matchingengine.CategoryScorer;
 
 import com.shiviishiv7.matchmaking.provider.implementation.BaseUserProfileRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.ProfessionalExtProfileRepository;
+import com.shiviishiv7.matchmaking.provider.model.profile.BaseUserProfile;
+import com.shiviishiv7.matchmaking.provider.model.profile.ProfessionalExtProfile;
 import com.shiviishiv7.matchmaking.provider.vo.MatchCandidateVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -37,19 +39,19 @@ public class ProfessionalScorer implements CategoryScorer {
     public MatchCategory supports() { return MatchCategory.MENTORSHIP; }
 
     @Override
-    public List<Integer> fetchCandidateIds(Integer userId, List<Integer> excludeIds) {
+    public List<String> fetchCandidateIds(String userId, List<String> excludeIds) {
         return professionalRepo.findAll().stream()
-            .filter(c -> !c.getUserId().equals(userId))
-            .filter(c -> excludeIds == null || !excludeIds.contains(c.getUserId()))
-            .map(ProfessionalExtProfile::getUserId)
+            .filter(c -> !c.getCognitoSub().equals(userId))
+            .filter(c -> excludeIds == null || !excludeIds.contains(c.getCognitoSub()))
+            .map(ProfessionalExtProfile::getCognitoSub)
             .collect(Collectors.toList());
     }
 
     @Override
-    public MatchCandidateVO score(Integer userId, Integer candidateUserId) {
-        ProfessionalExtProfile me        = professionalRepo.findByUserId(userId).orElseThrow();
-        ProfessionalExtProfile candidate = professionalRepo.findByUserId(candidateUserId).orElseThrow();
-        BaseUserProfile candBase         = baseProfileRepo.findByUserId(candidateUserId).orElseThrow();
+    public MatchCandidateVO score(String userId, String candidateUserId) {
+        ProfessionalExtProfile me        = professionalRepo.findByCognitoSub(userId).orElseThrow();
+        ProfessionalExtProfile candidate = professionalRepo.findByCognitoSub(candidateUserId).orElseThrow();
+        BaseUserProfile candBase         = baseProfileRepo.findByCognitoSub(candidateUserId).orElseThrow();
 
         Map<String, Integer> breakdown = new LinkedHashMap<>();
         int total = 0;
@@ -75,7 +77,7 @@ public class ProfessionalScorer implements CategoryScorer {
         total = Math.min(total, 100);
 
         MatchCandidateVO vo = new MatchCandidateVO();
-        vo.setCandidateUserId(candidateUserId);
+        vo.setCognitoSubB(candidateUserId);
         vo.setDisplayName(candBase.getDisplayName());
         vo.setProfilePhotoUrl(candBase.getProfilePhotoUrl());
         vo.setTagline(candBase.getTagline());
@@ -91,8 +93,8 @@ public class ProfessionalScorer implements CategoryScorer {
     }
 
     @Override
-    public String buildSnippet(Integer candidateUserId) {
-        ProfessionalExtProfile p = professionalRepo.findByUserId(candidateUserId).orElse(null);
+    public String buildSnippet(String candidateUserId) {
+        ProfessionalExtProfile p = professionalRepo.findByCognitoSub(candidateUserId).orElse(null);
         if (p == null) return "";
         List<String> parts = new ArrayList<>();
         if (StringUtils.isNotEmpty(p.getCurrentRole())) parts.add(p.getCurrentRole());

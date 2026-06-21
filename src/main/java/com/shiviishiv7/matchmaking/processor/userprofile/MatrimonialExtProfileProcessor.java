@@ -2,7 +2,7 @@ package com.shiviishiv7.matchmaking.processor.userprofile;
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.implementation.MatrimonialExtProfileRepository;
-import com.shiviishiv7.matchmaking.provider.model.MatrimonialExtProfile;
+import com.shiviishiv7.matchmaking.provider.model.profile.MatrimonialExtProfile;
 
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import com.shiviishiv7.matchmaking.provider.vo.MatrimonialExtProfileVO;
@@ -31,17 +31,17 @@ public class MatrimonialExtProfileProcessor implements IMatrimonialExtProfilePro
             vo.validate();
             log.info("MatrimonialExtProfileVO validation completed successfully.");
 
-            log.trace("Checking for duplicate matrimonial profile for userId: {}", vo.getUserId());
-            if (matrimonialExtProfileRepository.existsByUserId(vo.getUserId())) {
-                log.error("ALERT_FOR_ERROR: matrimonial profile already exists for userId: {}", vo.getUserId());
+            log.trace("Checking for duplicate matrimonial profile for userId: {}", vo.getCognitoSubB());
+            if (matrimonialExtProfileRepository.existsByCognitoSubB(vo.getCognitoSubB())) {
+                log.error("ALERT_FOR_ERROR: matrimonial profile already exists for userId: {}", vo.getCognitoSubB());
                 throw new MatchmakingException("matrimonial profile already exists for this user", DUPLICATE_RECORD);
             }
 
-            log.trace("Saving matrimonial profile for userId: {}", vo.getUserId());
+            log.trace("Saving matrimonial profile for userId: {}", vo.getCognitoSubB());
             MatrimonialExtProfile profile = new MatrimonialExtProfile();
             profile.fromVO(vo);
             profile = matrimonialExtProfileRepository.save(profile);
-            log.info("matrimonial profile saved successfully for userId: {}", profile.getUserId());
+            log.info("matrimonial profile saved successfully for userId: {}", profile.getCognitoSubB());
 
             return new BaseVO(SUCCESS, "matrimonial profile created", "matrimonial profile created", profile.toVO());
         } catch (MatchmakingException ex) {
@@ -141,7 +141,7 @@ public class MatrimonialExtProfileProcessor implements IMatrimonialExtProfilePro
     public BaseVO getByUserId(String userId) throws MatchmakingException {
         try {
             log.info("Fetching matrimonial profile for userId: {}", userId);
-            Optional<MatrimonialExtProfile> fromDB = matrimonialExtProfileRepository.findByUserId(Integer.valueOf(userId));
+            Optional<MatrimonialExtProfile> fromDB = matrimonialExtProfileRepository.findByCognitoSubB((userId));
             if (fromDB.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: matrimonial profile not found for userId: {}", userId);
                 throw new MatchmakingException("matrimonial profile does not exist for this user", DATA_NOT_FOUND);

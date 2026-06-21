@@ -13,13 +13,13 @@ import lombok.ToString;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MatchDiscoveryRequestVO {
 
-    private Integer userId;
+    private String cognitoSubA;
     private MatchCategory matchCategory;
     private int page;           // 0-indexed
     private int pageSize;       // default 20
 
     public boolean validate() {
-        if (userId == null) throw new IllegalArgumentException("userId is required.");
+        if (cognitoSubA == null) throw new IllegalArgumentException("userId is required.");
         if (matchCategory == null) throw new IllegalArgumentException("matchCategory is required.");
         if (pageSize <= 0 || pageSize > 100) pageSize = 20;
         if (page < 0) page = 0;

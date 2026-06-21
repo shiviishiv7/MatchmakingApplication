@@ -1,6 +1,7 @@
-package com.shiviishiv7.matchmaking.provider.model;
+package com.shiviishiv7.matchmaking.provider.model.profile;
 
 import com.shiviishiv7.matchmaking.common.enums.Gender;
+import com.shiviishiv7.matchmaking.provider.model.BaseEntity;
 import com.shiviishiv7.matchmaking.provider.vo.BaseUserProfileVO;
 import jakarta.persistence.*;
 import lombok.*;

@@ -1,12 +1,15 @@
-package com.shiviishiv7.matchmaking.provider.model;
+package com.shiviishiv7.matchmaking.processor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
-import com.shiviishiv7.matchmaking.processor.matchengine.CategoryScorer;
+import com.shiviishiv7.matchmaking.processor.matchingengine.CategoryScorer;
 
 import com.shiviishiv7.matchmaking.provider.implementation.BaseUserProfileRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.CategoryProfileRegistryRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.MatrimonialExtProfileRepository;
+import com.shiviishiv7.matchmaking.provider.model.PartnerPreference;
+import com.shiviishiv7.matchmaking.provider.model.profile.BaseUserProfile;
+import com.shiviishiv7.matchmaking.provider.model.profile.MatrimonialExtProfile;
 import com.shiviishiv7.matchmaking.provider.vo.MatchCandidateVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -63,11 +66,11 @@ public class MatrimonialScorer implements CategoryScorer {
     }
 
     @Override
-    public List<Integer> fetchCandidateIds(Integer userId, List<Integer> excludeIds) {
+    public List<String> fetchCandidateIds(String userId, List<String> excludeIds) {
         log.trace("Fetching matrimonial candidates for userId: {}", userId);
 
-        MatrimonialExtProfile me = matrimonialRepo.findByUserId(userId).orElse(null);
-        BaseUserProfile myBase  = baseProfileRepo.findByUserId(userId).orElse(null);
+        MatrimonialExtProfile me = matrimonialRepo.findByCognitoSubB(userId).orElse(null);
+        BaseUserProfile myBase  = baseProfileRepo.findByCognitoSub(userId).orElse(null);
         if (me == null || myBase == null) {
             log.warn("Matrimonial or base profile missing for userId: {}. Returning empty.", userId);
             return Collections.emptyList();
@@ -81,13 +84,13 @@ public class MatrimonialScorer implements CategoryScorer {
 
         // Fetch all active matrimonial users except excluded
         List<MatrimonialExtProfile> pool = matrimonialRepo.findAll().stream()
-            .filter(c -> !c.getUserId().equals(userId))
-            .filter(c -> excludeIds == null || !excludeIds.contains(c.getUserId()))
+            .filter(c -> !c.getCognitoSubB().equals(userId))
+            .filter(c -> excludeIds == null || !excludeIds.contains(c.getCognitoSubB()))
             .collect(Collectors.toList());
 
-        List<Integer> result = new ArrayList<>();
+        List<String> result = new ArrayList<>();
         for (MatrimonialExtProfile candidate : pool) {
-            BaseUserProfile candBase = baseProfileRepo.findByUserId(candidate.getUserId()).orElse(null);
+            BaseUserProfile candBase = baseProfileRepo.findByCognitoSub(candidate.getCognitoSubB()).orElse(null);
             if (candBase == null) continue;
 
             // Hard filter 1: gender preference
@@ -111,7 +114,7 @@ public class MatrimonialScorer implements CategoryScorer {
                 if (!pref.getReligionPref().contains(candidate.getReligion())) continue;
             }
 
-            result.add(candidate.getUserId());
+            result.add(candidate.getCognitoSubB());
         }
 
         log.trace("Matrimonial hard filter: {} candidates remain for userId: {}", result.size(), userId);
@@ -119,10 +122,10 @@ public class MatrimonialScorer implements CategoryScorer {
     }
 
     @Override
-    public MatchCandidateVO score(Integer userId, Integer candidateUserId) {
-        MatrimonialExtProfile me        = matrimonialRepo.findByUserId(userId).orElseThrow();
-        MatrimonialExtProfile candidate = matrimonialRepo.findByUserId(candidateUserId).orElseThrow();
-        BaseUserProfile candBase        = baseProfileRepo.findByUserId(candidateUserId).orElseThrow();
+    public MatchCandidateVO score(String userId, String candidateUserId) {
+        MatrimonialExtProfile me        = matrimonialRepo.findByCognitoSubB(userId).orElseThrow();
+        MatrimonialExtProfile candidate = matrimonialRepo.findByCognitoSubB(candidateUserId).orElseThrow();
+        BaseUserProfile candBase        = baseProfileRepo.findByCognitoSub(candidateUserId).orElseThrow();
 
         PartnerPreference myPref   = me.getPartnerPreference();
         PartnerPreference candPref = candidate.getPartnerPreference();
@@ -171,7 +174,7 @@ public class MatrimonialScorer implements CategoryScorer {
         total += manglikScore;
 
         // Mutual preference boost (check if candidate's pref also matches me)
-        BaseUserProfile myBase = baseProfileRepo.findByUserId(userId).orElse(null);
+        BaseUserProfile myBase = baseProfileRepo.findByCognitoSub(userId).orElse(null);
         if (candPref != null && myBase != null && isMutualPreferenceMatch(candPref, me, myBase)) {
             breakdown.put("mutualBoost", SCORE_MUTUAL_BOOST);
             total += SCORE_MUTUAL_BOOST;
@@ -180,7 +183,7 @@ public class MatrimonialScorer implements CategoryScorer {
         total = Math.min(total, 100);
 
         MatchCandidateVO vo = new MatchCandidateVO();
-        vo.setCandidateUserId(candidateUserId);
+        vo.setCognitoSubB(candidateUserId);
         vo.setDisplayName(candBase.getDisplayName());
         vo.setProfilePhotoUrl(candBase.getProfilePhotoUrl());
         vo.setTagline(candBase.getTagline());
@@ -204,8 +207,8 @@ public class MatrimonialScorer implements CategoryScorer {
     }
 
     @Override
-    public String buildSnippet(Integer candidateUserId) {
-        MatrimonialExtProfile p = matrimonialRepo.findByUserId(candidateUserId).orElse(null);
+    public String buildSnippet(String candidateUserId) {
+        MatrimonialExtProfile p = matrimonialRepo.findByCognitoSubB(candidateUserId).orElse(null);
         if (p == null) return "";
         List<String> parts = new ArrayList<>();
         if (StringUtils.isNotEmpty(p.getDietaryHabits()))    parts.add(p.getDietaryHabits());

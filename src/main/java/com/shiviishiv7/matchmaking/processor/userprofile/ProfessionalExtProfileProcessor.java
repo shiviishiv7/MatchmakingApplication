@@ -2,7 +2,7 @@ package com.shiviishiv7.matchmaking.processor.userprofile;
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.implementation.ProfessionalExtProfileRepository;
-import com.shiviishiv7.matchmaking.provider.model.ProfessionalExtProfile;
+import com.shiviishiv7.matchmaking.provider.model.profile.ProfessionalExtProfile;
 
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import com.shiviishiv7.matchmaking.provider.vo.ProfessionalExtProfileVO;
@@ -31,17 +31,17 @@ public class ProfessionalExtProfileProcessor implements IProfessionalExtProfileP
             vo.validate();
             log.info("ProfessionalExtProfileVO validation completed successfully.");
 
-            log.trace("Checking for duplicate professional profile for userId: {}", vo.getUserId());
-            if (professionalExtProfileRepository.existsByUserId(vo.getUserId())) {
-                log.error("ALERT_FOR_ERROR: professional profile already exists for userId: {}", vo.getUserId());
+            log.trace("Checking for duplicate professional profile for userId: {}", vo.getCognitoSub());
+            if (professionalExtProfileRepository.existsByCognitoSub(vo.getCognitoSub())) {
+                log.error("ALERT_FOR_ERROR: professional profile already exists for userId: {}", vo.getCognitoSub());
                 throw new MatchmakingException("professional profile already exists for this user", DUPLICATE_RECORD);
             }
 
-            log.trace("Saving professional profile for userId: {}", vo.getUserId());
+            log.trace("Saving professional profile for userId: {}", vo.getCognitoSub());
             ProfessionalExtProfile profile = new ProfessionalExtProfile();
             profile.fromVO(vo);
             profile = professionalExtProfileRepository.save(profile);
-            log.info("professional profile saved successfully for userId: {}", profile.getUserId());
+            log.info("professional profile saved successfully for userId: {}", profile.getCognitoSub());
 
             return new BaseVO(SUCCESS, "professional profile created", "professional profile created", profile.toVO());
         } catch (MatchmakingException ex) {
@@ -124,7 +124,7 @@ public class ProfessionalExtProfileProcessor implements IProfessionalExtProfileP
     public BaseVO getByUserId(String userId) throws MatchmakingException {
         try {
             log.info("Fetching professional profile for userId: {}", userId);
-            Optional<ProfessionalExtProfile> fromDB = professionalExtProfileRepository.findByUserId(Integer.valueOf(userId));
+            Optional<ProfessionalExtProfile> fromDB = professionalExtProfileRepository.findByCognitoSub((userId));
             if (fromDB.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: professional profile not found for userId: {}", userId);
                 throw new MatchmakingException("professional profile does not exist for this user", DATA_NOT_FOUND);

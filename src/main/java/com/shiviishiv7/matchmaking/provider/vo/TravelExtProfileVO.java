@@ -13,7 +13,7 @@ import lombok.ToString;
 public class TravelExtProfileVO {
 
     private Integer id;
-    private Integer userId;
+    private String cognitoSub;
     private String travelStyle;
     private String preferredDestinations;
     private String bucketListPlaces;
@@ -29,7 +29,7 @@ public class TravelExtProfileVO {
     private String pastTripsHighlights;
 
     public boolean validate() {
-        if (userId == null) throw new IllegalArgumentException("userId is required.");
+        if (cognitoSub == null) throw new IllegalArgumentException("userId is required.");
         return true;
     }
 }
