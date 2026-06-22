@@ -124,24 +124,3 @@ CREATE TABLE IF NOT EXISTS meeting_feedback (
     CONSTRAINT fk_feedback_user    FOREIGN KEY (user_id)    REFERENCES users (id)
 );
 
-INSERT INTO users (
-    id,
-    cognito_sub,
-    email,
-    first_name,
-    last_name,
-    is_active,
-    status,
-    created_at,
-    updated_at
-) VALUES (
-             gen_random_uuid(),
-             '51638dda-a0b1-70e4-2b7c-9d30746999f7',
-             'shiviishiv7@gmail.com',
-             'Shiv',
-             'User',
-             true,
-             'ACTIVE',
-             NOW(),
-             NOW()
-         );
