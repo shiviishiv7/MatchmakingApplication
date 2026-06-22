@@ -10,7 +10,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop           # changed from update → validate so Flyway owns the schema
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -18,9 +18,7 @@ spring:
         format_sql: true
 
   flyway:
-    enabled: true                  # was false — re-enabled so V2 migration runs
-    locations: classpath:db/migration
-    baseline-on-migrate: true      # allows Flyway to adopt the existing V1 schema
+    enabled: false
 
   data:
     redis:

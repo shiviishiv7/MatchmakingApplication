@@ -37,8 +37,8 @@ public interface MeetingRepository extends JpaRepository<Meeting, Integer> {
         WHERE m.status = 'SCHEDULED'
         AND m.scheduledAt > :now
         AND m.matchId IN (
-            SELECT CAST(ma.id AS string) FROM Match ma
-            WHERE ma.cognitoSubA = :sub OR ma.cognitoSubB = :sub
+            SELECT CAST(mr.id AS string) FROM MatchResult mr
+            WHERE mr.cognitoSubA = :sub OR mr.cognitoSubB = :sub
         )
     """)
     List<Meeting> findUpcomingForUser(String sub, LocalDateTime now);
