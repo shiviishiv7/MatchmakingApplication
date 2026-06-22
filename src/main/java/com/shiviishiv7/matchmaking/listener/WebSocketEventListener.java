@@ -1,6 +1,5 @@
 package com.shiviishiv7.matchmaking.listener;
 
-import com.shiviishiv7.matchmaking.processor.instant.IInstantMatchProcessor;
 import com.shiviishiv7.matchmaking.service.presence.UserPresenceService;
 import com.shiviishiv7.matchmaking.service.waiting.WaitingQueueService;
 import lombok.extern.slf4j.Slf4j;

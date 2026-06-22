@@ -3,10 +3,8 @@ package com.shiviishiv7.matchmaking.processor.match;
 import com.shiviishiv7.matchmaking.common.enums.MatchStatus;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.implementation.MatchResultRepository;
-import com.shiviishiv7.matchmaking.provider.implementation.UserRepository;
 
 import com.shiviishiv7.matchmaking.provider.model.MatchResult;
-import com.shiviishiv7.matchmaking.provider.model.User;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import com.shiviishiv7.matchmaking.provider.vo.MatchResultVO;
 import jakarta.transaction.Transactional;

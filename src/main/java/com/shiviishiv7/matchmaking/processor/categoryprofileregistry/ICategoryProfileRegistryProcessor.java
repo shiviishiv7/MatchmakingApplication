@@ -1,9 +1,12 @@
 package com.shiviishiv7.matchmaking.processor.categoryprofileregistry;
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
+import com.shiviishiv7.matchmaking.provider.model.CategoryProfileRegistry;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import com.shiviishiv7.matchmaking.provider.vo.CategoryProfileRegistryVO;
 import com.shiviishiv7.matchmaking.provider.vo.MatchFilterVO;
+
+import java.util.Optional;
 
 public interface ICategoryProfileRegistryProcessor {
 
@@ -20,4 +23,6 @@ public interface ICategoryProfileRegistryProcessor {
     BaseVO deactivate(String userId, String matchCategory) throws MatchmakingException;
 
     BaseVO delete(String id) throws MatchmakingException;
+
+    Optional<CategoryProfileRegistry> findByCognitoSub(String cognitoSub);
 }

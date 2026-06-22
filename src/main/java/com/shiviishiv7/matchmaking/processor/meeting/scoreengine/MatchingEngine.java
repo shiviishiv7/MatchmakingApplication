@@ -1,4 +1,4 @@
-package com.shiviishiv7.matchmaking.processor.scoreengine;
+package com.shiviishiv7.matchmaking.processor.meeting.scoreengine;
 
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
 import com.shiviishiv7.matchmaking.common.enums.MatchStatus;

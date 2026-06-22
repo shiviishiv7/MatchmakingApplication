@@ -4,7 +4,6 @@ import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.implementation.BaseUserProfileRepository;
 import com.shiviishiv7.matchmaking.provider.model.profile.BaseUserProfile;
 
-import com.shiviishiv7.matchmaking.provider.model.User;
 import com.shiviishiv7.matchmaking.provider.vo.BaseUserProfileVO;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import jakarta.transaction.Transactional;
@@ -204,11 +203,11 @@ public class BaseUserProfileProcessor implements IBaseUserProfileProcessor {
         }
     }
 
-    private boolean isProfileComplete(User user) {
-        return user.getFirstName() != null && !user.getFirstName().isBlank()
-                && user.getLastName() != null && !user.getLastName().isBlank()
-                && user.getGender() != null
-                && user.getDateOfBirth() != null;
-//                && user.getInterests() != null && !user.getInterests().isEmpty();
-    }
+//    private boolean isProfileComplete(User user) {
+//        return user.getFirstName() != null && !user.getFirstName().isBlank()
+//                && user.getLastName() != null && !user.getLastName().isBlank()
+//                && user.getGender() != null
+//                && user.getDateOfBirth() != null;
+////                && user.getInterests() != null && !user.getInterests().isEmpty();
+//    }
 }

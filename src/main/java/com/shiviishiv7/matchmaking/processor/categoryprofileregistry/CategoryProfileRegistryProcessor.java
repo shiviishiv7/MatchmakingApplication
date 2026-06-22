@@ -168,4 +168,15 @@ public class CategoryProfileRegistryProcessor implements ICategoryProfileRegistr
             throw new MatchmakingException("Error deleting registry entry: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
+
+    @Override
+    public Optional<CategoryProfileRegistry> findByCognitoSub(String cognitoSub) {
+        try {
+            Optional<CategoryProfileRegistry> byCognitoSub = registryRepository.findByCognitoSub(cognitoSub);
+            return byCognitoSub;
+        } catch (Exception ex) {
+            log.error("ALERT_FOR_ERROR: Error fetching registry entries. Error: {}", ex.getMessage(), ex);
+            throw new MatchmakingException("Error fetching registry entries: " + ex.getMessage(), UNKNOWN_EXCEPTION);
+        }
+    }
 }

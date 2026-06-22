@@ -2,8 +2,6 @@ package com.shiviishiv7.matchmaking.provider.vo;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.shiviishiv7.matchmaking.provider.model.Address;
-import com.shiviishiv7.matchmaking.provider.model.User;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

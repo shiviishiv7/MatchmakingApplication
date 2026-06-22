@@ -1,8 +1,8 @@
 package com.shiviishiv7.matchmaking.controller.ws;
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
-import com.shiviishiv7.matchmaking.provider.implementation.UserRepository;
-import com.shiviishiv7.matchmaking.provider.model.User;
+import com.shiviishiv7.matchmaking.provider.implementation.BaseUserProfileRepository;
+import com.shiviishiv7.matchmaking.provider.model.profile.BaseUserProfile;
 import com.shiviishiv7.matchmaking.provider.vo.ws.PoolUserVO;
 import com.shiviishiv7.matchmaking.provider.vo.ws.WebRTCSignalVO;
 import com.shiviishiv7.matchmaking.service.pool.UserPoolService;
@@ -40,7 +40,7 @@ public class MatchmakingWebSocketController {
     private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    private UserRepository userRepository;
+    private BaseUserProfileRepository baseUserProfileRepository;
 
     @Autowired
     private UserPoolService userPoolService;
@@ -57,11 +57,11 @@ public class MatchmakingWebSocketController {
         log.info("[JOIN] User joined pool: {}", sub);
 
         // Resolve user from DB and add to pool
-        User user = resolveUser(sub);
+        BaseUserProfile user = resolveUser(sub);
         userPoolService.addUser(new PoolUserVO(
                 sub,
-                user.getFirstName(),
-                user.getLastName()
+                user.getName(),
+                user.getName()
 //                user.getIndustry()
         ));
 
@@ -189,8 +189,8 @@ public class MatchmakingWebSocketController {
         return headerAccessor.getUser().getName();
     }
 
-    private User resolveUser(String cognitoSub) throws MatchmakingException {
-        Optional<User> user = userRepository.findByCognitoSub(cognitoSub);
+    private BaseUserProfile resolveUser(String cognitoSub) throws MatchmakingException {
+        Optional<BaseUserProfile> user = baseUserProfileRepository.findByCognitoSub(cognitoSub);
         if (user.isEmpty()) {
             throw new MatchmakingException("User not found for sub: " + cognitoSub, 401);
         }

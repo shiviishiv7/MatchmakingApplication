@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface CategoryProfileRegistryRepository extends JpaRepository<CategoryProfileRegistry, Integer> {
 
-    List<CategoryProfileRegistry> findByCognitoSub(String cognitoSub);
+    Optional<CategoryProfileRegistry> findByCognitoSub(String cognitoSub);
 
     List<CategoryProfileRegistry> findByCognitoSubAndIsActive(String cognitoSub, Boolean isActive);
 
