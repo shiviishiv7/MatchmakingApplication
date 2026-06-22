@@ -29,16 +29,16 @@ public class MeetingController {
 
     @GetMapping("/match/{matchId}")
     public ResponseEntity<BaseVO> getByMatch(@PathVariable String matchId) throws MatchmakingException {
-        return ResponseEntity.ok(meetingProcessor.getByMatchId(matchId));
+        return ResponseEntity.ok(meetingProcessor.getAllForMatch(matchId));
     }
 
     @GetMapping("/user/{cognitoSub}/upcoming")
     public ResponseEntity<BaseVO> getUpcoming(@PathVariable String cognitoSub) throws MatchmakingException {
-        return ResponseEntity.ok(meetingProcessor.getUpcomingForUser(cognitoSub));
+        return ResponseEntity.ok(meetingProcessor.getUpcomingMeetings(cognitoSub));
     }
 
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<BaseVO> cancel(@PathVariable String id) throws MatchmakingException {
-        return ResponseEntity.ok(meetingProcessor.cancel(id));
+        return ResponseEntity.ok(meetingProcessor.markCompleted(id));
     }
 }

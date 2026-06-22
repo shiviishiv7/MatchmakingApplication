@@ -30,10 +30,10 @@ public class MeetingFeedbackController {
     @ResponseBody
     public ResponseEntity<BaseVO> add(@RequestBody MeetingFeedbackVO feedbackVO) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("Request received to submit feedback for meeting ID: {} by user ID: {} sub: {}", feedbackVO.getMeetingId(), feedbackVO.getUserId(), sub);
+        log.info("Request received to submit feedback for meeting ID: {} by user ID: {} sub: {}", feedbackVO.getMeetingId(), feedbackVO.getCognitoSub(), sub);
 
         BaseVO response = meetingFeedbackProcessor.add(feedbackVO);
-        log.info("Successfully submitted feedback for meeting ID: {} by user ID: {} sub: {}", feedbackVO.getMeetingId(), feedbackVO.getUserId(), sub);
+        log.info("Successfully submitted feedback for meeting ID: {} by user ID: {} sub: {}", feedbackVO.getMeetingId(), feedbackVO.getCognitoSub(), sub);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

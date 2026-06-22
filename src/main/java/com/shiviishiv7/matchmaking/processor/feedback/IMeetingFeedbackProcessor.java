@@ -12,4 +12,12 @@ public interface IMeetingFeedbackProcessor {
     BaseVO get(String id) throws MatchmakingException;
 
     BaseVO getAllForMeeting(String meetingId) throws MatchmakingException;
+
+    default BaseVO submit(MeetingFeedbackVO vo) throws MatchmakingException {
+        return add(vo);
+    }
+
+    default BaseVO getByMeeting(String meetingId) throws MatchmakingException {
+        return getAllForMeeting(meetingId);
+    }
 }
