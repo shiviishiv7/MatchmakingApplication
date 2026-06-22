@@ -10,7 +10,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate           # changed from update → validate so Flyway owns the schema
+      ddl-auto: create-drop           # changed from update → validate so Flyway owns the schema
     show-sql: true
     properties:
       hibernate:
