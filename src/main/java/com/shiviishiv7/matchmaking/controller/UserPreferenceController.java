@@ -27,7 +27,8 @@ public class UserPreferenceController {
     @PostMapping(value = "/save", produces = "application/json", consumes = "application/json")
     public ResponseEntity<BaseVO> save(@RequestBody MatchFilterVO filterVO) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("Save match filter request for cognitoSub: {} by sub: {}", filterVO.getCognitoSub(), sub);
+        filterVO.setCognitoSub(sub);
+        log.info("Save match filter request for cognitoSub: {}", sub);
         BaseVO response = userPreferenceProcessor.save(filterVO);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

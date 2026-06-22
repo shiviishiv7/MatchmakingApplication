@@ -51,6 +51,8 @@ public class UserPreferenceProcessor implements IUserPreferenceProcessor {
             return new BaseVO(SUCCESS, "Match filter saved", "Match filter saved");
         } catch (MatchmakingException ex) {
             throw ex;
+        } catch (IllegalArgumentException ex) {
+            throw new MatchmakingException(ex.getMessage(), VALIDATION_ERROR);
         } catch (Exception ex) {
             log.error("ALERT_FOR_ERROR: Error saving match filter. Error: {}", ex.getMessage(), ex);
             throw new MatchmakingException("Error saving match filter: " + ex.getMessage(), UNKNOWN_EXCEPTION);
