@@ -24,14 +24,14 @@ public class BaseUserProfile extends BaseEntity {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "displayName", nullable = false, length = 100)
-    private String displayName;
+    @Column(name = "name", nullable = false, length = 100)
+    private String name;
 
-    @Column(name = "dateOfBirth", nullable = false)
+    @Column(name = "dateOfBirth")
     private LocalDate dateOfBirth;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender", nullable = false, length = 20)
+    @Column(name = "gender", length = 20)
     private Gender gender;
 
     @Column(name = "currentCity", length = 100)
@@ -80,7 +80,7 @@ public class BaseUserProfile extends BaseEntity {
         if (vo == null) return null;
         this.setId(vo.getId());
         this.setCognitoSub(vo.getCognitoSub());
-        this.setDisplayName(vo.getName());
+        this.setName(vo.getName());
         this.setDateOfBirth(vo.getDateOfBirth());
         this.setGender(vo.getGender());
         this.setCurrentCity(vo.getCurrentCity());
@@ -103,7 +103,7 @@ public class BaseUserProfile extends BaseEntity {
         BaseUserProfileVO vo = new BaseUserProfileVO();
         vo.setId(this.getId());
         vo.setCognitoSub(this.getCognitoSub());
-        vo.setName(this.getDisplayName());
+        vo.setName(this.getName());
         vo.setDateOfBirth(this.getDateOfBirth());
         vo.setGender(this.getGender());
         vo.setCurrentCity(this.getCurrentCity());

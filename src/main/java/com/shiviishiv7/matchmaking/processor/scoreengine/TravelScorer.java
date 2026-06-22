@@ -133,7 +133,7 @@ public class TravelScorer implements CategoryScorer {
                                           int score, MatchCategory category) {
         MatchCandidateVO vo = new MatchCandidateVO();
         vo.setCognitoSubB(candidateUserId);
-        vo.setDisplayName(base.getDisplayName());
+        vo.setName(base.getName());
         vo.setProfilePhotoUrl(base.getProfilePhotoUrl());
         vo.setTagline(base.getTagline());
         vo.setCurrentCity(base.getCurrentCity());

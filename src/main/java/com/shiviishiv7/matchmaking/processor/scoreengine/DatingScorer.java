@@ -155,7 +155,7 @@ public class DatingScorer implements CategoryScorer {
 
         MatchCandidateVO vo = new MatchCandidateVO();
         vo.setCognitoSubB(candidateUserId);
-        vo.setDisplayName(candBase.getDisplayName());
+        vo.setName(candBase.getName());
         vo.setProfilePhotoUrl(candBase.getProfilePhotoUrl());
         vo.setTagline(candBase.getTagline());
         vo.setCurrentCity(candBase.getCurrentCity());

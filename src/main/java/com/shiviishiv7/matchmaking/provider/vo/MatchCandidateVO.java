@@ -16,7 +16,7 @@ import lombok.ToString;
 public class MatchCandidateVO {
 
     private String cognitoSubB;
-    private String displayName;
+    private String name;
     private String profilePhotoUrl;
     private String tagline;
     private String currentCity;
