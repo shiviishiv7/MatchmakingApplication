@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "extFitnessProfiles")
+@Table(name = "EXT_FITNESS_PROFILES")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class FitnessExtProfile extends BaseEntity {
 

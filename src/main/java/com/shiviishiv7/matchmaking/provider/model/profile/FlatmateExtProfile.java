@@ -8,7 +8,7 @@ import lombok.*;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "extFlatmateProfiles")
+@Table(name = "EXT_FLATMATE_PROFILES")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class FlatmateExtProfile extends BaseEntity {
 

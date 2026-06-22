@@ -8,7 +8,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "categoryProfileRegistry")
+@Table(name = "CATEGORY_PROFILE_REGISTRY")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class CategoryProfileRegistry extends BaseEntity {
 

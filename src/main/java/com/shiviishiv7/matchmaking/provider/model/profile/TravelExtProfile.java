@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "extTravelProfiles")
+@Table(name = "EXT_TRAVEL_PROFILES")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class TravelExtProfile extends BaseEntity {
 

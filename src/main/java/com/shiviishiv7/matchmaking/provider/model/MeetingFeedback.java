@@ -22,7 +22,7 @@ import lombok.*;
  *   Either        + NOT_INTERESTED → ENDED
  */
 @Entity
-@Table(name = "meetingFeedback")
+@Table(name = "MEETING_FEEDBACK")
 @Getter
 @Setter
 @NoArgsConstructor

@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalTime;
 
 @Entity
-@Table(name = "extMatrimonialProfiles")
+@Table(name = "EXT_MATRIMONIAL_PROFILES")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class MatrimonialExtProfile extends BaseEntity {
 

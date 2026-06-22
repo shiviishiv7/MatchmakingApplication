@@ -6,7 +6,7 @@ import lombok.*;
 
 
 @Entity
-@Table(name = "userAddress")
+@Table(name = "USER_ADDRESS")
 @Getter
 @Setter
 @NoArgsConstructor

@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "extProfessionalProfiles")
+@Table(name = "EXT_PROFESSIONAL_PROFILES")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class ProfessionalExtProfile extends BaseEntity {
 

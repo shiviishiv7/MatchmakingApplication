@@ -7,7 +7,7 @@ import lombok.*;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "partnerPreferences")
+@Table(name = "PARTNER_PREFERENCES")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class PartnerPreference extends BaseEntity {
 

@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "extDatingProfiles")
+@Table(name = "EXT_DATING_PROFILES")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class DatingExtProfile extends BaseEntity {
 

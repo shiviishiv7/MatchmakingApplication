@@ -14,7 +14,7 @@ import java.util.List;
  * matches the company's domain before accessing the platform.
  */
 @Entity
-@Table(name = "companies", indexes = {
+@Table(name = "COMPANIES", indexes = {
         @Index(name = "idx_company_domain", columnList = "domain", unique = true),
         @Index(name = "idx_company_name",   columnList = "name")
 })
