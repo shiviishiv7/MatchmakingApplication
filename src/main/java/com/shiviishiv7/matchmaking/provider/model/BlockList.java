@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * unless B also blocks A.
  */
 @Entity
-@Table(name = "BLOCK_LIST",
+@Table(name = "blockList",
     uniqueConstraints = @UniqueConstraint(columnNames = {"blockerId", "blockedId"}))
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class BlockList extends BaseEntity {

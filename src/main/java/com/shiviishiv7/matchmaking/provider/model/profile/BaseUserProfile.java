@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "BASE_USER_PROFILES")
+@Table(name = "baseUserProfiles")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class BaseUserProfile extends BaseEntity {
 

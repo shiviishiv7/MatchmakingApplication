@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
  * Updated when the user acts on it (liked, skipped, connected).
  */
 @Entity
-@Table(name = "MATCH_RESULT")
+@Table(name = "matchResult")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class MatchResult extends BaseEntity {
 

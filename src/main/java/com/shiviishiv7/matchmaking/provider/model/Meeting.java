@@ -18,7 +18,7 @@ import java.util.List;
  * each with its own scheduling and feedback entries.
  */
 @Entity
-@Table(name = "MEETING")
+@Table(name = "meeting")
 @Getter
 @Setter
 @NoArgsConstructor

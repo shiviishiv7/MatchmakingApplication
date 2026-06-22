@@ -15,7 +15,7 @@ import java.util.List;
  * The matching algorithm reads these when scoring candidates.
  */
 @Entity
-@Table(name = "user_preferences")
+@Table(name = "userPreferences")
 @Getter
 @Setter
 @NoArgsConstructor
