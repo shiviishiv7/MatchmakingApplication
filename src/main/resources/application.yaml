@@ -18,9 +18,6 @@ spring:
         format_sql: true
         physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
 
-  flyway:
-    enabled: false
-
   data:
     redis:
       host: ${REDIS_HOST:localhost}
