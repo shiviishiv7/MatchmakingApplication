@@ -16,7 +16,7 @@ public class BaseUserProfileVO {
 
     private Integer id;
     private String cognitoSub;
-    private String displayName;
+    private String name;
     private LocalDate dateOfBirth;
     private Gender gender;
     private String currentCity;
@@ -35,7 +35,7 @@ public class BaseUserProfileVO {
 
     public boolean validate() {
         if (cognitoSub == null) throw new IllegalArgumentException("userId is required.");
-        if (displayName == null || displayName.trim().isEmpty()) throw new IllegalArgumentException("displayName is required.");
+        if (name == null || name.trim().isEmpty()) throw new IllegalArgumentException("displayName is required.");
         if (dateOfBirth == null) throw new IllegalArgumentException("dateOfBirth is required.");
         if (gender == null) throw new IllegalArgumentException("gender is required.");
         return true;

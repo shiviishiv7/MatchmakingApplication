@@ -72,7 +72,7 @@ public class BaseUserProfileProcessor implements IBaseUserProfileProcessor {
             BaseUserProfile profile = fromDB.get();
             log.trace("Base profile found for ID: {}. Applying updates.", vo.getId());
 
-            profile.setDisplayName(vo.getDisplayName());
+            profile.setDisplayName(vo.getName());
             profile.setDateOfBirth(vo.getDateOfBirth());
             profile.setGender(vo.getGender());
             profile.setCurrentCity(vo.getCurrentCity());

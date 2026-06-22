@@ -80,7 +80,7 @@ public class BaseUserProfile extends BaseEntity {
         if (vo == null) return null;
         this.setId(vo.getId());
         this.setCognitoSub(vo.getCognitoSub());
-        this.setDisplayName(vo.getDisplayName());
+        this.setDisplayName(vo.getName());
         this.setDateOfBirth(vo.getDateOfBirth());
         this.setGender(vo.getGender());
         this.setCurrentCity(vo.getCurrentCity());
@@ -103,7 +103,7 @@ public class BaseUserProfile extends BaseEntity {
         BaseUserProfileVO vo = new BaseUserProfileVO();
         vo.setId(this.getId());
         vo.setCognitoSub(this.getCognitoSub());
-        vo.setDisplayName(this.getDisplayName());
+        vo.setName(this.getDisplayName());
         vo.setDateOfBirth(this.getDateOfBirth());
         vo.setGender(this.getGender());
         vo.setCurrentCity(this.getCurrentCity());
