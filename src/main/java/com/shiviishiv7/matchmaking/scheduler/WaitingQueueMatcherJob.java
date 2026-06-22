@@ -33,6 +33,7 @@ public class WaitingQueueMatcherJob {
     @Scheduled(fixedDelay = 30_000)
     public void retryWaitingUsers() {
         try {
+            log.debug("WaitingQueueMatcherJob tick");
             Set<String> waitingUserIds = waitingQueueService.getAllWaiting();
             if (waitingUserIds.isEmpty()) return;
 
@@ -51,8 +52,7 @@ public class WaitingQueueMatcherJob {
                 }
             }
         } catch (Exception ex) {
-            // Redis not available — skip silently, will retry on next tick
-            log.debug("WaitingQueueMatcherJob skipped — Redis unavailable: {}", ex.getMessage());
+            log.warn("WaitingQueueMatcherJob tick failed: {}", ex.getMessage());
         }
     }
 }
