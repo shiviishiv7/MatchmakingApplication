@@ -55,18 +55,18 @@ public class GamingScorer implements CategoryScorer {
     public List<String> fetchCandidateIds(String userId, List<String> excludeIds) {
         log.trace("Fetching gaming candidates for userId: {}", userId);
 
-        GamingExtProfile me = gamingRepo.findByCognitoSubB(userId).orElse(null);
+        GamingExtProfile me = gamingRepo.findByCognitoSub(userId).orElse(null);
         if (me == null) {
             log.warn("Gaming profile missing for userId: {}. Returning empty.", userId);
             return Collections.emptyList();
         }
 
         List<String> result = gamingRepo.findAll().stream()
-                .filter(c -> !c.getCognitoSubB().equals(userId))
-                .filter(c -> excludeIds == null || !excludeIds.contains(c.getCognitoSubB()))
+                .filter(c -> !c.getCognitoSub().equals(userId))
+                .filter(c -> excludeIds == null || !excludeIds.contains(c.getCognitoSub()))
                 // Hard filter: must share at least one platform — cross-platform gaming is rare
                 .filter(c -> hasOverlap(me.getPlatforms(), c.getPlatforms()))
-                .map(GamingExtProfile::getCognitoSubB)
+                .map(GamingExtProfile::getCognitoSub)
                 .collect(Collectors.toList());
 
         log.trace("Gaming hard filter: {} candidates remain for userId: {}", result.size(), userId);
@@ -75,8 +75,8 @@ public class GamingScorer implements CategoryScorer {
 
     @Override
     public MatchCandidateVO score(String userId, String candidateUserId) {
-        GamingExtProfile me        = gamingRepo.findByCognitoSubB(userId).orElseThrow();
-        GamingExtProfile candidate = gamingRepo.findByCognitoSubB(candidateUserId).orElseThrow();
+        GamingExtProfile me        = gamingRepo.findByCognitoSub(userId).orElseThrow();
+        GamingExtProfile candidate = gamingRepo.findByCognitoSub(candidateUserId).orElseThrow();
         BaseUserProfile candBase   = baseProfileRepo.findByCognitoSub(candidateUserId).orElseThrow();
 
         Map<String, Integer> breakdown = new LinkedHashMap<>();
@@ -131,7 +131,7 @@ public class GamingScorer implements CategoryScorer {
 
     @Override
     public String buildSnippet(String candidateUserId) {
-        GamingExtProfile p = gamingRepo.findByCognitoSubB(candidateUserId).orElse(null);
+        GamingExtProfile p = gamingRepo.findByCognitoSub(candidateUserId).orElse(null);
         if (p == null) return "";
         List<String> parts = new ArrayList<>();
         if (StringUtils.isNotEmpty(p.getPlatforms()))       parts.add(p.getPlatforms());

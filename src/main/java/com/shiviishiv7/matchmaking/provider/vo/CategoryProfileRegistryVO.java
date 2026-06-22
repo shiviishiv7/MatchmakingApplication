@@ -14,17 +14,24 @@ import lombok.ToString;
 public class CategoryProfileRegistryVO {
 
     private Integer id;
-    private Integer userId;
+    private String cognitoSub;
     private MatchCategory matchCategory;
-    private Integer extensionProfileId;
+
+    // Common filter fields
+    private String preferredGender;
+    private String preferredCity;
+    private String preferredState;
+    private String preferredCountry;
+    private Integer maxTimezoneOffsetHours;
+    private Boolean sameCompanyAllowed;
+
     private Integer completionPct;
     private Boolean isActive;
     private LocalDateTime createdAt;
 
     public boolean validate() {
-        if (userId == null) throw new IllegalArgumentException("userId is required.");
+        if (cognitoSub == null) throw new IllegalArgumentException("cognitoSub is required.");
         if (matchCategory == null) throw new IllegalArgumentException("matchCategory is required.");
-        if (extensionProfileId == null) throw new IllegalArgumentException("extensionProfileId is required.");
         return true;
     }
 }

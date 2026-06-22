@@ -8,6 +8,7 @@ import com.shiviishiv7.matchmaking.provider.model.Meeting;
 import com.shiviishiv7.matchmaking.provider.model.MeetingFeedback;
 import com.shiviishiv7.matchmaking.provider.model.User;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
+import com.shiviishiv7.matchmaking.provider.vo.MeetingFeedbackVO;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

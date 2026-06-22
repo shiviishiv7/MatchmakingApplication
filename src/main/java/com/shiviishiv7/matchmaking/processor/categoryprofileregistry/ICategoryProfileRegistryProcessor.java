@@ -3,10 +3,11 @@ package com.shiviishiv7.matchmaking.processor.categoryprofileregistry;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import com.shiviishiv7.matchmaking.provider.vo.CategoryProfileRegistryVO;
+import com.shiviishiv7.matchmaking.provider.vo.MatchFilterVO;
 
 public interface ICategoryProfileRegistryProcessor {
 
-    BaseVO add(CategoryProfileRegistryVO vo) throws MatchmakingException;
+    BaseVO add(MatchFilterVO vo) throws MatchmakingException;
 
     BaseVO update(CategoryProfileRegistryVO vo) throws MatchmakingException;
 

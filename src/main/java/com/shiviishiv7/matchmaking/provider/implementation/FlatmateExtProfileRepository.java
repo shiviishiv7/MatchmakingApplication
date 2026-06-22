@@ -8,9 +8,9 @@ import java.util.Optional;
 @Repository
 public interface FlatmateExtProfileRepository extends JpaRepository<FlatmateExtProfile, Integer> {
 
-    Optional<FlatmateExtProfile> findByUserId(Integer userId);
+    Optional<FlatmateExtProfile> findByCognitoSub(String cognitoSub);
 
-    boolean existsByUserId(Integer userId);
+    boolean existsByCognitoSub(String cognitoSub);
 
-    void deleteByUserId(Integer userId);
+    void deleteByCognitoSub(String cognitoSub);
 }

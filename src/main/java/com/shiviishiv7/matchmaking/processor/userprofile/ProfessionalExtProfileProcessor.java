@@ -5,6 +5,7 @@ import com.shiviishiv7.matchmaking.provider.implementation.ProfessionalExtProfil
 import com.shiviishiv7.matchmaking.provider.model.profile.ProfessionalExtProfile;
 
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
+import com.shiviishiv7.matchmaking.provider.vo.MatchFilterVO;
 import com.shiviishiv7.matchmaking.provider.vo.ProfessionalExtProfileVO;
 
 import jakarta.transaction.Transactional;
@@ -156,6 +157,31 @@ public class ProfessionalExtProfileProcessor implements IProfessionalExtProfileP
         } catch (Exception ex) {
             log.error("ALERT_FOR_ERROR: Error occurred while deleting professional profile. Error: {}", ex.getMessage(), ex);
             throw new MatchmakingException("Error occurred while deleting professional profile: " + ex.getMessage(), UNKNOWN_EXCEPTION);
+        }
+    }
+
+    @Override
+    public void upsertFromFilter(MatchFilterVO vo) throws MatchmakingException {
+        try {
+            ProfessionalExtProfile profile = professionalExtProfileRepository
+                    .findByCognitoSub(vo.getCognitoSub())
+                    .orElse(new ProfessionalExtProfile());
+            profile.setCognitoSub(vo.getCognitoSub());
+            profile.setCurrentRole(vo.getCurrentRole());
+            profile.setCurrentCompany(vo.getCurrentCompany());
+            profile.setYearsOfExperience(vo.getYearsOfExperience());
+            profile.setIndustryDomain(vo.getIndustryDomain());
+            profile.setTechStack(vo.getTechStack());
+            profile.setSkillsOffering(vo.getSkillsOffering());
+            profile.setSkillsSeeking(vo.getSkillsSeeking());
+            profile.setMentorshipRole(vo.getMentorshipRole());
+            profile.setOpenToCoFounder(vo.getOpenToCoFounder());
+            profile.setPreferredCollabMode(vo.getPreferredCollabMode());
+            professionalExtProfileRepository.save(profile);
+            log.info("Professional ext profile upserted for cognitoSub: {}", vo.getCognitoSub());
+        } catch (Exception ex) {
+            log.error("ALERT_FOR_ERROR: Error upserting professional profile. Error: {}", ex.getMessage(), ex);
+            throw new MatchmakingException("Error upserting professional profile: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
 }

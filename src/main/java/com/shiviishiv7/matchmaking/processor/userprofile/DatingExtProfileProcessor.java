@@ -5,6 +5,7 @@ import com.shiviishiv7.matchmaking.provider.implementation.DatingExtProfileRepos
 import com.shiviishiv7.matchmaking.provider.model.profile.DatingExtProfile;
 
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
+import com.shiviishiv7.matchmaking.provider.vo.MatchFilterVO;
 import com.shiviishiv7.matchmaking.provider.vo.DatingExtProfileVO;
 
 import jakarta.transaction.Transactional;
@@ -31,17 +32,17 @@ public class DatingExtProfileProcessor implements IDatingExtProfileProcessor {
             vo.validate();
             log.info("DatingExtProfileVO validation completed successfully.");
 
-            log.trace("Checking for duplicate dating profile for userId: {}", vo.getUserId());
-            if (datingExtProfileRepository.existsByUserId(vo.getUserId())) {
-                log.error("ALERT_FOR_ERROR: dating profile already exists for userId: {}", vo.getUserId());
+            log.trace("Checking for duplicate dating profile for userId: {}", vo.getCognitoSub());
+            if (datingExtProfileRepository.existsByCognitoSub(vo.getCognitoSub())) {
+                log.error("ALERT_FOR_ERROR: dating profile already exists for userId: {}", vo.getCognitoSub());
                 throw new MatchmakingException("dating profile already exists for this user", DUPLICATE_RECORD);
             }
 
-            log.trace("Saving dating profile for userId: {}", vo.getUserId());
+            log.trace("Saving dating profile for userId: {}", vo.getCognitoSub());
             DatingExtProfile profile = new DatingExtProfile();
             profile.fromVO(vo);
             profile = datingExtProfileRepository.save(profile);
-            log.info("dating profile saved successfully for userId: {}", profile.getUserId());
+            log.info("dating profile saved successfully for userId: {}", profile.getCognitoSub());
 
             return new BaseVO(SUCCESS, "dating profile created", "dating profile created", profile.toVO());
         } catch (MatchmakingException ex) {
@@ -129,7 +130,7 @@ public class DatingExtProfileProcessor implements IDatingExtProfileProcessor {
     public BaseVO getByUserId(String userId) throws MatchmakingException {
         try {
             log.info("Fetching dating profile for userId: {}", userId);
-            Optional<DatingExtProfile> fromDB = datingExtProfileRepository.findByUserId(Integer.valueOf(userId));
+            Optional<DatingExtProfile> fromDB = datingExtProfileRepository.findByCognitoSub(userId);
             if (fromDB.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: dating profile not found for userId: {}", userId);
                 throw new MatchmakingException("dating profile does not exist for this user", DATA_NOT_FOUND);
@@ -161,6 +162,33 @@ public class DatingExtProfileProcessor implements IDatingExtProfileProcessor {
         } catch (Exception ex) {
             log.error("ALERT_FOR_ERROR: Error occurred while deleting dating profile. Error: {}", ex.getMessage(), ex);
             throw new MatchmakingException("Error occurred while deleting dating profile: " + ex.getMessage(), UNKNOWN_EXCEPTION);
+        }
+    }
+
+    @Override
+    public void upsertFromFilter(MatchFilterVO vo) throws MatchmakingException {
+        try {
+            DatingExtProfile profile = datingExtProfileRepository
+                    .findByCognitoSub(vo.getCognitoSub())
+                    .orElse(new DatingExtProfile());
+            profile.setCognitoSub(vo.getCognitoSub());
+            profile.setDietaryHabits(vo.getDietaryHabits());
+            profile.setSmokingHabit(vo.getSmokingHabit());
+            profile.setDrinkingHabit(vo.getDrinkingHabit());
+            profile.setHeightCm(vo.getHeightCm());
+            profile.setBodyType(vo.getBodyType());
+            profile.setRelationshipGoal(vo.getRelationshipGoal());
+            profile.setSexualOrientation(vo.getSexualOrientation());
+            profile.setHasChildren(vo.getHasChildren());
+            profile.setWantsChildren(vo.getWantsChildren());
+            profile.setLoveLanguage(vo.getLoveLanguage());
+            profile.setPersonalityType(vo.getPersonalityType());
+            profile.setPrefHeightMinCm(vo.getPrefHeightMinCm());
+            datingExtProfileRepository.save(profile);
+            log.info("Dating ext profile upserted for cognitoSub: {}", vo.getCognitoSub());
+        } catch (Exception ex) {
+            log.error("ALERT_FOR_ERROR: Error upserting dating profile. Error: {}", ex.getMessage(), ex);
+            throw new MatchmakingException("Error upserting dating profile: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
 }

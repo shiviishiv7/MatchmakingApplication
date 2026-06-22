@@ -11,13 +11,13 @@ import java.util.Optional;
 @Repository
 public interface CategoryProfileRegistryRepository extends JpaRepository<CategoryProfileRegistry, Integer> {
 
-    List<CategoryProfileRegistry> findByUserId(Integer userId);
+    List<CategoryProfileRegistry> findByCognitoSub(String cognitoSub);
 
-    List<CategoryProfileRegistry> findByUserIdAndIsActive(Integer userId, Boolean isActive);
+    List<CategoryProfileRegistry> findByCognitoSubAndIsActive(String cognitoSub, Boolean isActive);
 
-    Optional<CategoryProfileRegistry> findByUserIdAndMatchCategory(Integer userId, MatchCategory matchCategory);
+    Optional<CategoryProfileRegistry> findByCognitoSubAndMatchCategory(String cognitoSub, MatchCategory matchCategory);
 
-    boolean existsByUserIdAndMatchCategory(Integer userId, MatchCategory matchCategory);
+    boolean existsByCognitoSubAndMatchCategory(String cognitoSub, MatchCategory matchCategory);
 
-    void deleteByUserIdAndMatchCategory(Integer userId, MatchCategory matchCategory);
+    void deleteByCognitoSubAndMatchCategory(String cognitoSub, MatchCategory matchCategory);
 }

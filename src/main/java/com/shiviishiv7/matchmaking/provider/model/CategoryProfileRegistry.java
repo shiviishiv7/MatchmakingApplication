@@ -17,16 +17,34 @@ public class CategoryProfileRegistry extends BaseEntity {
     @Column(name = "id", updatable = false, nullable = false)
     private Integer id;
 
-    @Column(name = "userId", nullable = false)
-    private Integer userId;
+    @Column(name = "cognitoSub", nullable = false)
+    private String cognitoSub;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "matchCategory", nullable = false, length = 60)
     private MatchCategory matchCategory;
 
-    @Column(name = "extensionProfileId", nullable = false)
-    private Integer extensionProfileId;
+    // ── Common filter fields ──────────────────────────────────────────────────
+    @Column(name = "preferredGender", length = 20)
+    private String preferredGender;
 
+    @Column(name = "preferredCity", length = 100)
+    private String preferredCity;
+
+    @Column(name = "preferredState", length = 100)
+    private String preferredState;
+
+    @Column(name = "preferredCountry", length = 100)
+    private String preferredCountry;
+
+    @Column(name = "maxTimezoneOffsetHours")
+    private Integer maxTimezoneOffsetHours;
+
+    @Column(name = "sameCompanyAllowed")
+    @Builder.Default
+    private Boolean sameCompanyAllowed = false;
+
+    // ── Registry metadata ─────────────────────────────────────────────────────
     @Column(name = "completionPct")
     @Builder.Default
     private Integer completionPct = 0;
@@ -38,24 +56,17 @@ public class CategoryProfileRegistry extends BaseEntity {
     @Column(name = "createdAt")
     private LocalDateTime createdAt;
 
-    public CategoryProfileRegistry fromVO(CategoryProfileRegistryVO vo) {
-        if (vo == null) return null;
-        this.setId(vo.getId());
-        this.setUserId(vo.getUserId());
-        this.setMatchCategory(vo.getMatchCategory());
-        this.setExtensionProfileId(vo.getExtensionProfileId());
-        this.setCompletionPct(vo.getCompletionPct());
-        this.setIsActive(vo.getIsActive());
-        this.setCreatedAt(vo.getCreatedAt());
-        return this;
-    }
-
     public CategoryProfileRegistryVO toVO() {
         CategoryProfileRegistryVO vo = new CategoryProfileRegistryVO();
         vo.setId(this.getId());
-        vo.setUserId(this.getUserId());
+        vo.setCognitoSub(this.getCognitoSub());
         vo.setMatchCategory(this.getMatchCategory());
-        vo.setExtensionProfileId(this.getExtensionProfileId());
+        vo.setPreferredGender(this.getPreferredGender());
+        vo.setPreferredCity(this.getPreferredCity());
+        vo.setPreferredState(this.getPreferredState());
+        vo.setPreferredCountry(this.getPreferredCountry());
+        vo.setMaxTimezoneOffsetHours(this.getMaxTimezoneOffsetHours());
+        vo.setSameCompanyAllowed(this.getSameCompanyAllowed());
         vo.setCompletionPct(this.getCompletionPct());
         vo.setIsActive(this.getIsActive());
         vo.setCreatedAt(this.getCreatedAt());

@@ -19,8 +19,8 @@ public class MatrimonialExtProfile extends BaseEntity {
     @Column(name = "id", updatable = false, nullable = false)
     private Integer id;
 
-    @Column(name = "cognitoSubB", nullable = false, unique = true)
-    private String cognitoSubB;
+    @Column(name = "cognitoSub", nullable = false, unique = true)
+    private String cognitoSub;
 
     @Column(name = "religion", length = 50)
     private String religion;
@@ -129,7 +129,7 @@ public class MatrimonialExtProfile extends BaseEntity {
     public MatrimonialExtProfile fromVO(MatrimonialExtProfileVO vo) {
         if (vo == null) return null;
         this.setId(vo.getId());
-        this.setCognitoSubB(vo.getCognitoSubB());
+        this.setCognitoSub(vo.getCognitoSub());
         this.setReligion(vo.getReligion());
         this.setCaste(vo.getCaste());
         this.setSubCaste(vo.getSubCaste());
@@ -169,7 +169,7 @@ public class MatrimonialExtProfile extends BaseEntity {
     public MatrimonialExtProfileVO toVO() {
         MatrimonialExtProfileVO vo = new MatrimonialExtProfileVO();
         vo.setId(this.getId());
-        vo.setCognitoSubB(this.getCognitoSubB());
+        vo.setCognitoSub(this.getCognitoSub());
         vo.setReligion(this.getReligion());
         vo.setCaste(this.getCaste());
         vo.setSubCaste(this.getSubCaste());

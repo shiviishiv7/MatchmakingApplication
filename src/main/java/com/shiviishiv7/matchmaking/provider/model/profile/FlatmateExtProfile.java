@@ -17,8 +17,8 @@ public class FlatmateExtProfile extends BaseEntity {
     @Column(name = "id", updatable = false, nullable = false)
     private Integer id;
 
-    @Column(name = "userId", nullable = false, unique = true)
-    private Integer userId;
+    @Column(name = "cognitoSub", nullable = false, unique = true)
+    private String cognitoSub;
 
     @Column(name = "lookingIn", length = 200)
     private String lookingIn;
@@ -65,7 +65,7 @@ public class FlatmateExtProfile extends BaseEntity {
     public FlatmateExtProfile fromVO(FlatmateExtProfileVO vo) {
         if (vo == null) return null;
         this.setId(vo.getId());
-        this.setUserId(vo.getUserId());
+        this.setCognitoSub(vo.getCognitoSub());
         this.setLookingIn(vo.getLookingIn());
         this.setBudgetRangeInr(vo.getBudgetRangeInr());
         this.setMoveInDate(vo.getMoveInDate());
@@ -86,7 +86,7 @@ public class FlatmateExtProfile extends BaseEntity {
     public FlatmateExtProfileVO toVO() {
         FlatmateExtProfileVO vo = new FlatmateExtProfileVO();
         vo.setId(this.getId());
-        vo.setUserId(this.getUserId());
+        vo.setCognitoSub(this.getCognitoSub());
         vo.setLookingIn(this.getLookingIn());
         vo.setBudgetRangeInr(this.getBudgetRangeInr());
         vo.setMoveInDate(this.getMoveInDate());

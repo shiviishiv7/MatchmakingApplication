@@ -5,6 +5,7 @@ import com.shiviishiv7.matchmaking.provider.implementation.FitnessExtProfileRepo
 import com.shiviishiv7.matchmaking.provider.model.profile.FitnessExtProfile;
 
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
+import com.shiviishiv7.matchmaking.provider.vo.MatchFilterVO;
 import com.shiviishiv7.matchmaking.provider.vo.FitnessExtProfileVO;
 
 import jakarta.transaction.Transactional;
@@ -31,17 +32,17 @@ public class FitnessExtProfileProcessor implements IFitnessExtProfileProcessor {
             vo.validate();
             log.info("FitnessExtProfileVO validation completed successfully.");
 
-            log.trace("Checking for duplicate fitness profile for userId: {}", vo.getUserId());
-            if (fitnessExtProfileRepository.existsByUserId(vo.getUserId())) {
-                log.error("ALERT_FOR_ERROR: fitness profile already exists for userId: {}", vo.getUserId());
+            log.trace("Checking for duplicate fitness profile for userId: {}", vo.getCognitoSub());
+            if (fitnessExtProfileRepository.existsByCognitoSub(vo.getCognitoSub())) {
+                log.error("ALERT_FOR_ERROR: fitness profile already exists for userId: {}", vo.getCognitoSub());
                 throw new MatchmakingException("fitness profile already exists for this user", DUPLICATE_RECORD);
             }
 
-            log.trace("Saving fitness profile for userId: {}", vo.getUserId());
+            log.trace("Saving fitness profile for userId: {}", vo.getCognitoSub());
             FitnessExtProfile profile = new FitnessExtProfile();
             profile.fromVO(vo);
             profile = fitnessExtProfileRepository.save(profile);
-            log.info("fitness profile saved successfully for userId: {}", profile.getUserId());
+            log.info("fitness profile saved successfully for userId: {}", profile.getCognitoSub());
 
             return new BaseVO(SUCCESS, "fitness profile created", "fitness profile created", profile.toVO());
         } catch (MatchmakingException ex) {
@@ -117,7 +118,7 @@ public class FitnessExtProfileProcessor implements IFitnessExtProfileProcessor {
     public BaseVO getByUserId(String userId) throws MatchmakingException {
         try {
             log.info("Fetching fitness profile for userId: {}", userId);
-            Optional<FitnessExtProfile> fromDB = fitnessExtProfileRepository.findByUserId(Integer.valueOf(userId));
+            Optional<FitnessExtProfile> fromDB = fitnessExtProfileRepository.findByCognitoSub(userId);
             if (fromDB.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: fitness profile not found for userId: {}", userId);
                 throw new MatchmakingException("fitness profile does not exist for this user", DATA_NOT_FOUND);
@@ -149,6 +150,30 @@ public class FitnessExtProfileProcessor implements IFitnessExtProfileProcessor {
         } catch (Exception ex) {
             log.error("ALERT_FOR_ERROR: Error occurred while deleting fitness profile. Error: {}", ex.getMessage(), ex);
             throw new MatchmakingException("Error occurred while deleting fitness profile: " + ex.getMessage(), UNKNOWN_EXCEPTION);
+        }
+    }
+
+    @Override
+    public void upsertFromFilter(MatchFilterVO vo) throws MatchmakingException {
+        try {
+            FitnessExtProfile profile = fitnessExtProfileRepository
+                    .findByCognitoSub(vo.getCognitoSub())
+                    .orElse(new FitnessExtProfile());
+            profile.setCognitoSub(vo.getCognitoSub());
+            profile.setFitnessActivities(vo.getFitnessActivities());
+            profile.setFitnessLevel(vo.getFitnessLevel());
+            profile.setWorkoutDays(vo.getWorkoutDays());
+            profile.setPreferredWorkoutTime(vo.getPreferredWorkoutTime());
+            profile.setGymName(vo.getGymName());
+            profile.setIsOkWithMixedGender(vo.getIsOkWithMixedGender());
+            profile.setSportsLeagueLevel(vo.getSportsLeagueLevel());
+            profile.setFitnessGoal(vo.getFitnessGoal());
+            profile.setDietPreference(vo.getDietPreference());
+            fitnessExtProfileRepository.save(profile);
+            log.info("Fitness ext profile upserted for cognitoSub: {}", vo.getCognitoSub());
+        } catch (Exception ex) {
+            log.error("ALERT_FOR_ERROR: Error upserting fitness profile. Error: {}", ex.getMessage(), ex);
+            throw new MatchmakingException("Error upserting fitness profile: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
 }

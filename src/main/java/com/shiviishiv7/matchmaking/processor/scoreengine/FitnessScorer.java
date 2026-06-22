@@ -57,18 +57,18 @@ public class FitnessScorer implements CategoryScorer {
     public List<String> fetchCandidateIds(String userId, List<String> excludeIds) {
         log.trace("Fetching fitness candidates for userId: {}", userId);
 
-        FitnessExtProfile me = fitnessRepo.findByCognitoSubB(userId).orElse(null);
+        FitnessExtProfile me = fitnessRepo.findByCognitoSub(userId).orElse(null);
         if (me == null) {
             log.warn("Fitness profile missing for userId: {}. Returning empty.", userId);
             return Collections.emptyList();
         }
 
         List<String> result = fitnessRepo.findAll().stream()
-                .filter(c -> !c.getCognitoSubB().equals(userId))
-                .filter(c -> excludeIds == null || !excludeIds.contains(c.getCognitoSubB()))
+                .filter(c -> !c.getCognitoSub().equals(userId))
+                .filter(c -> excludeIds == null || !excludeIds.contains(c.getCognitoSub()))
                 // Hard filter: must share at least one activity
                 .filter(c -> hasActivityOverlap(me.getFitnessActivities(), c.getFitnessActivities()))
-                .map(FitnessExtProfile::getCognitoSubB)
+                .map(FitnessExtProfile::getCognitoSub)
                 .collect(Collectors.toList());
 
         log.trace("Fitness hard filter: {} candidates remain for userId: {}", result.size(), userId);
@@ -77,8 +77,8 @@ public class FitnessScorer implements CategoryScorer {
 
     @Override
     public MatchCandidateVO score(String userId, String candidateUserId) {
-        FitnessExtProfile me        = fitnessRepo.findByCognitoSubB(userId).orElseThrow();
-        FitnessExtProfile candidate = fitnessRepo.findByCognitoSubB(candidateUserId).orElseThrow();
+        FitnessExtProfile me        = fitnessRepo.findByCognitoSub(userId).orElseThrow();
+        FitnessExtProfile candidate = fitnessRepo.findByCognitoSub(candidateUserId).orElseThrow();
         BaseUserProfile candBase    = baseProfileRepo.findByCognitoSub(candidateUserId).orElseThrow();
 
         Map<String, Integer> breakdown = new LinkedHashMap<>();
@@ -138,7 +138,7 @@ public class FitnessScorer implements CategoryScorer {
 
     @Override
     public String buildSnippet(String candidateUserId) {
-        FitnessExtProfile p = fitnessRepo.findByCognitoSubB(candidateUserId).orElse(null);
+        FitnessExtProfile p = fitnessRepo.findByCognitoSub(candidateUserId).orElse(null);
         if (p == null) return "";
         List<String> parts = new ArrayList<>();
         if (StringUtils.isNotEmpty(p.getFitnessLevel()))         parts.add(p.getFitnessLevel());

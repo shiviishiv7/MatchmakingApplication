@@ -5,6 +5,7 @@ import com.shiviishiv7.matchmaking.provider.implementation.MatrimonialExtProfile
 import com.shiviishiv7.matchmaking.provider.model.profile.MatrimonialExtProfile;
 
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
+import com.shiviishiv7.matchmaking.provider.vo.MatchFilterVO;
 import com.shiviishiv7.matchmaking.provider.vo.MatrimonialExtProfileVO;
 
 import jakarta.transaction.Transactional;
@@ -31,17 +32,17 @@ public class MatrimonialExtProfileProcessor implements IMatrimonialExtProfilePro
             vo.validate();
             log.info("MatrimonialExtProfileVO validation completed successfully.");
 
-            log.trace("Checking for duplicate matrimonial profile for userId: {}", vo.getCognitoSubB());
-            if (matrimonialExtProfileRepository.existsByCognitoSubB(vo.getCognitoSubB())) {
-                log.error("ALERT_FOR_ERROR: matrimonial profile already exists for userId: {}", vo.getCognitoSubB());
+            log.trace("Checking for duplicate matrimonial profile for userId: {}", vo.getCognitoSub());
+            if (matrimonialExtProfileRepository.existsByCognitoSub(vo.getCognitoSub())) {
+                log.error("ALERT_FOR_ERROR: matrimonial profile already exists for userId: {}", vo.getCognitoSub());
                 throw new MatchmakingException("matrimonial profile already exists for this user", DUPLICATE_RECORD);
             }
 
-            log.trace("Saving matrimonial profile for userId: {}", vo.getCognitoSubB());
+            log.trace("Saving matrimonial profile for userId: {}", vo.getCognitoSub());
             MatrimonialExtProfile profile = new MatrimonialExtProfile();
             profile.fromVO(vo);
             profile = matrimonialExtProfileRepository.save(profile);
-            log.info("matrimonial profile saved successfully for userId: {}", profile.getCognitoSubB());
+            log.info("matrimonial profile saved successfully for userId: {}", profile.getCognitoSub());
 
             return new BaseVO(SUCCESS, "matrimonial profile created", "matrimonial profile created", profile.toVO());
         } catch (MatchmakingException ex) {
@@ -141,7 +142,7 @@ public class MatrimonialExtProfileProcessor implements IMatrimonialExtProfilePro
     public BaseVO getByUserId(String userId) throws MatchmakingException {
         try {
             log.info("Fetching matrimonial profile for userId: {}", userId);
-            Optional<MatrimonialExtProfile> fromDB = matrimonialExtProfileRepository.findByCognitoSubB((userId));
+            Optional<MatrimonialExtProfile> fromDB = matrimonialExtProfileRepository.findByCognitoSub((userId));
             if (fromDB.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: matrimonial profile not found for userId: {}", userId);
                 throw new MatchmakingException("matrimonial profile does not exist for this user", DATA_NOT_FOUND);
@@ -173,6 +174,43 @@ public class MatrimonialExtProfileProcessor implements IMatrimonialExtProfilePro
         } catch (Exception ex) {
             log.error("ALERT_FOR_ERROR: Error occurred while deleting matrimonial profile. Error: {}", ex.getMessage(), ex);
             throw new MatchmakingException("Error occurred while deleting matrimonial profile: " + ex.getMessage(), UNKNOWN_EXCEPTION);
+        }
+    }
+
+    @Override
+    public void upsertFromFilter(MatchFilterVO vo) throws MatchmakingException {
+        try {
+            MatrimonialExtProfile profile = matrimonialExtProfileRepository
+                    .findByCognitoSub(vo.getCognitoSub())
+                    .orElse(new MatrimonialExtProfile());
+            profile.setCognitoSub(vo.getCognitoSub());
+            profile.setReligion(vo.getReligion());
+            profile.setCaste(vo.getCaste());
+            profile.setSubCaste(vo.getSubCaste());
+            profile.setGotram(vo.getGotram());
+            profile.setMotherTongue(vo.getMotherTongue());
+            profile.setDietaryHabits(vo.getDietaryHabits());
+            profile.setHighestEducation(vo.getHighestEducation());
+            profile.setProfession(vo.getProfession());
+            profile.setEmploymentType(vo.getEmploymentType());
+            profile.setAnnualIncomeInr(vo.getAnnualIncomeInr());
+            profile.setNativeCity(vo.getNativeCity());
+            profile.setNativeState(vo.getNativeState());
+            profile.setFamilyType(vo.getFamilyType());
+            profile.setFamilyValues(vo.getFamilyValues());
+            profile.setFamilyStatus(vo.getFamilyStatus());
+            profile.setHeightCm(vo.getHeightCm());
+            profile.setMaritalStatus(vo.getMaritalStatus());
+            profile.setBodyType(vo.getBodyType());
+            profile.setSmokingHabit(vo.getSmokingHabit());
+            profile.setDrinkingHabit(vo.getDrinkingHabit());
+            profile.setManglikStatus(vo.getManglikStatus());
+            profile.setHoroscopeMatchRequired(vo.getHoroscopeMatchRequired());
+            matrimonialExtProfileRepository.save(profile);
+            log.info("Matrimonial ext profile upserted for cognitoSub: {}", vo.getCognitoSub());
+        } catch (Exception ex) {
+            log.error("ALERT_FOR_ERROR: Error upserting matrimonial profile. Error: {}", ex.getMessage(), ex);
+            throw new MatchmakingException("Error upserting matrimonial profile: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
 }

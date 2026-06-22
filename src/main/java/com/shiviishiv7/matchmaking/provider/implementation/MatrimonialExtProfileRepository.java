@@ -8,9 +8,9 @@ import java.util.Optional;
 @Repository
 public interface MatrimonialExtProfileRepository extends JpaRepository<MatrimonialExtProfile, Integer> {
 
-    Optional<MatrimonialExtProfile> findByCognitoSubB(String cognitoSubB);
+    Optional<MatrimonialExtProfile> findByCognitoSub(String cognitoSub);
 
-    boolean existsByCognitoSubB(String cognitoSubB);
+    boolean existsByCognitoSub(String cognitoSub);
 
-    void deleteByCognitoSubB(String cognitoSubB);
+    void deleteByCognitoSub(String cognitoSub);
 }

@@ -57,22 +57,22 @@ public class FlatmateScorer implements CategoryScorer {
     public List<String> fetchCandidateIds(String userId, List<String> excludeIds) {
         log.trace("Fetching flatmate candidates for userId: {}", userId);
 
-        FlatmateExtProfile me = flatmateRepo.findByCognitoSubB(userId).orElse(null);
+        FlatmateExtProfile me = flatmateRepo.findByCognitoSub(userId).orElse(null);
         if (me == null) {
             log.warn("Flatmate profile missing for userId: {}. Returning empty.", userId);
             return Collections.emptyList();
         }
 
         List<String> result = flatmateRepo.findAll().stream()
-                .filter(c -> !c.getCognitoSubB().equals(userId))
-                .filter(c -> excludeIds == null || !excludeIds.contains(c.getCognitoSubB()))
+                .filter(c -> !c.getCognitoSub().equals(userId))
+                .filter(c -> excludeIds == null || !excludeIds.contains(c.getCognitoSub()))
                 // Hard filter 1: must be looking in the same city/area
                 .filter(c -> isLocationCompatible(me.getLookingIn(), c.getLookingIn()))
                 // Hard filter 2: budgets must overlap (my max >= their min AND my min <= their max)
                 .filter(c -> isBudgetCompatible(me.getBudgetRangeInr(), c.getBudgetRangeInr()))
                 // Hard filter 3: vegetarian household — non-negotiable for many users
                 .filter(c -> isVegCompatible(me.getIsVegetarianHousehold(), c.getIsVegetarianHousehold()))
-                .map(FlatmateExtProfile::getCognitoSubB)
+                .map(FlatmateExtProfile::getCognitoSub)
                 .collect(Collectors.toList());
 
         log.trace("Flatmate hard filter: {} candidates remain for userId: {}", result.size(), userId);
@@ -81,8 +81,8 @@ public class FlatmateScorer implements CategoryScorer {
 
     @Override
     public MatchCandidateVO score(String userId, String candidateUserId) {
-        FlatmateExtProfile me        = flatmateRepo.findByCognitoSubB(userId).orElseThrow();
-        FlatmateExtProfile candidate = flatmateRepo.findByCognitoSubB(candidateUserId).orElseThrow();
+        FlatmateExtProfile me        = flatmateRepo.findByCognitoSub(userId).orElseThrow();
+        FlatmateExtProfile candidate = flatmateRepo.findByCognitoSub(candidateUserId).orElseThrow();
         BaseUserProfile candBase     = baseProfileRepo.findByCognitoSub(candidateUserId).orElseThrow();
 
         Map<String, Integer> breakdown = new LinkedHashMap<>();
@@ -146,7 +146,7 @@ public class FlatmateScorer implements CategoryScorer {
 
     @Override
     public String buildSnippet(String candidateUserId) {
-        FlatmateExtProfile p = flatmateRepo.findByCognitoSubB(candidateUserId).orElse(null);
+        FlatmateExtProfile p = flatmateRepo.findByCognitoSub(candidateUserId).orElse(null);
         if (p == null) return "";
         List<String> parts = new ArrayList<>();
         if (StringUtils.isNotEmpty(p.getLookingIn()))      parts.add(p.getLookingIn());

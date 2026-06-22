@@ -15,8 +15,8 @@ public class DatingExtProfile extends BaseEntity {
     @Column(name = "id", updatable = false, nullable = false)
     private Integer id;
 
-    @Column(name = "userId", nullable = false, unique = true)
-    private Integer userId;
+    @Column(name = "cognitoSub", nullable = false, unique = true)
+    private String cognitoSub;
 
     @Column(name = "dietaryHabits", length = 30)
     private String dietaryHabits;
@@ -84,7 +84,7 @@ public class DatingExtProfile extends BaseEntity {
     public DatingExtProfile fromVO(DatingExtProfileVO vo) {
         if (vo == null) return null;
         this.setId(vo.getId());
-        this.setUserId(vo.getUserId());
+        this.setCognitoSub(vo.getCognitoSub());
         this.setDietaryHabits(vo.getDietaryHabits());
         this.setSmokingHabit(vo.getSmokingHabit());
         this.setDrinkingHabit(vo.getDrinkingHabit());
@@ -112,7 +112,7 @@ public class DatingExtProfile extends BaseEntity {
     public DatingExtProfileVO toVO() {
         DatingExtProfileVO vo = new DatingExtProfileVO();
         vo.setId(this.getId());
-        vo.setUserId(this.getUserId());
+        vo.setCognitoSub(this.getCognitoSub());
         vo.setDietaryHabits(this.getDietaryHabits());
         vo.setSmokingHabit(this.getSmokingHabit());
         vo.setDrinkingHabit(this.getDrinkingHabit());

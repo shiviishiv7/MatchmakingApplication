@@ -15,8 +15,8 @@ public class GamingExtProfile extends BaseEntity {
     @Column(name = "id", updatable = false, nullable = false)
     private Integer id;
 
-    @Column(name = "userId", nullable = false, unique = true)
-    private Integer userId;
+    @Column(name = "cognitoSub", nullable = false, unique = true)
+    private String cognitoSub;
 
     @Column(name = "platforms", length = 100)
     private String platforms;
@@ -45,7 +45,7 @@ public class GamingExtProfile extends BaseEntity {
     public GamingExtProfile fromVO(GamingExtProfileVO vo) {
         if (vo == null) return null;
         this.setId(vo.getId());
-        this.setUserId(vo.getUserId());
+        this.setCognitoSub(vo.getCognitoSub());
         this.setPlatforms(vo.getPlatforms());
         this.setFavoriteGames(vo.getFavoriteGames());
         this.setFavoriteGenres(vo.getFavoriteGenres());
@@ -60,7 +60,7 @@ public class GamingExtProfile extends BaseEntity {
     public GamingExtProfileVO toVO() {
         GamingExtProfileVO vo = new GamingExtProfileVO();
         vo.setId(this.getId());
-        vo.setUserId(this.getUserId());
+        vo.setCognitoSub(this.getCognitoSub());
         vo.setPlatforms(this.getPlatforms());
         vo.setFavoriteGames(this.getFavoriteGames());
         vo.setFavoriteGenres(this.getFavoriteGenres());

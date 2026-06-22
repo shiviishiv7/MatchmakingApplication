@@ -8,9 +8,9 @@ import java.util.Optional;
 @Repository
 public interface FitnessExtProfileRepository extends JpaRepository<FitnessExtProfile, Integer> {
 
-    Optional<FitnessExtProfile> findByUserId(Integer userId);
+    Optional<FitnessExtProfile> findByCognitoSub(String cognitoSub);
 
-    boolean existsByUserId(Integer userId);
+    boolean existsByCognitoSub(String cognitoSub);
 
-    void deleteByUserId(Integer userId);
+    void deleteByCognitoSub(String cognitoSub);
 }

@@ -13,7 +13,7 @@ import lombok.ToString;
 public class FlatmateExtProfileVO {
 
     private Integer id;
-    private Integer userId;
+    private String cognitoSub;
     private String lookingIn;
     private String budgetRangeInr;
     private LocalDate moveInDate;
@@ -30,7 +30,7 @@ public class FlatmateExtProfileVO {
     private String currentFlatDetails;
 
     public boolean validate() {
-        if (userId == null) throw new IllegalArgumentException("userId is required.");
+        if (cognitoSub == null) throw new IllegalArgumentException("cognitoSub is required.");
         return true;
     }
 }

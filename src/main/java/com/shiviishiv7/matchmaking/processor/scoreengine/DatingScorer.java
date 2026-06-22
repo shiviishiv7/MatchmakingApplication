@@ -59,7 +59,7 @@ public class DatingScorer implements CategoryScorer {
     public List<String> fetchCandidateIds(String userId, List<String> excludeIds) {
         log.trace("Fetching dating candidates for userId: {}", userId);
 
-        DatingExtProfile me    = datingRepo.findByCognitoSubB(userId).orElse(null);
+        DatingExtProfile me    = datingRepo.findByCognitoSub(userId).orElse(null);
         BaseUserProfile myBase = baseProfileRepo.findByCognitoSub(userId).orElse(null);
         if (me == null || myBase == null) {
             log.warn("Dating or base profile missing for userId: {}. Returning empty.", userId);
@@ -73,12 +73,12 @@ public class DatingScorer implements CategoryScorer {
         List<String> result = new ArrayList<>();
 
         List<DatingExtProfile> pool = datingRepo.findAll().stream()
-                .filter(c -> !c.getCognitoSubB().equals(userId))
-                .filter(c -> excludeIds == null || !excludeIds.contains(c.getCognitoSubB()))
+                .filter(c -> !c.getCognitoSub().equals(userId))
+                .filter(c -> excludeIds == null || !excludeIds.contains(c.getCognitoSub()))
                 .collect(Collectors.toList());
 
         for (DatingExtProfile candidate : pool) {
-            BaseUserProfile candBase = baseProfileRepo.findByCognitoSub(candidate.getCognitoSubB()).orElse(null);
+            BaseUserProfile candBase = baseProfileRepo.findByCognitoSub(candidate.getCognitoSub()).orElse(null);
             if (candBase == null) continue;
 
             // Hard filter 1: gender preference
@@ -98,7 +98,7 @@ public class DatingScorer implements CategoryScorer {
                 if (me.getPrefAgeMax() != null && candAge > me.getPrefAgeMax()) continue;
             }
 
-            result.add(candidate.getCognitoSubB());
+            result.add(candidate.getCognitoSub());
         }
 
         log.trace("Dating hard filter: {} candidates remain for userId: {}", result.size(), userId);
@@ -107,8 +107,8 @@ public class DatingScorer implements CategoryScorer {
 
     @Override
     public MatchCandidateVO score(String userId, String candidateUserId) {
-        DatingExtProfile me        = datingRepo.findByCognitoSubB(userId).orElseThrow();
-        DatingExtProfile candidate = datingRepo.findByCognitoSubB(candidateUserId).orElseThrow();
+        DatingExtProfile me        = datingRepo.findByCognitoSub(userId).orElseThrow();
+        DatingExtProfile candidate = datingRepo.findByCognitoSub(candidateUserId).orElseThrow();
         BaseUserProfile candBase   = baseProfileRepo.findByCognitoSub(candidateUserId).orElseThrow();
         BaseUserProfile myBase     = baseProfileRepo.findByCognitoSub(userId).orElseThrow();
 
@@ -179,7 +179,7 @@ public class DatingScorer implements CategoryScorer {
 
     @Override
     public String buildSnippet(String candidateUserId) {
-        DatingExtProfile p = datingRepo.findByCognitoSubB(candidateUserId).orElse(null);
+        DatingExtProfile p = datingRepo.findByCognitoSub(candidateUserId).orElse(null);
         if (p == null) return "";
         List<String> parts = new ArrayList<>();
         if (StringUtils.isNotEmpty(p.getRelationshipGoal())) parts.add(p.getRelationshipGoal());

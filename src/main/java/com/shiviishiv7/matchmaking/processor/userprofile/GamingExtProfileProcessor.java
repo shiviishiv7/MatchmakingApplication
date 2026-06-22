@@ -5,6 +5,7 @@ import com.shiviishiv7.matchmaking.provider.implementation.GamingExtProfileRepos
 import com.shiviishiv7.matchmaking.provider.model.profile.GamingExtProfile;
 
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
+import com.shiviishiv7.matchmaking.provider.vo.MatchFilterVO;
 import com.shiviishiv7.matchmaking.provider.vo.GamingExtProfileVO;
 
 import jakarta.transaction.Transactional;
@@ -31,17 +32,17 @@ public class GamingExtProfileProcessor implements IGamingExtProfileProcessor {
             vo.validate();
             log.info("GamingExtProfileVO validation completed successfully.");
 
-            log.trace("Checking for duplicate gaming profile for userId: {}", vo.getUserId());
-            if (gamingExtProfileRepository.existsByUserId(vo.getUserId())) {
-                log.error("ALERT_FOR_ERROR: gaming profile already exists for userId: {}", vo.getUserId());
+            log.trace("Checking for duplicate gaming profile for userId: {}", vo.getCognitoSub());
+            if (gamingExtProfileRepository.existsByCognitoSub(vo.getCognitoSub())) {
+                log.error("ALERT_FOR_ERROR: gaming profile already exists for userId: {}", vo.getCognitoSub());
                 throw new MatchmakingException("gaming profile already exists for this user", DUPLICATE_RECORD);
             }
 
-            log.trace("Saving gaming profile for userId: {}", vo.getUserId());
+            log.trace("Saving gaming profile for userId: {}", vo.getCognitoSub());
             GamingExtProfile profile = new GamingExtProfile();
             profile.fromVO(vo);
             profile = gamingExtProfileRepository.save(profile);
-            log.info("gaming profile saved successfully for userId: {}", profile.getUserId());
+            log.info("gaming profile saved successfully for userId: {}", profile.getCognitoSub());
 
             return new BaseVO(SUCCESS, "gaming profile created", "gaming profile created", profile.toVO());
         } catch (MatchmakingException ex) {
@@ -116,7 +117,7 @@ public class GamingExtProfileProcessor implements IGamingExtProfileProcessor {
     public BaseVO getByUserId(String userId) throws MatchmakingException {
         try {
             log.info("Fetching gaming profile for userId: {}", userId);
-            Optional<GamingExtProfile> fromDB = gamingExtProfileRepository.findByUserId(Integer.valueOf(userId));
+            Optional<GamingExtProfile> fromDB = gamingExtProfileRepository.findByCognitoSub(userId);
             if (fromDB.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: gaming profile not found for userId: {}", userId);
                 throw new MatchmakingException("gaming profile does not exist for this user", DATA_NOT_FOUND);
@@ -148,6 +149,28 @@ public class GamingExtProfileProcessor implements IGamingExtProfileProcessor {
         } catch (Exception ex) {
             log.error("ALERT_FOR_ERROR: Error occurred while deleting gaming profile. Error: {}", ex.getMessage(), ex);
             throw new MatchmakingException("Error occurred while deleting gaming profile: " + ex.getMessage(), UNKNOWN_EXCEPTION);
+        }
+    }
+
+    @Override
+    public void upsertFromFilter(MatchFilterVO vo) throws MatchmakingException {
+        try {
+            GamingExtProfile profile = gamingExtProfileRepository
+                    .findByCognitoSub(vo.getCognitoSub())
+                    .orElse(new GamingExtProfile());
+            profile.setCognitoSub(vo.getCognitoSub());
+            profile.setPlatforms(vo.getPlatforms());
+            profile.setFavoriteGames(vo.getFavoriteGames());
+            profile.setFavoriteGenres(vo.getFavoriteGenres());
+            profile.setGamingSchedule(vo.getGamingSchedule());
+            profile.setSkillLevel(vo.getSkillLevel());
+            profile.setCommunicationStyle(vo.getCommunicationStyle());
+            profile.setIsOkWithNewbies(vo.getIsOkWithNewbies());
+            gamingExtProfileRepository.save(profile);
+            log.info("Gaming ext profile upserted for cognitoSub: {}", vo.getCognitoSub());
+        } catch (Exception ex) {
+            log.error("ALERT_FOR_ERROR: Error upserting gaming profile. Error: {}", ex.getMessage(), ex);
+            throw new MatchmakingException("Error upserting gaming profile: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
 }

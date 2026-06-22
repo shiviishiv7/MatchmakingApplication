@@ -15,8 +15,8 @@ public class FitnessExtProfile extends BaseEntity {
     @Column(name = "id", updatable = false, nullable = false)
     private Integer id;
 
-    @Column(name = "userId", nullable = false, unique = true)
-    private Integer userId;
+    @Column(name = "cognitoSub", nullable = false, unique = true)
+    private String cognitoSub;
 
     @Column(name = "fitnessActivities", length = 300)
     private String fitnessActivities;
@@ -48,7 +48,7 @@ public class FitnessExtProfile extends BaseEntity {
     public FitnessExtProfile fromVO(FitnessExtProfileVO vo) {
         if (vo == null) return null;
         this.setId(vo.getId());
-        this.setUserId(vo.getUserId());
+        this.setCognitoSub(vo.getCognitoSub());
         this.setFitnessActivities(vo.getFitnessActivities());
         this.setFitnessLevel(vo.getFitnessLevel());
         this.setWorkoutDays(vo.getWorkoutDays());
@@ -64,7 +64,7 @@ public class FitnessExtProfile extends BaseEntity {
     public FitnessExtProfileVO toVO() {
         FitnessExtProfileVO vo = new FitnessExtProfileVO();
         vo.setId(this.getId());
-        vo.setUserId(this.getUserId());
+        vo.setCognitoSub(this.getCognitoSub());
         vo.setFitnessActivities(this.getFitnessActivities());
         vo.setFitnessLevel(this.getFitnessLevel());
         vo.setWorkoutDays(this.getWorkoutDays());

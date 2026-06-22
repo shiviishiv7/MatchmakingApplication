@@ -1,7 +1,6 @@
 package com.shiviishiv7.matchmaking.provider.vo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -13,7 +12,7 @@ import lombok.ToString;
 public class DatingExtProfileVO {
 
     private Integer id;
-    private Integer userId;
+    private String cognitoSub;
     private String dietaryHabits;
     private String smokingHabit;
     private String drinkingHabit;
@@ -37,8 +36,9 @@ public class DatingExtProfileVO {
     private String prefRelationshipGoal;
 
     public boolean validate() {
-        if (userId == null) throw new IllegalArgumentException("userId is required.");
-        if (prefAgeMin != null && prefAgeMax != null && prefAgeMin > prefAgeMax) throw new IllegalArgumentException("prefAgeMin cannot exceed prefAgeMax.");
+        if (cognitoSub == null) throw new IllegalArgumentException("cognitoSub is required.");
+        if (prefAgeMin != null && prefAgeMax != null && prefAgeMin > prefAgeMax)
+            throw new IllegalArgumentException("prefAgeMin cannot exceed prefAgeMax.");
         return true;
     }
 }

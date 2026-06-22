@@ -1,7 +1,6 @@
 package com.shiviishiv7.matchmaking.provider.vo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -13,7 +12,7 @@ import lombok.ToString;
 public class GamingExtProfileVO {
 
     private Integer id;
-    private Integer userId;
+    private String cognitoSub;
     private String platforms;
     private String favoriteGames;
     private String favoriteGenres;
@@ -24,7 +23,7 @@ public class GamingExtProfileVO {
     private String gamertags;
 
     public boolean validate() {
-        if (userId == null) throw new IllegalArgumentException("userId is required.");
+        if (cognitoSub == null) throw new IllegalArgumentException("cognitoSub is required.");
         return true;
     }
 }

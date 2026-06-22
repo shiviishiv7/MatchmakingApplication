@@ -4,6 +4,7 @@ import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.implementation.TravelExtProfileRepository;
 import com.shiviishiv7.matchmaking.provider.model.profile.TravelExtProfile;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
+import com.shiviishiv7.matchmaking.provider.vo.MatchFilterVO;
 import com.shiviishiv7.matchmaking.provider.vo.TravelExtProfileVO;
 
 import jakarta.transaction.Transactional;
@@ -152,6 +153,31 @@ public class TravelExtProfileProcessor implements ITravelExtProfileProcessor {
         } catch (Exception ex) {
             log.error("ALERT_FOR_ERROR: Error occurred while deleting travel profile. Error: {}", ex.getMessage(), ex);
             throw new MatchmakingException("Error occurred while deleting travel profile: " + ex.getMessage(), UNKNOWN_EXCEPTION);
+        }
+    }
+
+    @Override
+    public void upsertFromFilter(MatchFilterVO vo) throws MatchmakingException {
+        try {
+            TravelExtProfile profile = travelExtProfileRepository
+                    .findByCognitoSub(vo.getCognitoSub())
+                    .orElse(new TravelExtProfile());
+            profile.setCognitoSub(vo.getCognitoSub());
+            profile.setTravelStyle(vo.getTravelStyle());
+            profile.setPreferredDestinations(vo.getPreferredDestinations());
+            profile.setTripsPerYear(vo.getTripsPerYear());
+            profile.setPreferredTripDuration(vo.getPreferredTripDuration());
+            profile.setHasTraveledAbroad(vo.getHasTraveledAbroad());
+            profile.setCountriesVisited(vo.getCountriesVisited());
+            profile.setDietaryNeeds(vo.getDietaryNeeds());
+            profile.setIsOkWithBudgetStays(vo.getIsOkWithBudgetStays());
+            profile.setIsOkWithCamping(vo.getIsOkWithCamping());
+            profile.setPreferredGroupSize(vo.getPreferredGroupSize());
+            travelExtProfileRepository.save(profile);
+            log.info("Travel ext profile upserted for cognitoSub: {}", vo.getCognitoSub());
+        } catch (Exception ex) {
+            log.error("ALERT_FOR_ERROR: Error upserting travel profile. Error: {}", ex.getMessage(), ex);
+            throw new MatchmakingException("Error upserting travel profile: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
 }

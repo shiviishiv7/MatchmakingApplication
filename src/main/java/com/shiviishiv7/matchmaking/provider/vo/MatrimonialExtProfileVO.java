@@ -12,10 +12,10 @@ import lombok.ToString;
 @Setter
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class MatrimonialExtProfileVO {
+public class    MatrimonialExtProfileVO {
 
     private Integer id;
-    private String cognitoSubB;
+    private String cognitoSub;
     private String religion;
     private String caste;
     private String subCaste;
@@ -52,7 +52,7 @@ public class MatrimonialExtProfileVO {
     private PartnerPreferenceVO partnerPreferenceVO;
 
     public boolean validate() {
-        if (cognitoSubB == null) throw new IllegalArgumentException("userId is required.");
+        if (cognitoSub == null) throw new IllegalArgumentException("cognitoSub is required.");
         return true;
     }
 }

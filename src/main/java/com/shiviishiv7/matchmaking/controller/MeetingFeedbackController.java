@@ -4,6 +4,7 @@ import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.common.security.MatchmakingSecurityUtility;
 import com.shiviishiv7.matchmaking.processor.feedback.IMeetingFeedbackProcessor;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
+import com.shiviishiv7.matchmaking.provider.vo.MeetingFeedbackVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
