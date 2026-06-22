@@ -36,8 +36,8 @@ public class BaseUserProfileVO {
     public boolean validate() {
         if (cognitoSub == null) throw new IllegalArgumentException("userId is required.");
         if (name == null || name.trim().isEmpty()) throw new IllegalArgumentException("displayName is required.");
-        if (dateOfBirth == null) throw new IllegalArgumentException("dateOfBirth is required.");
-        if (gender == null) throw new IllegalArgumentException("gender is required.");
+//        if (dateOfBirth == null) throw new IllegalArgumentException("dateOfBirth is required.");
+//        if (gender == null) throw new IllegalArgumentException("gender is required.");
         return true;
     }
 }
