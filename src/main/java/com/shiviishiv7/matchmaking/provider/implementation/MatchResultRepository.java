@@ -32,11 +32,12 @@ public interface MatchResultRepository extends JpaRepository<MatchResult, Intege
     /** Check if both sides have LIKED each other — used to detect mutual match */
     @Query("SELECT COUNT(m) FROM MatchResult m " +
            "WHERE m.cognitoSubA = :userA AND m.cognitoSubB = :userB " +
-           "AND m.matchCategory = :category AND m.status = 'LIKED'")
+           "AND m.matchCategory = :category AND m.status = :status")
     long countMutualLike(
             @Param("userA") String userA,
             @Param("userB") String userB,
-            @Param("category") MatchCategory category);
+            @Param("category") MatchCategory category,
+            @Param("status") MatchStatus status);
 
 
 

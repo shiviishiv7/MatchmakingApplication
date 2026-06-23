@@ -54,9 +54,8 @@ public class MeetingSchedulerJob {
                 meeting.setStatus(MeetingStatus.WAITING_ROOM);
                 meetingRepository.save(meeting);
                 Optional<MatchResult> optionalMatch = matchRepository.findById(Integer.valueOf(meeting.getMatchId()));
+                if (optionalMatch.isEmpty()) continue;
                 MatchResult match = optionalMatch.get();
-
-                if (match == null) continue;
 
                 String subA = match.getCognitoSubA();
                 String subB = match.getCognitoSubB();
@@ -103,8 +102,9 @@ public class MeetingSchedulerJob {
                 log.info("MeetingSchedulerJob: marked meeting ID: {} as COMPLETED.", meeting.getId());
 
                 Optional<MatchResult> optionalMatch = matchRepository.findById(Integer.valueOf(meeting.getMatchId()));
+                if (optionalMatch.isEmpty()) continue;
                 MatchResult match = optionalMatch.get();
-                if (match != null && match.getStatus() == MatchStatus.MEETING_SCHEDULED) {
+                if (match.getStatus() == MatchStatus.MEETING_SCHEDULED) {
                     match.setStatus(MatchStatus.AWAITING_FEEDBACK);
                     matchRepository.save(match);
                     log.info("MeetingSchedulerJob: match ID: {} transitioned to AWAITING_FEEDBACK.", match.getId());

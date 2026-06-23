@@ -77,18 +77,26 @@ public class MatchingEngineProcessor {
 
         // ── Build exclude list ────────────────────────────────────────────────
         // Exclude: already-seen candidates + blocked users
-        Set<String> seenIds    = matchResultRepository.findSeenCandidateIds(userId, category);
-        Set<String> blockedIds = blockListRepository.findAllBlockedUserIds(userId);
+        Set<String> seenIds = matchResultRepository.findSeenCandidateIds(userId, category);
 
-        List<String> excludeIds = new ArrayList<>();
-        excludeIds.addAll(seenIds);
-        excludeIds.addAll(blockedIds);
+        // BlockList stores integer IDs; parse userId if numeric, skip block lookup if it's a UUID-style cognitoSub
+        Set<String> excludeIds = new HashSet<>(seenIds);
+        try {
+            Integer userIdInt = Integer.valueOf(userId);
+            Set<Integer> blocked = blockListRepository.findBlockedIdsByBlockerId(userIdInt);
+            Set<Integer> blockers = blockListRepository.findBlockerIdsByBlockedId(userIdInt);
+            blocked.forEach(id -> excludeIds.add(id.toString()));
+            blockers.forEach(id -> excludeIds.add(id.toString()));
+        } catch (NumberFormatException ex) {
+            log.debug("userId {} is not an integer — skipping block list lookup.", userId);
+        }
 
-        log.trace("Excluding {} seen + {} blocked candidates for userId: {}",
-                seenIds.size(), blockedIds.size(), userId);
+        List<String> excludeIdList = new ArrayList<>(excludeIds);
+
+        log.trace("Excluding {} total candidates (seen + blocked) for userId: {}", excludeIdList.size(), userId);
 
         // ── Phase 1: Hard filter ──────────────────────────────────────────────
-        List<String> candidateIds = scorer.fetchCandidateIds(userId, excludeIds);
+        List<String> candidateIds = scorer.fetchCandidateIds(userId, excludeIdList);
         log.info("Phase 1 complete: {} candidates after hard filter for userId: {}", candidateIds.size(), userId);
 
         if (candidateIds.isEmpty()) {
@@ -153,7 +161,7 @@ public class MatchingEngineProcessor {
 
         // Check for mutual like
         if (action == MatchStatus.LIKED) {
-            long mutualCount = matchResultRepository.countMutualLike(cognitoSubB, cognitoSubA, category);
+            long mutualCount = matchResultRepository.countMutualLike(cognitoSubB, cognitoSubA, category, MatchStatus.LIKED);
             if (mutualCount > 0) {
                 log.info("Mutual match detected! userId={} <-> candidateUserId={} category={}",
                         cognitoSubA, cognitoSubB, category);

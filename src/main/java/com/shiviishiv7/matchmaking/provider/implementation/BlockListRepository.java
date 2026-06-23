@@ -13,10 +13,11 @@ public interface BlockListRepository extends JpaRepository<BlockList, Integer> {
 
     boolean existsByBlockerIdAndBlockedId(Integer blockerId, Integer blockedId);
 
-    /** All IDs that userId has blocked OR that have blocked userId */
-    @Query("SELECT b.blockedId FROM BlockList b WHERE b.blockerId = :userId " +
-           "UNION SELECT b.blockerId FROM BlockList b WHERE b.blockedId = :userId")
-    Set<String> findAllBlockedUserIds(@Param("userId") String userId);
+    @Query("SELECT b.blockedId FROM BlockList b WHERE b.blockerId = :blockerId")
+    Set<Integer> findBlockedIdsByBlockerId(@Param("blockerId") Integer blockerId);
+
+    @Query("SELECT b.blockerId FROM BlockList b WHERE b.blockedId = :blockedId")
+    Set<Integer> findBlockerIdsByBlockedId(@Param("blockedId") Integer blockedId);
 
     void deleteByBlockerIdAndBlockedId(Integer blockerId, Integer blockedId);
 }
