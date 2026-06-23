@@ -57,21 +57,21 @@ public class MatrimonialExtProfileProcessor implements IMatrimonialExtProfilePro
     public BaseVO update(MatrimonialExtProfileVO vo) throws MatchmakingException {
         try {
             log.info("Validating inputs for matrimonial profile update.");
-            if (vo.getId() == null) {
-                throw new MatchmakingException("MatrimonialExtProfile ID cannot be null for update", VALIDATION_ERROR);
+            if (vo.getCognitoSub() == null) {
+                throw new MatchmakingException("cognitoSub cannot be null for update", VALIDATION_ERROR);
             }
             vo.validate();
             log.info("MatrimonialExtProfileVO validation completed successfully.");
 
-            log.trace("Fetching existing matrimonial profile for ID: {}", vo.getId());
-            Optional<MatrimonialExtProfile> fromDB = matrimonialExtProfileRepository.findById(vo.getId());
+            log.trace("Fetching profile for cognitoSub: {}", vo.getId());
+            Optional<MatrimonialExtProfile> fromDB = matrimonialExtProfileRepository.findByCognitoSub(vo.getCognitoSub());
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: matrimonial profile not found for ID: {}", vo.getId());
+                log.error("ALERT_FOR_ERROR: matrimonial profile not found for cognitoSub: {}", vo.getId());
                 throw new MatchmakingException("matrimonial profile does not exist", DATA_NOT_FOUND);
             }
 
             MatrimonialExtProfile profile = fromDB.get();
-            log.trace("matrimonial profile found for ID: {}. Applying updates.", vo.getId());
+            log.trace("matrimonial profile found for cognitoSub: {}. Applying updates.", vo.getId());
 
             profile.setReligion(vo.getReligion());
             profile.setCaste(vo.getCaste());
@@ -120,15 +120,15 @@ public class MatrimonialExtProfileProcessor implements IMatrimonialExtProfilePro
     }
 
     @Override
-    public BaseVO getById(String id) throws MatchmakingException {
+    public BaseVO getByCognitoSub(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Fetching matrimonial profile for ID: {}", id);
-            Optional<MatrimonialExtProfile> fromDB = matrimonialExtProfileRepository.findById(Integer.valueOf(id));
+            log.info("Fetching profile for cognitoSub: {}", cognitoSub);
+            Optional<MatrimonialExtProfile> fromDB = matrimonialExtProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: matrimonial profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("matrimonial profile does not exist", DATA_NOT_FOUND);
             }
-            log.info("matrimonial profile found for ID: {}", id);
+            log.info("Profile found for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "matrimonial profile fetched", "matrimonial profile fetched", fromDB.get().toVO());
         } catch (MatchmakingException ex) {
             throw ex;
@@ -158,16 +158,16 @@ public class MatrimonialExtProfileProcessor implements IMatrimonialExtProfilePro
     }
 
     @Override
-    public BaseVO delete(String id) throws MatchmakingException {
+    public BaseVO delete(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Deleting matrimonial profile for ID: {}", id);
-            Optional<MatrimonialExtProfile> fromDB = matrimonialExtProfileRepository.findById(Integer.valueOf(id));
+            log.info("Deleting matrimonial profile for cognitoSub: {}", cognitoSub);
+            Optional<MatrimonialExtProfile> fromDB = matrimonialExtProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: matrimonial profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("matrimonial profile does not exist", DATA_NOT_FOUND);
             }
-            matrimonialExtProfileRepository.deleteById(Integer.valueOf(id));
-            log.info("matrimonial profile hard-deleted for ID: {}", id);
+            matrimonialExtProfileRepository.delete(fromDB.get());
+            log.info("matrimonial profile hard-deleted for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "matrimonial profile deleted", "matrimonial profile deleted");
         } catch (MatchmakingException ex) {
             throw ex;

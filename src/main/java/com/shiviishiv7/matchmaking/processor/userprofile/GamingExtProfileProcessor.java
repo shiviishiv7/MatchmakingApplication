@@ -57,21 +57,21 @@ public class GamingExtProfileProcessor implements IGamingExtProfileProcessor {
     public BaseVO update(GamingExtProfileVO vo) throws MatchmakingException {
         try {
             log.info("Validating inputs for gaming profile update.");
-            if (vo.getId() == null) {
-                throw new MatchmakingException("GamingExtProfile ID cannot be null for update", VALIDATION_ERROR);
+            if (vo.getCognitoSub() == null) {
+                throw new MatchmakingException("cognitoSub cannot be null for update", VALIDATION_ERROR);
             }
             vo.validate();
             log.info("GamingExtProfileVO validation completed successfully.");
 
-            log.trace("Fetching existing gaming profile for ID: {}", vo.getId());
-            Optional<GamingExtProfile> fromDB = gamingExtProfileRepository.findById(vo.getId());
+            log.trace("Fetching profile for cognitoSub: {}", vo.getId());
+            Optional<GamingExtProfile> fromDB = gamingExtProfileRepository.findByCognitoSub(vo.getCognitoSub());
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: gaming profile not found for ID: {}", vo.getId());
+                log.error("ALERT_FOR_ERROR: gaming profile not found for cognitoSub: {}", vo.getId());
                 throw new MatchmakingException("gaming profile does not exist", DATA_NOT_FOUND);
             }
 
             GamingExtProfile profile = fromDB.get();
-            log.trace("gaming profile found for ID: {}. Applying updates.", vo.getId());
+            log.trace("gaming profile found for cognitoSub: {}. Applying updates.", vo.getId());
 
             profile.setPlatforms(vo.getPlatforms());
             profile.setFavoriteGames(vo.getFavoriteGames());
@@ -95,15 +95,15 @@ public class GamingExtProfileProcessor implements IGamingExtProfileProcessor {
     }
 
     @Override
-    public BaseVO getById(String id) throws MatchmakingException {
+    public BaseVO getByCognitoSub(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Fetching gaming profile for ID: {}", id);
-            Optional<GamingExtProfile> fromDB = gamingExtProfileRepository.findById(Integer.valueOf(id));
+            log.info("Fetching profile for cognitoSub: {}", cognitoSub);
+            Optional<GamingExtProfile> fromDB = gamingExtProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: gaming profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("gaming profile does not exist", DATA_NOT_FOUND);
             }
-            log.info("gaming profile found for ID: {}", id);
+            log.info("Profile found for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "gaming profile fetched", "gaming profile fetched", fromDB.get().toVO());
         } catch (MatchmakingException ex) {
             throw ex;
@@ -133,16 +133,16 @@ public class GamingExtProfileProcessor implements IGamingExtProfileProcessor {
     }
 
     @Override
-    public BaseVO delete(String id) throws MatchmakingException {
+    public BaseVO delete(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Deleting gaming profile for ID: {}", id);
-            Optional<GamingExtProfile> fromDB = gamingExtProfileRepository.findById(Integer.valueOf(id));
+            log.info("Deleting gaming profile for cognitoSub: {}", cognitoSub);
+            Optional<GamingExtProfile> fromDB = gamingExtProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: gaming profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("gaming profile does not exist", DATA_NOT_FOUND);
             }
-            gamingExtProfileRepository.deleteById(Integer.valueOf(id));
-            log.info("gaming profile hard-deleted for ID: {}", id);
+            gamingExtProfileRepository.delete(fromDB.get());
+            log.info("gaming profile hard-deleted for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "gaming profile deleted", "gaming profile deleted");
         } catch (MatchmakingException ex) {
             throw ex;

@@ -57,21 +57,21 @@ public class DatingExtProfileProcessor implements IDatingExtProfileProcessor {
     public BaseVO update(DatingExtProfileVO vo) throws MatchmakingException {
         try {
             log.info("Validating inputs for dating profile update.");
-            if (vo.getId() == null) {
-                throw new MatchmakingException("DatingExtProfile ID cannot be null for update", VALIDATION_ERROR);
+            if (vo.getCognitoSub() == null) {
+                throw new MatchmakingException("cognitoSub cannot be null for update", VALIDATION_ERROR);
             }
             vo.validate();
             log.info("DatingExtProfileVO validation completed successfully.");
 
-            log.trace("Fetching existing dating profile for ID: {}", vo.getId());
-            Optional<DatingExtProfile> fromDB = datingExtProfileRepository.findById(vo.getId());
+            log.trace("Fetching profile for cognitoSub: {}", vo.getId());
+            Optional<DatingExtProfile> fromDB = datingExtProfileRepository.findByCognitoSub(vo.getCognitoSub());
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: dating profile not found for ID: {}", vo.getId());
+                log.error("ALERT_FOR_ERROR: dating profile not found for cognitoSub: {}", vo.getId());
                 throw new MatchmakingException("dating profile does not exist", DATA_NOT_FOUND);
             }
 
             DatingExtProfile profile = fromDB.get();
-            log.trace("dating profile found for ID: {}. Applying updates.", vo.getId());
+            log.trace("dating profile found for cognitoSub: {}. Applying updates.", vo.getId());
 
             profile.setDietaryHabits(vo.getDietaryHabits());
             profile.setSmokingHabit(vo.getSmokingHabit());
@@ -108,15 +108,15 @@ public class DatingExtProfileProcessor implements IDatingExtProfileProcessor {
     }
 
     @Override
-    public BaseVO getById(String id) throws MatchmakingException {
+    public BaseVO getByCognitoSub(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Fetching dating profile for ID: {}", id);
-            Optional<DatingExtProfile> fromDB = datingExtProfileRepository.findById(Integer.valueOf(id));
+            log.info("Fetching profile for cognitoSub: {}", cognitoSub);
+            Optional<DatingExtProfile> fromDB = datingExtProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: dating profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("dating profile does not exist", DATA_NOT_FOUND);
             }
-            log.info("dating profile found for ID: {}", id);
+            log.info("Profile found for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "dating profile fetched", "dating profile fetched", fromDB.get().toVO());
         } catch (MatchmakingException ex) {
             throw ex;
@@ -146,16 +146,16 @@ public class DatingExtProfileProcessor implements IDatingExtProfileProcessor {
     }
 
     @Override
-    public BaseVO delete(String id) throws MatchmakingException {
+    public BaseVO delete(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Deleting dating profile for ID: {}", id);
-            Optional<DatingExtProfile> fromDB = datingExtProfileRepository.findById(Integer.valueOf(id));
+            log.info("Deleting dating profile for cognitoSub: {}", cognitoSub);
+            Optional<DatingExtProfile> fromDB = datingExtProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: dating profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("dating profile does not exist", DATA_NOT_FOUND);
             }
-            datingExtProfileRepository.deleteById(Integer.valueOf(id));
-            log.info("dating profile hard-deleted for ID: {}", id);
+            datingExtProfileRepository.delete(fromDB.get());
+            log.info("dating profile hard-deleted for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "dating profile deleted", "dating profile deleted");
         } catch (MatchmakingException ex) {
             throw ex;

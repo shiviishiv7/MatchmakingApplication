@@ -55,16 +55,16 @@ public class BaseUserProfileProcessor implements IBaseUserProfileProcessor {
     public BaseVO update(BaseUserProfileVO vo) throws MatchmakingException {
         try {
             log.info("Validating inputs for base profile update.");
-            if (vo.getId() == null) {
-                throw new MatchmakingException("Profile ID cannot be null for update", VALIDATION_ERROR);
+            if (vo.getCognitoSub() == null) {
+                throw new MatchmakingException("cognitoSub cannot be null for update", VALIDATION_ERROR);
             }
             vo.validate();
             log.info("BaseUserProfileVO validation completed successfully.");
 
-            log.trace("Fetching existing base profile for ID: {}", vo.getId());
-            Optional<BaseUserProfile> fromDB = baseUserProfileRepository.findById(vo.getId());
+            log.trace("Fetching existing base profile for cognitoSub: {}", vo.getCognitoSub());
+            Optional<BaseUserProfile> fromDB = baseUserProfileRepository.findByCognitoSub(vo.getCognitoSub());
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: Base profile not found for ID: {}", vo.getId());
+                log.error("ALERT_FOR_ERROR: Base profile not found for cognitoSub: {}", vo.getCognitoSub());
                 throw new MatchmakingException("Base profile does not exist", DATA_NOT_FOUND);
             }
 
@@ -100,15 +100,15 @@ public class BaseUserProfileProcessor implements IBaseUserProfileProcessor {
     }
 
     @Override
-    public BaseVO getById(String id) throws MatchmakingException {
+    public BaseVO getByCognitoSub(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Fetching base profile for ID: {}", id);
-            Optional<BaseUserProfile> fromDB = baseUserProfileRepository.findById(Integer.valueOf(id));
+            log.info("Fetching base profile for cognitoSub: {}", cognitoSub);
+            Optional<BaseUserProfile> fromDB = baseUserProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: Base profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: Base profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("Base profile does not exist", DATA_NOT_FOUND);
             }
-            log.info("Base profile found for ID: {}", id);
+            log.info("Base profile found for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "Base profile fetched", "Base profile fetched", fromDB.get().toVO());
         } catch (MatchmakingException ex) {
             throw ex;
@@ -138,43 +138,24 @@ public class BaseUserProfileProcessor implements IBaseUserProfileProcessor {
     }
 
     @Override
-    public BaseVO delete(String id) throws MatchmakingException {
+    public BaseVO delete(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Deactivating base profile for ID: {}", id);
-            Optional<BaseUserProfile> fromDB = baseUserProfileRepository.findById(Integer.valueOf(id));
+            log.info("Deactivating base profile for cognitoSub: {}", cognitoSub);
+            Optional<BaseUserProfile> fromDB = baseUserProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: Base profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: Base profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("Base profile does not exist", DATA_NOT_FOUND);
             }
             BaseUserProfile profile = fromDB.get();
             profile.setIsActive(false);
             baseUserProfileRepository.save(profile);
-            log.info("Base profile soft-deleted (deactivated) for ID: {}", id);
+            log.info("Base profile soft-deleted (deactivated) for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "Base profile deactivated", "Base profile deactivated");
         } catch (MatchmakingException ex) {
             throw ex;
         } catch (Exception ex) {
             log.error("ALERT_FOR_ERROR: Error occurred while deleting base profile. Error: {}", ex.getMessage(), ex);
             throw new MatchmakingException("Error occurred while deleting base profile: " + ex.getMessage(), UNKNOWN_EXCEPTION);
-        }
-    }
-    @Override
-    public BaseVO get(String id) throws MatchmakingException {
-        try {
-            log.info("Fetching user for ID: {}", id);
-            Optional<BaseUserProfile> optionalUser = baseUserProfileRepository.findById(Integer.valueOf(id));
-            if (optionalUser.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: User not found for ID: {}", id);
-                throw new MatchmakingException("User does not exist", DATA_NOT_FOUND);
-            }
-            BaseUserProfileVO vo = optionalUser.get().toVO();
-            log.info("User found for ID: {}", id);
-            return new BaseVO(SUCCESS, "User record fetched", "User record fetched", vo);
-        } catch (MatchmakingException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            log.error("ALERT_FOR_ERROR: Error occurred while fetching user. Error: {}", ex.getMessage(), ex);
-            throw new MatchmakingException("Error occurred while fetching user: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
 

@@ -10,11 +10,11 @@ public interface IBaseUserProfileProcessor {
 
     BaseVO update(BaseUserProfileVO vo) throws MatchmakingException;
 
-    BaseVO getById(String id) throws MatchmakingException;
+    BaseVO getByCognitoSub(String cognitoSub) throws MatchmakingException;
 
     BaseVO getByUserId(String userId) throws MatchmakingException;
 
-    BaseVO delete(String id) throws MatchmakingException;
-    BaseVO get(String id) throws MatchmakingException;
+    BaseVO delete(String cognitoSub) throws MatchmakingException;
+
     BaseVO getByEmail(String email) throws MatchmakingException;
 }

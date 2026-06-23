@@ -57,21 +57,21 @@ public class TravelExtProfileProcessor implements ITravelExtProfileProcessor {
     public BaseVO update(TravelExtProfileVO vo) throws MatchmakingException {
         try {
             log.info("Validating inputs for travel profile update.");
-            if (vo.getId() == null) {
-                throw new MatchmakingException("TravelExtProfile ID cannot be null for update", VALIDATION_ERROR);
+            if (vo.getCognitoSub() == null) {
+                throw new MatchmakingException("cognitoSub cannot be null for update", VALIDATION_ERROR);
             }
             vo.validate();
             log.info("TravelExtProfileVO validation completed successfully.");
 
-            log.trace("Fetching existing travel profile for ID: {}", vo.getId());
-            Optional<TravelExtProfile> fromDB = travelExtProfileRepository.findById(vo.getId());
+            log.trace("Fetching profile for cognitoSub: {}", vo.getId());
+            Optional<TravelExtProfile> fromDB = travelExtProfileRepository.findByCognitoSub(vo.getCognitoSub());
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: travel profile not found for ID: {}", vo.getId());
+                log.error("ALERT_FOR_ERROR: travel profile not found for cognitoSub: {}", vo.getId());
                 throw new MatchmakingException("travel profile does not exist", DATA_NOT_FOUND);
             }
 
             TravelExtProfile profile = fromDB.get();
-            log.trace("travel profile found for ID: {}. Applying updates.", vo.getId());
+            log.trace("travel profile found for cognitoSub: {}. Applying updates.", vo.getId());
 
             profile.setTravelStyle(vo.getTravelStyle());
             profile.setPreferredDestinations(vo.getPreferredDestinations());
@@ -100,15 +100,15 @@ public class TravelExtProfileProcessor implements ITravelExtProfileProcessor {
     }
 
     @Override
-    public BaseVO getById(String id) throws MatchmakingException {
+    public BaseVO getByCognitoSub(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Fetching travel profile for ID: {}", id);
-            Optional<TravelExtProfile> fromDB = travelExtProfileRepository.findById(Integer.valueOf(id));
+            log.info("Fetching profile for cognitoSub: {}", cognitoSub);
+            Optional<TravelExtProfile> fromDB = travelExtProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: travel profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("travel profile does not exist", DATA_NOT_FOUND);
             }
-            log.info("travel profile found for ID: {}", id);
+            log.info("Profile found for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "travel profile fetched", "travel profile fetched", fromDB.get().toVO());
         } catch (MatchmakingException ex) {
             throw ex;
@@ -138,16 +138,16 @@ public class TravelExtProfileProcessor implements ITravelExtProfileProcessor {
     }
 
     @Override
-    public BaseVO delete(String id) throws MatchmakingException {
+    public BaseVO delete(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Deleting travel profile for ID: {}", id);
-            Optional<TravelExtProfile> fromDB = travelExtProfileRepository.findById(Integer.valueOf(id));
+            log.info("Deleting travel profile for cognitoSub: {}", cognitoSub);
+            Optional<TravelExtProfile> fromDB = travelExtProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: travel profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("travel profile does not exist", DATA_NOT_FOUND);
             }
-            travelExtProfileRepository.deleteById(Integer.valueOf(id));
-            log.info("travel profile hard-deleted for ID: {}", id);
+            travelExtProfileRepository.delete(fromDB.get());
+            log.info("travel profile hard-deleted for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "travel profile deleted", "travel profile deleted");
         } catch (MatchmakingException ex) {
             throw ex;

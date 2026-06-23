@@ -56,21 +56,21 @@ public class PartnerPreferenceProcessor implements IPartnerPreferenceProcessor {
     public BaseVO update(PartnerPreferenceVO vo) throws MatchmakingException {
         try {
             log.info("Validating inputs for partner preference update.");
-            if (vo.getId() == null) {
-                throw new MatchmakingException("PartnerPreference ID cannot be null for update", VALIDATION_ERROR);
+            if (vo.getCognitoSub() == null) {
+                throw new MatchmakingException("cognitoSub cannot be null for update", VALIDATION_ERROR);
             }
             vo.validate();
             log.info("PartnerPreferenceVO validation completed successfully.");
 
-            log.trace("Fetching existing partner preference for ID: {}", vo.getId());
-            Optional<PartnerPreference> fromDB = partnerPreferenceRepository.findById(vo.getId());
+            log.trace("Fetching existing partner preference for cognitoSub: {}", vo.getCognitoSub());
+            Optional<PartnerPreference> fromDB = partnerPreferenceRepository.findByCognitoSub(vo.getCognitoSub());
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: partner preference not found for ID: {}", vo.getId());
+                log.error("ALERT_FOR_ERROR: partner preference not found for cognitoSub: {}", vo.getCognitoSub());
                 throw new MatchmakingException("partner preference does not exist", DATA_NOT_FOUND);
             }
 
             PartnerPreference profile = fromDB.get();
-            log.trace("partner preference found for ID: {}. Applying updates.", vo.getId());
+            log.trace("partner preference found for cognitoSub: {}", vo.getCognitoSub());
 
             profile.setAgeMin(vo.getAgeMin());
             profile.setAgeMax(vo.getAgeMax());
@@ -110,15 +110,15 @@ public class PartnerPreferenceProcessor implements IPartnerPreferenceProcessor {
     }
 
     @Override
-    public BaseVO getById(String id) throws MatchmakingException {
+    public BaseVO getByCognitoSub(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Fetching partner preference for ID: {}", id);
-            Optional<PartnerPreference> fromDB = partnerPreferenceRepository.findById(Integer.valueOf(id));
+            log.info("Fetching partner preference for cognitoSub: {}", cognitoSub);
+            Optional<PartnerPreference> fromDB = partnerPreferenceRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: partner preference not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: partner preference not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("partner preference does not exist", DATA_NOT_FOUND);
             }
-            log.info("partner preference found for ID: {}", id);
+            log.info("partner preference found for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "partner preference fetched", "partner preference fetched", fromDB.get().toVO());
         } catch (MatchmakingException ex) {
             throw ex;
@@ -148,16 +148,16 @@ public class PartnerPreferenceProcessor implements IPartnerPreferenceProcessor {
     }
 
     @Override
-    public BaseVO delete(String id) throws MatchmakingException {
+    public BaseVO delete(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Deleting partner preference for ID: {}", id);
-            Optional<PartnerPreference> fromDB = partnerPreferenceRepository.findById(Integer.valueOf(id));
+            log.info("Deleting partner preference for cognitoSub: {}", cognitoSub);
+            Optional<PartnerPreference> fromDB = partnerPreferenceRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: partner preference not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: partner preference not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("partner preference does not exist", DATA_NOT_FOUND);
             }
-            partnerPreferenceRepository.deleteById(Integer.valueOf(id));
-            log.info("partner preference hard-deleted for ID: {}", id);
+            partnerPreferenceRepository.delete(fromDB.get());
+            log.info("partner preference hard-deleted for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "partner preference deleted", "partner preference deleted");
         } catch (MatchmakingException ex) {
             throw ex;

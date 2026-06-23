@@ -57,21 +57,21 @@ public class FitnessExtProfileProcessor implements IFitnessExtProfileProcessor {
     public BaseVO update(FitnessExtProfileVO vo) throws MatchmakingException {
         try {
             log.info("Validating inputs for fitness profile update.");
-            if (vo.getId() == null) {
-                throw new MatchmakingException("FitnessExtProfile ID cannot be null for update", VALIDATION_ERROR);
+            if (vo.getCognitoSub() == null) {
+                throw new MatchmakingException("cognitoSub cannot be null for update", VALIDATION_ERROR);
             }
             vo.validate();
             log.info("FitnessExtProfileVO validation completed successfully.");
 
-            log.trace("Fetching existing fitness profile for ID: {}", vo.getId());
-            Optional<FitnessExtProfile> fromDB = fitnessExtProfileRepository.findById(vo.getId());
+            log.trace("Fetching profile for cognitoSub: {}", vo.getId());
+            Optional<FitnessExtProfile> fromDB = fitnessExtProfileRepository.findByCognitoSub(vo.getCognitoSub());
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: fitness profile not found for ID: {}", vo.getId());
+                log.error("ALERT_FOR_ERROR: fitness profile not found for cognitoSub: {}", vo.getId());
                 throw new MatchmakingException("fitness profile does not exist", DATA_NOT_FOUND);
             }
 
             FitnessExtProfile profile = fromDB.get();
-            log.trace("fitness profile found for ID: {}. Applying updates.", vo.getId());
+            log.trace("fitness profile found for cognitoSub: {}. Applying updates.", vo.getId());
 
             profile.setFitnessActivities(vo.getFitnessActivities());
             profile.setFitnessLevel(vo.getFitnessLevel());
@@ -96,15 +96,15 @@ public class FitnessExtProfileProcessor implements IFitnessExtProfileProcessor {
     }
 
     @Override
-    public BaseVO getById(String id) throws MatchmakingException {
+    public BaseVO getByCognitoSub(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Fetching fitness profile for ID: {}", id);
-            Optional<FitnessExtProfile> fromDB = fitnessExtProfileRepository.findById(Integer.valueOf(id));
+            log.info("Fetching profile for cognitoSub: {}", cognitoSub);
+            Optional<FitnessExtProfile> fromDB = fitnessExtProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: fitness profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("fitness profile does not exist", DATA_NOT_FOUND);
             }
-            log.info("fitness profile found for ID: {}", id);
+            log.info("Profile found for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "fitness profile fetched", "fitness profile fetched", fromDB.get().toVO());
         } catch (MatchmakingException ex) {
             throw ex;
@@ -134,16 +134,16 @@ public class FitnessExtProfileProcessor implements IFitnessExtProfileProcessor {
     }
 
     @Override
-    public BaseVO delete(String id) throws MatchmakingException {
+    public BaseVO delete(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Deleting fitness profile for ID: {}", id);
-            Optional<FitnessExtProfile> fromDB = fitnessExtProfileRepository.findById(Integer.valueOf(id));
+            log.info("Deleting fitness profile for cognitoSub: {}", cognitoSub);
+            Optional<FitnessExtProfile> fromDB = fitnessExtProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: fitness profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("fitness profile does not exist", DATA_NOT_FOUND);
             }
-            fitnessExtProfileRepository.deleteById(Integer.valueOf(id));
-            log.info("fitness profile hard-deleted for ID: {}", id);
+            fitnessExtProfileRepository.delete(fromDB.get());
+            log.info("fitness profile hard-deleted for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "fitness profile deleted", "fitness profile deleted");
         } catch (MatchmakingException ex) {
             throw ex;

@@ -11,7 +11,7 @@ public interface IFitnessExtProfileProcessor {
 
     BaseVO update(FitnessExtProfileVO vo) throws MatchmakingException;
 
-    BaseVO getById(String id) throws MatchmakingException;
+    BaseVO getByCognitoSub(String cognitoSub) throws MatchmakingException;
 
     BaseVO getByUserId(String userId) throws MatchmakingException;
 

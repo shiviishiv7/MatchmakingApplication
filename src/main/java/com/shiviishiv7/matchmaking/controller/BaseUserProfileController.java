@@ -45,21 +45,23 @@ public class BaseUserProfileController {
     @Operation(summary = "Update an existing base user profile")
     public ResponseEntity<BaseVO> update(@RequestBody BaseUserProfileVO profileVO) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("Request received to update base profile with ID: {} by sub: {}", profileVO.getId(), sub);
+        // Always bind the authenticated user's sub — prevents updating another user's profile
+        profileVO.setCognitoSub(sub);
+        log.info("Request received to update base profile for sub: {}", sub);
 
         BaseVO response = baseUserProfileProcessor.update(profileVO);
-        log.info("Successfully updated base profile with ID: {} by sub: {}", profileVO.getId(), sub);
+        log.info("Successfully updated base profile for sub: {}", sub);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @GetMapping(value = "/{id}", produces = "application/json")
-    @Operation(summary = "Get base user profile by profile ID")
-    public ResponseEntity<BaseVO> get(@PathVariable("id") String id) throws MatchmakingException {
+    @GetMapping(value = "/{cognitoSub}", produces = "application/json")
+    @Operation(summary = "Get base user profile by Cognito sub")
+    public ResponseEntity<BaseVO> getByCognitoSub(@PathVariable("cognitoSub") String cognitoSub) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("Request received to fetch base profile with ID: {} by sub: {}", id, sub);
+        log.info("Request received to fetch base profile for cognitoSub: {} by sub: {}", cognitoSub, sub);
 
-        BaseVO response = baseUserProfileProcessor.get(id);
-        log.info("Successfully fetched base profile with ID: {} by sub: {}", id, sub);
+        BaseVO response = baseUserProfileProcessor.getByCognitoSub(cognitoSub);
+        log.info("Successfully fetched base profile for cognitoSub: {} by sub: {}", cognitoSub, sub);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -85,14 +87,14 @@ public class BaseUserProfileController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @PostMapping(value = "/delete/{id}", produces = "application/json")
-    @Operation(summary = "Soft-delete/Deactivate base user profile by ID")
-    public ResponseEntity<BaseVO> delete(@PathVariable("id") String id) throws MatchmakingException {
+    @PostMapping(value = "/delete/{cognitoSub}", produces = "application/json")
+    @Operation(summary = "Soft-delete/Deactivate base user profile by Cognito sub")
+    public ResponseEntity<BaseVO> delete(@PathVariable("cognitoSub") String cognitoSub) throws MatchmakingException {
         String sub = securityUtility.getAuthenticatedUserSub();
-        log.info("Request received to deactivate base profile with ID: {} by sub: {}", id, sub);
+        log.info("Request received to deactivate base profile for cognitoSub: {} by sub: {}", cognitoSub, sub);
 
-        BaseVO response = baseUserProfileProcessor.delete(id);
-        log.info("Successfully deactivated base profile with ID: {} by sub: {}", id, sub);
+        BaseVO response = baseUserProfileProcessor.delete(cognitoSub);
+        log.info("Successfully deactivated base profile for cognitoSub: {} by sub: {}", cognitoSub, sub);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

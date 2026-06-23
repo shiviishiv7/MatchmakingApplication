@@ -57,21 +57,21 @@ public class FlatmateExtProfileProcessor implements IFlatmateExtProfileProcessor
     public BaseVO update(FlatmateExtProfileVO vo) throws MatchmakingException {
         try {
             log.info("Validating inputs for flatmate profile update.");
-            if (vo.getId() == null) {
-                throw new MatchmakingException("FlatmateExtProfile ID cannot be null for update", VALIDATION_ERROR);
+            if (vo.getCognitoSub() == null) {
+                throw new MatchmakingException("cognitoSub cannot be null for update", VALIDATION_ERROR);
             }
             vo.validate();
             log.info("FlatmateExtProfileVO validation completed successfully.");
 
-            log.trace("Fetching existing flatmate profile for ID: {}", vo.getId());
-            Optional<FlatmateExtProfile> fromDB = flatmateExtProfileRepository.findById(vo.getId());
+            log.trace("Fetching profile for cognitoSub: {}", vo.getId());
+            Optional<FlatmateExtProfile> fromDB = flatmateExtProfileRepository.findByCognitoSub(vo.getCognitoSub());
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: flatmate profile not found for ID: {}", vo.getId());
+                log.error("ALERT_FOR_ERROR: flatmate profile not found for cognitoSub: {}", vo.getId());
                 throw new MatchmakingException("flatmate profile does not exist", DATA_NOT_FOUND);
             }
 
             FlatmateExtProfile profile = fromDB.get();
-            log.trace("flatmate profile found for ID: {}. Applying updates.", vo.getId());
+            log.trace("flatmate profile found for cognitoSub: {}. Applying updates.", vo.getId());
 
             profile.setLookingIn(vo.getLookingIn());
             profile.setBudgetRangeInr(vo.getBudgetRangeInr());
@@ -101,15 +101,15 @@ public class FlatmateExtProfileProcessor implements IFlatmateExtProfileProcessor
     }
 
     @Override
-    public BaseVO getById(String id) throws MatchmakingException {
+    public BaseVO getByCognitoSub(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Fetching flatmate profile for ID: {}", id);
-            Optional<FlatmateExtProfile> fromDB = flatmateExtProfileRepository.findById(Integer.valueOf(id));
+            log.info("Fetching profile for cognitoSub: {}", cognitoSub);
+            Optional<FlatmateExtProfile> fromDB = flatmateExtProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: flatmate profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("flatmate profile does not exist", DATA_NOT_FOUND);
             }
-            log.info("flatmate profile found for ID: {}", id);
+            log.info("Profile found for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "flatmate profile fetched", "flatmate profile fetched", fromDB.get().toVO());
         } catch (MatchmakingException ex) {
             throw ex;
@@ -139,16 +139,16 @@ public class FlatmateExtProfileProcessor implements IFlatmateExtProfileProcessor
     }
 
     @Override
-    public BaseVO delete(String id) throws MatchmakingException {
+    public BaseVO delete(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Deleting flatmate profile for ID: {}", id);
-            Optional<FlatmateExtProfile> fromDB = flatmateExtProfileRepository.findById(Integer.valueOf(id));
+            log.info("Deleting flatmate profile for cognitoSub: {}", cognitoSub);
+            Optional<FlatmateExtProfile> fromDB = flatmateExtProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: flatmate profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("flatmate profile does not exist", DATA_NOT_FOUND);
             }
-            flatmateExtProfileRepository.deleteById(Integer.valueOf(id));
-            log.info("flatmate profile hard-deleted for ID: {}", id);
+            flatmateExtProfileRepository.delete(fromDB.get());
+            log.info("flatmate profile hard-deleted for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "flatmate profile deleted", "flatmate profile deleted");
         } catch (MatchmakingException ex) {
             throw ex;

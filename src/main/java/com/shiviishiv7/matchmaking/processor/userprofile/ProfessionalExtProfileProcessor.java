@@ -57,21 +57,21 @@ public class ProfessionalExtProfileProcessor implements IProfessionalExtProfileP
     public BaseVO update(ProfessionalExtProfileVO vo) throws MatchmakingException {
         try {
             log.info("Validating inputs for professional profile update.");
-            if (vo.getId() == null) {
-                throw new MatchmakingException("ProfessionalExtProfile ID cannot be null for update", VALIDATION_ERROR);
+            if (vo.getCognitoSub() == null) {
+                throw new MatchmakingException("cognitoSub cannot be null for update", VALIDATION_ERROR);
             }
             vo.validate();
             log.info("ProfessionalExtProfileVO validation completed successfully.");
 
-            log.trace("Fetching existing professional profile for ID: {}", vo.getId());
-            Optional<ProfessionalExtProfile> fromDB = professionalExtProfileRepository.findById(vo.getId());
+            log.trace("Fetching profile for cognitoSub: {}", vo.getId());
+            Optional<ProfessionalExtProfile> fromDB = professionalExtProfileRepository.findByCognitoSub(vo.getCognitoSub());
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: professional profile not found for ID: {}", vo.getId());
+                log.error("ALERT_FOR_ERROR: professional profile not found for cognitoSub: {}", vo.getId());
                 throw new MatchmakingException("professional profile does not exist", DATA_NOT_FOUND);
             }
 
             ProfessionalExtProfile profile = fromDB.get();
-            log.trace("professional profile found for ID: {}. Applying updates.", vo.getId());
+            log.trace("professional profile found for cognitoSub: {}. Applying updates.", vo.getId());
 
             profile.setCurrentRole(vo.getCurrentRole());
             profile.setCurrentCompany(vo.getCurrentCompany());
@@ -103,15 +103,15 @@ public class ProfessionalExtProfileProcessor implements IProfessionalExtProfileP
     }
 
     @Override
-    public BaseVO getById(String id) throws MatchmakingException {
+    public BaseVO getByCognitoSub(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Fetching professional profile for ID: {}", id);
-            Optional<ProfessionalExtProfile> fromDB = professionalExtProfileRepository.findById(Integer.valueOf(id));
+            log.info("Fetching profile for cognitoSub: {}", cognitoSub);
+            Optional<ProfessionalExtProfile> fromDB = professionalExtProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: professional profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("professional profile does not exist", DATA_NOT_FOUND);
             }
-            log.info("professional profile found for ID: {}", id);
+            log.info("Profile found for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "professional profile fetched", "professional profile fetched", fromDB.get().toVO());
         } catch (MatchmakingException ex) {
             throw ex;
@@ -141,16 +141,16 @@ public class ProfessionalExtProfileProcessor implements IProfessionalExtProfileP
     }
 
     @Override
-    public BaseVO delete(String id) throws MatchmakingException {
+    public BaseVO delete(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Deleting professional profile for ID: {}", id);
-            Optional<ProfessionalExtProfile> fromDB = professionalExtProfileRepository.findById(Integer.valueOf(id));
+            log.info("Deleting professional profile for cognitoSub: {}", cognitoSub);
+            Optional<ProfessionalExtProfile> fromDB = professionalExtProfileRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: professional profile not found for ID: {}", id);
+                log.error("ALERT_FOR_ERROR: profile not found for cognitoSub: {}", cognitoSub);
                 throw new MatchmakingException("professional profile does not exist", DATA_NOT_FOUND);
             }
-            professionalExtProfileRepository.deleteById(Integer.valueOf(id));
-            log.info("professional profile hard-deleted for ID: {}", id);
+            professionalExtProfileRepository.delete(fromDB.get());
+            log.info("professional profile hard-deleted for cognitoSub: {}", cognitoSub);
             return new BaseVO(SUCCESS, "professional profile deleted", "professional profile deleted");
         } catch (MatchmakingException ex) {
             throw ex;
