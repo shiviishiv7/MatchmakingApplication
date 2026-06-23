@@ -24,4 +24,8 @@ public class BaseVO {
         this.description = description;
         this.data = data;
     }
+
+    public BaseVO() {
+
+    }
 }
