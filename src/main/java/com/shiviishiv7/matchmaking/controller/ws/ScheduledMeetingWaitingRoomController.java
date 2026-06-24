@@ -81,7 +81,7 @@ public class ScheduledMeetingWaitingRoomController {
         Optional<MatchResult> optionalMatch = matchRepository.findById(Integer.valueOf(meeting.getMatchId()));
         MatchResult match = optionalMatch.get();
         String subA = match.getCognitoSubA();
-        String subB = match.getCognitoSubA();
+        String subB = match.getCognitoSubB();
 
         String matchId = match.getId().toString();
 

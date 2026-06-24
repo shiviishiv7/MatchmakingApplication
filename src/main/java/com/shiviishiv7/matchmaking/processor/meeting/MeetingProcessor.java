@@ -3,11 +3,12 @@ package com.shiviishiv7.matchmaking.processor.meeting;
 import com.shiviishiv7.matchmaking.common.enums.MatchStatus;
 import com.shiviishiv7.matchmaking.common.enums.MeetingStatus;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
+import com.shiviishiv7.matchmaking.provider.implementation.BaseUserProfileRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.MatchResultRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.MeetingRepository;
-
 import com.shiviishiv7.matchmaking.provider.model.MatchResult;
 import com.shiviishiv7.matchmaking.provider.model.Meeting;
+import com.shiviishiv7.matchmaking.provider.model.profile.BaseUserProfile;
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import com.shiviishiv7.matchmaking.provider.vo.MeetingVO;
 import jakarta.transaction.Transactional;
@@ -35,6 +36,9 @@ public class MeetingProcessor implements IMeetingProcessor {
 
     @Autowired
     private MatchResultRepository matchRepository;
+
+    @Autowired
+    private BaseUserProfileRepository userProfileRepository;
 
     @Override
     public BaseVO add(MeetingVO meetingVO) throws MatchmakingException {
@@ -154,15 +158,16 @@ public class MeetingProcessor implements IMeetingProcessor {
 
             List<MeetingVO> result = meetings.stream().map(m -> {
                 MeetingVO vo = new MeetingVO().toVO(m);
-                // Resolve the peer — the other participant in the match
-//                var match = m.getMatch();
-//                if (match != null) {
-//                    boolean iAmA = match.getUserA().getCognitoSub().equals(sub);
-//                    var peer = iAmA ? match.getUserB() : match.getUserA();
-//                    vo.setPeerFirstName(peer.getFirstName());
-//                    vo.setPeerLastName(peer.getLastName());
-//                    vo.setPeerCognitoSub(peer.getCognitoSub());
-//                }
+                matchRepository.findById(Integer.valueOf(m.getMatchId())).ifPresent(match -> {
+                    String peerSub = match.getCognitoSubA().equals(sub)
+                            ? match.getCognitoSubB()
+                            : match.getCognitoSubA();
+                    userProfileRepository.findByCognitoSub(peerSub).ifPresent(peer -> {
+                        vo.setPeerFirstName(peer.getName());
+                        vo.setPeerLastName("");
+                        vo.setPeerCognitoSub(peerSub);
+                    });
+                });
                 return vo;
             }).collect(Collectors.toList());
 
