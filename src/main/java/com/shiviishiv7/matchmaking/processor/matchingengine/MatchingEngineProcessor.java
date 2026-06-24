@@ -4,11 +4,14 @@ package com.shiviishiv7.matchmaking.processor.matchingengine;
 
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
 import com.shiviishiv7.matchmaking.common.enums.MatchStatus;
+import com.shiviishiv7.matchmaking.common.enums.MeetingStatus;
+import com.shiviishiv7.matchmaking.common.enums.MeetingType;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.implementation.BlockListRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.MatchResultRepository;
+import com.shiviishiv7.matchmaking.provider.implementation.MeetingRepository;
 import com.shiviishiv7.matchmaking.provider.model.MatchResult;
-
+import com.shiviishiv7.matchmaking.provider.model.Meeting;
 import com.shiviishiv7.matchmaking.provider.vo.MatchCandidateVO;
 import com.shiviishiv7.matchmaking.provider.vo.MatchDiscoveryRequestVO;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +44,12 @@ public class MatchingEngineProcessor {
     private MatchResultRepository matchResultRepository;
 
     @Autowired
+    private MeetingRepository meetingRepository;
+
+    @Autowired
     private BlockListRepository blockListRepository;
+
+    private static final int SCHEDULE_AHEAD_HOURS = 3;
 
     /**
      * Spring injects all CategoryScorer beans here at startup.
@@ -177,11 +185,32 @@ public class MatchingEngineProcessor {
                             mirror.setStatus(MatchStatus.CONNECTED);
                             matchResultRepository.save(mirror);
                         });
+
+                // Auto-schedule round 1 meeting for now + 3 hours
+                scheduleFirstMeeting(result);
             }
         }
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────
+
+    private void scheduleFirstMeeting(MatchResult match) {
+        try {
+            Meeting meeting = Meeting.builder()
+                    .matchId(match.getId().toString())
+                    .roundNumber(1)
+                    .scheduledAt(LocalDateTime.now().plusHours(SCHEDULE_AHEAD_HOURS))
+                    .meetingType(MeetingType.SCHEDULED)
+                    .status(MeetingStatus.SCHEDULED)
+                    .durationMinutes(30)
+                    .build();
+            meetingRepository.save(meeting);
+            log.info("Scheduled round-1 meeting for matchId={} at {}", match.getId(), meeting.getScheduledAt());
+        } catch (Exception ex) {
+            log.error("ALERT_FOR_ERROR: Failed to schedule meeting for matchId={}. Error: {}",
+                    match.getId(), ex.getMessage(), ex);
+        }
+    }
 
     private void persistShownResults(String cognitoSubA, MatchCategory category,
                                      List<MatchCandidateVO> results) {
