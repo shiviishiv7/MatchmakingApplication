@@ -54,25 +54,21 @@ public class MatchmakingWebSocketController {
     @MessageMapping("/webrtc.join")
     public void userJoin(SimpMessageHeaderAccessor headerAccessor) throws MatchmakingException {
         String sub = getPrincipalName(headerAccessor);
-        log.info("[JOIN] User joined pool: {}", sub);
 
-        // Resolve user from DB and add to pool
-        BaseUserProfile user = resolveUser(sub);
-        userPoolService.addUser(new PoolUserVO(
-                sub,
-                user.getName(),
-                user.getName()
-//                user.getIndustry()
-        ));
+        if (!userPoolService.isInPool(sub)) {
+            BaseUserProfile user = resolveUser(sub);
+            userPoolService.addUser(new PoolUserVO(
+                    sub,
+                    user.getName(),
+                    user.getName()
+//                    user.getIndustry()
+            ));
+            log.info("[JOIN] User added to pool: {}", sub);
+        } else {
+            log.info("[JOIN] User already in pool, skipping add: {}", sub);
+        }
 
-        // Send the available user list back to the joining user only
         List<PoolUserVO> availableUsers = userPoolService.getOtherUsers(sub);
-        WebRTCSignalVO response = new WebRTCSignalVO();
-        response.setType("POOL_LIST");
-        response.setFromUserId("server");
-        response.setToUserId(sub);
-        response.setPayload(availableUsers.toString()); // serialized by Spring as JSON
-
         messagingTemplate.convertAndSendToUser(sub, USER_QUEUE, availableUsers);
         log.info("[JOIN] Sent pool list ({} users) to {}", availableUsers.size(), sub);
     }
@@ -88,12 +84,41 @@ public class MatchmakingWebSocketController {
                                   SimpMessageHeaderAccessor headerAccessor) {
         String callerSub = getPrincipalName(headerAccessor);
         signal.setFromUserId(callerSub);
+
+        String targetSub = signal.getToUserId();
+
+        if (userPoolService.isBusy(targetSub)) {
+            log.info("[REQUEST] {} is busy, notifying caller {}", targetSub, callerSub);
+            WebRTCSignalVO busySignal = new WebRTCSignalVO();
+            busySignal.setType("BUSY");
+            busySignal.setFromUserId(targetSub);
+            busySignal.setToUserId(callerSub);
+            messagingTemplate.convertAndSendToUser(callerSub, USER_QUEUE, busySignal);
+            return;
+        }
+
         signal.setType("CONNECTION_REQUEST");
+        log.info("[REQUEST] {} wants to connect to {}", callerSub, targetSub);
+        messagingTemplate.convertAndSendToUser(targetSub, USER_QUEUE, signal);
+    }
 
-        log.info("[REQUEST] {} wants to connect to {}", callerSub, signal.getToUserId());
+    /**
+     * Callee is busy in another call — they notify the server which forwards
+     * a BUSY signal to the original caller so the caller moves to the next user.
+     */
+    @MessageMapping("/webrtc.busy")
+    public void connectionBusy(@Payload WebRTCSignalVO signal,
+                               SimpMessageHeaderAccessor headerAccessor) {
+        String calleeSub = getPrincipalName(headerAccessor);
+        String callerSub = signal.getToUserId();
 
-        // Forward request to callee
-        messagingTemplate.convertAndSendToUser(signal.getToUserId(), USER_QUEUE, signal);
+        log.info("[BUSY] {} is busy, notifying caller {}", calleeSub, callerSub);
+
+        WebRTCSignalVO busySignal = new WebRTCSignalVO();
+        busySignal.setType("BUSY");
+        busySignal.setFromUserId(calleeSub);
+        busySignal.setToUserId(callerSub);
+        messagingTemplate.convertAndSendToUser(callerSub, USER_QUEUE, busySignal);
     }
 
     // ─── Step 3: Caller sends SDP Offer ──────────────────────────────────────
@@ -129,9 +154,12 @@ public class MatchmakingWebSocketController {
         signal.setFromUserId(calleeSub);
         signal.setType("ANSWER");
 
-        log.info("[ANSWER] Forwarding SDP answer from {} to {}", calleeSub, signal.getToUserId());
+        // Both sides are now in a call — mark them busy
+        userPoolService.markBusy(calleeSub);
+        userPoolService.markBusy(signal.getToUserId());
+        log.info("[ANSWER] Marking {} and {} as busy", calleeSub, signal.getToUserId());
 
-        // Forward answer to caller
+        log.info("[ANSWER] Forwarding SDP answer from {} to {}", calleeSub, signal.getToUserId());
         messagingTemplate.convertAndSendToUser(signal.getToUserId(), USER_QUEUE, signal);
     }
 
@@ -165,7 +193,7 @@ public class MatchmakingWebSocketController {
     public void handleLeave(@Payload WebRTCSignalVO signal,
                             SimpMessageHeaderAccessor headerAccessor) {
         String leavingSub = getPrincipalName(headerAccessor);
-        userPoolService.removeUser(leavingSub);
+        userPoolService.removeUser(leavingSub); // also clears busy state
         log.info("[LEAVE] User {} left the pool", leavingSub);
 
         // Notify the other peer if they were in a call
