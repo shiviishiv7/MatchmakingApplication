@@ -2,7 +2,10 @@ package com.shiviishiv7.matchmaking.controller.ws;
 
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.implementation.BaseUserProfileRepository;
+import com.shiviishiv7.matchmaking.provider.implementation.CategoryProfileRegistryRepository;
+import com.shiviishiv7.matchmaking.provider.model.CategoryProfileRegistry;
 import com.shiviishiv7.matchmaking.provider.model.profile.BaseUserProfile;
+import com.shiviishiv7.matchmaking.provider.vo.ws.InstantSearchFilterVO;
 import com.shiviishiv7.matchmaking.provider.vo.ws.PoolUserVO;
 import com.shiviishiv7.matchmaking.provider.vo.ws.WebRTCSignalVO;
 import com.shiviishiv7.matchmaking.service.pool.UserPoolService;
@@ -15,18 +18,22 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Handles WebRTC signaling over STOMP WebSocket.
  *
  * Full flow:
- *  1. /app/webrtc.join              — user joins pool, receives available users list
- *  2. /app/webrtc.request           — caller sends connection request to a specific user
- *  3. /app/webrtc.offer             — caller sends SDP offer → forwarded to callee
- *  4. /app/webrtc.answer            — callee sends SDP answer → forwarded to caller
- *  5. /app/webrtc.ice               — either peer sends ICE candidate → forwarded to other peer
- *  6. /app/webrtc.leave             — user leaves, pool updated, other peer notified
+ *  1. /app/webrtc.join     — user joins pool; receives no-filter pool list; pending requesters notified if new user matches
+ *  2. /app/webrtc.search   — user sends filter; receives filtered pool list or NO_MATCH_NOW
+ *  3. /app/webrtc.request  — caller sends connection request to a specific user
+ *  4. /app/webrtc.busy     — callee is in a call; server notifies caller with BUSY
+ *  5. /app/webrtc.offer    — caller sends SDP offer → forwarded to callee
+ *  6. /app/webrtc.answer   — callee sends SDP answer → forwarded to caller; both marked busy
+ *  7. /app/webrtc.ice      — either peer sends ICE candidate → forwarded to other peer
+ *  8. /app/webrtc.leave    — user leaves; pool updated; other peer notified
  *
  * All responses go to /user/{sub}/queue/webrtc on the client.
  */
@@ -36,64 +43,94 @@ public class MatchmakingWebSocketController {
 
     private static final String USER_QUEUE = "/queue/webrtc";
 
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
-
-    @Autowired
-    private BaseUserProfileRepository baseUserProfileRepository;
-
-    @Autowired
-    private UserPoolService userPoolService;
+    @Autowired private SimpMessagingTemplate           messagingTemplate;
+    @Autowired private BaseUserProfileRepository       baseUserProfileRepository;
+    @Autowired private CategoryProfileRegistryRepository categoryProfileRegistryRepository;
+    @Autowired private UserPoolService                 userPoolService;
 
     // ─── Step 1: User Joins Pool ──────────────────────────────────────────────
 
-    /**
-     * Called when a user opens the find-match screen.
-     * Adds them to the pool and sends them the list of all other available users.
-     */
     @MessageMapping("/webrtc.join")
     public void userJoin(SimpMessageHeaderAccessor headerAccessor) throws MatchmakingException {
         String sub = getPrincipalName(headerAccessor);
 
         if (!userPoolService.isInPool(sub)) {
-            BaseUserProfile user = resolveUser(sub);
-            userPoolService.addUser(new PoolUserVO(
-                    sub,
-                    user.getName(),
-                    user.getName()
-//                    user.getIndustry()
-            ));
+            PoolUserVO poolUser = buildPoolUser(sub);
+            userPoolService.addUser(poolUser);
             log.info("[JOIN] User added to pool: {}", sub);
+
+            // Notify any pending filter requesters who are satisfied by this new joiner
+            Map<String, PoolUserVO> pendingMatches = userPoolService.findPendingMatches(poolUser);
+            pendingMatches.forEach((requesterSub, joiner) -> {
+                WebRTCSignalVO matchSignal = new WebRTCSignalVO();
+                matchSignal.setType("MATCH_FOUND");
+                matchSignal.setFromUserId("server");
+                matchSignal.setToUserId(requesterSub);
+                messagingTemplate.convertAndSendToUser(requesterSub, USER_QUEUE, joiner);
+                log.info("[JOIN] Notified pending requester {} of new joiner {}", requesterSub, sub);
+            });
         } else {
             log.info("[JOIN] User already in pool, skipping add: {}", sub);
         }
 
-        List<PoolUserVO> availableUsers = userPoolService.getOtherUsers(sub);
-        messagingTemplate.convertAndSendToUser(sub, USER_QUEUE, availableUsers);
-        log.info("[JOIN] Sent pool list ({} users) to {}", availableUsers.size(), sub);
+        List<PoolUserVO> available = userPoolService.getOtherUsers(sub);
+        userPoolService.markAsSeen(sub, available);
+        messagingTemplate.convertAndSendToUser(sub, USER_QUEUE, available);
+        log.info("[JOIN] Sent no-filter pool list ({} users) to {}", available.size(), sub);
     }
 
-    // ─── Step 2: Caller sends Connection Request ──────────────────────────────
+    // ─── Step 2: Filtered Search ──────────────────────────────────────────────
 
     /**
-     * Caller selected a user and wants to connect.
-     * Forward the request to the selected (callee) user.
+     * Client sends a filter payload.
+     * childCategory present → advanced filter (category + basic fields).
+     * childCategory absent  → basic filter (gender + city + age).
+     *
+     * If results found:  sends POOL_LIST (same format as join).
+     * If no results:     saves pending request, sends NO_MATCH_NOW signal.
      */
+    @MessageMapping("/webrtc.search")
+    public void filterSearch(@Payload InstantSearchFilterVO filter,
+                             SimpMessageHeaderAccessor headerAccessor) {
+        String sub = getPrincipalName(headerAccessor);
+        boolean isAdvanced = filter.getChildCategory() != null && !filter.getChildCategory().isBlank();
+        log.info("[SEARCH] {} requested {} search", sub, isAdvanced ? "advanced" : "basic");
+
+        List<PoolUserVO> results = userPoolService.getFilteredUsers(sub, filter);
+
+        if (!results.isEmpty()) {
+            userPoolService.markAsSeen(sub, results);
+            userPoolService.removePendingRequest(sub); // clear any previous pending request
+            messagingTemplate.convertAndSendToUser(sub, USER_QUEUE, results);
+            log.info("[SEARCH] Sent {} filtered users to {}", results.size(), sub);
+        } else {
+            log.info("[SEARCH] No match found for {} — saving pending request", sub);
+            userPoolService.addPendingRequest(sub, filter);
+
+            WebRTCSignalVO noMatch = new WebRTCSignalVO();
+            noMatch.setType("NO_MATCH_NOW");
+            noMatch.setFromUserId("server");
+            noMatch.setToUserId(sub);
+            messagingTemplate.convertAndSendToUser(sub, USER_QUEUE, noMatch);
+        }
+    }
+
+    // ─── Step 3: Caller sends Connection Request ──────────────────────────────
+
     @MessageMapping("/webrtc.request")
     public void connectionRequest(@Payload WebRTCSignalVO signal,
                                   SimpMessageHeaderAccessor headerAccessor) {
         String callerSub = getPrincipalName(headerAccessor);
         signal.setFromUserId(callerSub);
-
         String targetSub = signal.getToUserId();
 
         if (userPoolService.isBusy(targetSub)) {
             log.info("[REQUEST] {} is busy, notifying caller {}", targetSub, callerSub);
-            WebRTCSignalVO busySignal = new WebRTCSignalVO();
-            busySignal.setType("BUSY");
-            busySignal.setFromUserId(targetSub);
-            busySignal.setToUserId(callerSub);
-            messagingTemplate.convertAndSendToUser(callerSub, USER_QUEUE, busySignal);
+            WebRTCSignalVO busy = new WebRTCSignalVO();
+            busy.setType("BUSY");
+            busy.setFromUserId(targetSub);
+            busy.setToUserId(callerSub);
+            messagingTemplate.convertAndSendToUser(callerSub, USER_QUEUE, busy);
             return;
         }
 
@@ -102,9 +139,10 @@ public class MatchmakingWebSocketController {
         messagingTemplate.convertAndSendToUser(targetSub, USER_QUEUE, signal);
     }
 
+    // ─── Step 4: Callee is busy ───────────────────────────────────────────────
+
     /**
-     * Callee is busy in another call — they notify the server which forwards
-     * a BUSY signal to the original caller so the caller moves to the next user.
+     * Callee is in an active call — forward BUSY signal to the original caller.
      */
     @MessageMapping("/webrtc.busy")
     public void connectionBusy(@Payload WebRTCSignalVO signal,
@@ -114,39 +152,27 @@ public class MatchmakingWebSocketController {
 
         log.info("[BUSY] {} is busy, notifying caller {}", calleeSub, callerSub);
 
-        WebRTCSignalVO busySignal = new WebRTCSignalVO();
-        busySignal.setType("BUSY");
-        busySignal.setFromUserId(calleeSub);
-        busySignal.setToUserId(callerSub);
-        messagingTemplate.convertAndSendToUser(callerSub, USER_QUEUE, busySignal);
+        WebRTCSignalVO busy = new WebRTCSignalVO();
+        busy.setType("BUSY");
+        busy.setFromUserId(calleeSub);
+        busy.setToUserId(callerSub);
+        messagingTemplate.convertAndSendToUser(callerSub, USER_QUEUE, busy);
     }
 
-    // ─── Step 3: Caller sends SDP Offer ──────────────────────────────────────
+    // ─── Step 5: Caller sends SDP Offer ──────────────────────────────────────
 
-    /**
-     * Callee accepted the request.
-     * Now the CALLER creates an SDP offer and sends it here.
-     * Server forwards it to the callee.
-     */
     @MessageMapping("/webrtc.offer")
     public void handleOffer(@Payload WebRTCSignalVO signal,
                             SimpMessageHeaderAccessor headerAccessor) {
         String callerSub = getPrincipalName(headerAccessor);
         signal.setFromUserId(callerSub);
         signal.setType("OFFER");
-
         log.info("[OFFER] Forwarding SDP offer from {} to {}", callerSub, signal.getToUserId());
-
-        // Forward offer to callee
         messagingTemplate.convertAndSendToUser(signal.getToUserId(), USER_QUEUE, signal);
     }
 
-    // ─── Step 4: Callee sends SDP Answer ─────────────────────────────────────
+    // ─── Step 6: Callee sends SDP Answer ─────────────────────────────────────
 
-    /**
-     * Callee received the offer, created an answer.
-     * Server forwards the SDP answer back to the caller.
-     */
     @MessageMapping("/webrtc.answer")
     public void handleAnswer(@Payload WebRTCSignalVO signal,
                              SimpMessageHeaderAccessor headerAccessor) {
@@ -154,55 +180,40 @@ public class MatchmakingWebSocketController {
         signal.setFromUserId(calleeSub);
         signal.setType("ANSWER");
 
-        // Both sides are now in a call — mark them busy
+        // Both sides are now in an active call
         userPoolService.markBusy(calleeSub);
         userPoolService.markBusy(signal.getToUserId());
         log.info("[ANSWER] Marking {} and {} as busy", calleeSub, signal.getToUserId());
 
-        log.info("[ANSWER] Forwarding SDP answer from {} to {}", calleeSub, signal.getToUserId());
         messagingTemplate.convertAndSendToUser(signal.getToUserId(), USER_QUEUE, signal);
     }
 
-    // ─── Step 5: ICE Candidate Exchange ──────────────────────────────────────
+    // ─── Step 7: ICE Candidate Exchange ──────────────────────────────────────
 
-    /**
-     * Either peer generated an ICE candidate.
-     * Server forwards it to the other peer.
-     * This happens continuously on both sides until P2P is established.
-     */
     @MessageMapping("/webrtc.ice")
     public void handleIceCandidate(@Payload WebRTCSignalVO signal,
                                    SimpMessageHeaderAccessor headerAccessor) {
         String senderSub = getPrincipalName(headerAccessor);
         signal.setFromUserId(senderSub);
         signal.setType("ICE_CANDIDATE");
-
         log.info("[ICE] Forwarding ICE candidate from {} to {}", senderSub, signal.getToUserId());
-
-        // Forward ICE candidate to the other peer
         messagingTemplate.convertAndSendToUser(signal.getToUserId(), USER_QUEUE, signal);
     }
 
-    // ─── Step 6: User Leaves ─────────────────────────────────────────────────
+    // ─── Step 8: User Leaves ─────────────────────────────────────────────────
 
-    /**
-     * User left the screen or ended the call.
-     * Remove from pool and notify the other peer if they were in a call.
-     */
     @MessageMapping("/webrtc.leave")
     public void handleLeave(@Payload WebRTCSignalVO signal,
                             SimpMessageHeaderAccessor headerAccessor) {
         String leavingSub = getPrincipalName(headerAccessor);
-        userPoolService.removeUser(leavingSub); // also clears busy state
+        userPoolService.removeUser(leavingSub); // also clears busy, seen, pending
         log.info("[LEAVE] User {} left the pool", leavingSub);
 
-        // Notify the other peer if they were in a call
         if (signal.getToUserId() != null) {
             WebRTCSignalVO leaveSignal = new WebRTCSignalVO();
             leaveSignal.setType("PEER_LEFT");
             leaveSignal.setFromUserId(leavingSub);
             leaveSignal.setToUserId(signal.getToUserId());
-
             messagingTemplate.convertAndSendToUser(signal.getToUserId(), USER_QUEUE, leaveSignal);
             log.info("[LEAVE] Notified {} that {} has left", signal.getToUserId(), leavingSub);
         }
@@ -223,5 +234,27 @@ public class MatchmakingWebSocketController {
             throw new MatchmakingException("User not found for sub: " + cognitoSub, 401);
         }
         return user.get();
+    }
+
+    /** Builds a fully enriched PoolUserVO by loading profile + active categories from DB. */
+    private PoolUserVO buildPoolUser(String sub) throws MatchmakingException {
+        BaseUserProfile profile = resolveUser(sub);
+
+        List<String> categories = categoryProfileRegistryRepository
+                .findByCognitoSubAndIsActive(sub, true)
+                .stream()
+                .map(CategoryProfileRegistry::getMatchCategory)
+                .map(Enum::name)
+                .collect(Collectors.toList());
+
+        return PoolUserVO.builder()
+                .cognitoSub(sub)
+                .firstName(profile.getName())
+                .lastName(profile.getName())
+                .gender(profile.getGender() != null ? profile.getGender().name() : null)
+                .currentCity(profile.getCurrentCity())
+                .dateOfBirth(profile.getDateOfBirth())
+                .matchCategories(categories)
+                .build();
     }
 }
