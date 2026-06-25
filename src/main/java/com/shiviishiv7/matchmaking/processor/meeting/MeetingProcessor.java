@@ -47,14 +47,14 @@ public class MeetingProcessor implements IMeetingProcessor {
             meetingVO.validate();
             log.info("MeetingVO validation completed successfully.");
 
-            log.trace("Fetching match for ID: {}", meetingVO.getMatchId());
-            Optional<MatchResult> optionalMatch = matchRepository.findById(Integer.valueOf(meetingVO.getMatchId()));
+            log.trace("Fetching match for ID: {}", meetingVO.getMatchResultId());
+            Optional<MatchResult> optionalMatch = matchRepository.findById(meetingVO.getMatchResultId());
             if (optionalMatch.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: Match not found for ID: {}", meetingVO.getMatchId());
+                log.error("ALERT_FOR_ERROR: Match not found for ID: {}", meetingVO.getMatchResultId());
                 throw new MatchmakingException("Match does not exist", DATA_NOT_FOUND);
             }
 
-            log.trace("Saving meeting record for match ID: {}", meetingVO.getMatchId());
+            log.trace("Saving meeting record for match result ID: {}", meetingVO.getMatchResultId());
             Meeting meeting = meetingVO.fromVO();
 //            meeting.setMatch(optionalMatch.get());
             meeting = meetingRepository.save(meeting);
@@ -101,7 +101,7 @@ public class MeetingProcessor implements IMeetingProcessor {
     public BaseVO getAllForMatch(String matchId) throws MatchmakingException {
         try {
             log.info("Fetching all meetings for match ID: {}", matchId);
-            List<Meeting> meetings = meetingRepository.findByMatchId(matchId);
+            List<Meeting> meetings = meetingRepository.findByMatchResultId(Integer.valueOf(matchId));
             if (meetings.isEmpty()) {
                 log.error("ALERT_FOR_ERROR: No meetings found for match ID: {}", matchId);
                 throw new MatchmakingException("No meetings found for the given match", DATA_NOT_FOUND);
@@ -158,7 +158,7 @@ public class MeetingProcessor implements IMeetingProcessor {
 
             List<MeetingVO> result = meetings.stream().map(m -> {
                 MeetingVO vo = new MeetingVO().toVO(m);
-                matchRepository.findById(Integer.valueOf(m.getMatchId())).ifPresent(match -> {
+                matchRepository.findById(m.getMatchResultId()).ifPresent(match -> {
                     String peerSub = match.getCognitoSubA().equals(sub)
                             ? match.getCognitoSubB()
                             : match.getCognitoSubA();

@@ -32,8 +32,8 @@ public class Meeting extends BaseEntity {
     private Integer id;
 
     // ── Round info ────────────────────────────────────────────────────────
-    @Column(name = "matchId", nullable = false)
-    private String matchId;                // 1, 2, 3 ...
+    @Column(name = "matchResultId", nullable = false)
+    private Integer matchResultId;
     @Column(name = "roundNumber", nullable = false)
     private Integer roundNumber;                // 1, 2, 3 ...
 

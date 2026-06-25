@@ -13,7 +13,7 @@ import java.util.List;
 @Repository
 public interface MeetingRepository extends JpaRepository<Meeting, Integer> {
 
-    List<Meeting> findByMatchId(String matchId);
+    List<Meeting> findByMatchResultId(Integer matchResultId);
 
     // SCHEDULED meetings whose scheduledAt has arrived — ready to open the waiting room
     @Query("""
@@ -36,8 +36,8 @@ public interface MeetingRepository extends JpaRepository<Meeting, Integer> {
         SELECT m FROM Meeting m
         WHERE m.status = 'SCHEDULED'
         AND m.scheduledAt > :now
-        AND m.matchId IN (
-            SELECT CAST(mr.id AS string) FROM MatchResult mr
+        AND m.matchResultId IN (
+            SELECT mr.id FROM MatchResult mr
             WHERE mr.cognitoSubA = :sub OR mr.cognitoSubB = :sub
         )
     """)

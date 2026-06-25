@@ -53,7 +53,7 @@ public class MeetingSchedulerJob {
             try {
                 meeting.setStatus(MeetingStatus.WAITING_ROOM);
                 meetingRepository.save(meeting);
-                Optional<MatchResult> optionalMatch = matchRepository.findById(Integer.valueOf(meeting.getMatchId()));
+                Optional<MatchResult> optionalMatch = matchRepository.findById(meeting.getMatchResultId());
                 if (optionalMatch.isEmpty()) continue;
                 MatchResult match = optionalMatch.get();
 
@@ -101,7 +101,7 @@ public class MeetingSchedulerJob {
                 meetingRepository.save(meeting);
                 log.info("MeetingSchedulerJob: marked meeting ID: {} as COMPLETED.", meeting.getId());
 
-                Optional<MatchResult> optionalMatch = matchRepository.findById(Integer.valueOf(meeting.getMatchId()));
+                Optional<MatchResult> optionalMatch = matchRepository.findById(meeting.getMatchResultId());
                 if (optionalMatch.isEmpty()) continue;
                 MatchResult match = optionalMatch.get();
                 if (match.getStatus() == MatchStatus.MEETING_SCHEDULED) {

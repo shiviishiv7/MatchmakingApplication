@@ -197,7 +197,7 @@ public class MatchingEngineProcessor {
     private void scheduleFirstMeeting(MatchResult match) {
         try {
             Meeting meeting = Meeting.builder()
-                    .matchId(match.getId().toString())
+                    .matchResultId(match.getId())
                     .roundNumber(1)
                     .scheduledAt(LocalDateTime.now().plusHours(SCHEDULE_AHEAD_HOURS))
                     .meetingType(MeetingType.SCHEDULED)

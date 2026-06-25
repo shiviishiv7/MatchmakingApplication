@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 public class MeetingVO {
 
     private Integer id;
-    private String matchId;
+    private Integer matchResultId;
     private Integer roundNumber;
     private LocalDateTime scheduledAt;
     private Integer durationMinutes;
@@ -29,8 +29,8 @@ public class MeetingVO {
     private String peerCognitoSub;
 
     public boolean validate() {
-        if (matchId == null) {
-            throw new IllegalArgumentException("Match ID cannot be null");
+        if (matchResultId == null) {
+            throw new IllegalArgumentException("Match result ID cannot be null");
         }
         if (roundNumber == null || roundNumber <= 0) {
             throw new IllegalArgumentException("Round number must be greater than 0");
@@ -44,7 +44,7 @@ public class MeetingVO {
     public Meeting fromVO() {
         Meeting meeting = new Meeting();
         meeting.setId(id);
-        meeting.setMatchId(matchId);
+        meeting.setMatchResultId(matchResultId);
         meeting.setRoundNumber(roundNumber);
         meeting.setScheduledAt(scheduledAt);
         meeting.setDurationMinutes(durationMinutes);
@@ -56,7 +56,7 @@ public class MeetingVO {
     public MeetingVO toVO(Meeting meeting) {
         MeetingVO vo = new MeetingVO();
         vo.setId(meeting.getId());
-        vo.setMatchId(meeting.getMatchId().toString());
+        vo.setMatchResultId(meeting.getMatchResultId());
         vo.setRoundNumber(meeting.getRoundNumber());
         vo.setScheduledAt(meeting.getScheduledAt());
         vo.setDurationMinutes(meeting.getDurationMinutes());
