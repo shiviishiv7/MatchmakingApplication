@@ -49,20 +49,18 @@ echo ""
 echo "[3/4] Deploying to Tomcat with profile=$SPRING_PROFILE..."
 sudo systemctl stop tomcat
 
-# Inject Spring profile via setenv.sh — the standard Tomcat mechanism for JVM env vars
+# Inject Spring profile via CATALINA_OPTS in setenv.sh.
+# Only updates the profile line — preserves DB, Redis, and API key exports already in the file.
 SETENV="/opt/tomcat/bin/setenv.sh"
-sudo tee "$SETENV" > /dev/null <<EOF
-#!/bin/bash
-export SPRING_PROFILES_ACTIVE=$SPRING_PROFILE
-# Load remaining env vars from tomcat.conf (DB, Redis, API keys)
-if [ -f /opt/tomcat/conf/tomcat.conf ]; then
-  set -a
-  source /opt/tomcat/conf/tomcat.conf
-  set +a
+if [ ! -f "$SETENV" ]; then
+  echo "ERROR: $SETENV does not exist. Create it manually on the server first."
+  echo "  See README or run: sudo nano $SETENV"
+  exit 1
 fi
-EOF
-sudo chmod +x "$SETENV"
-echo "Written SPRING_PROFILES_ACTIVE=$SPRING_PROFILE to $SETENV"
+# Replace only the CATALINA_OPTS / spring.profiles.active line
+sudo sed -i '/spring.profiles.active/d' "$SETENV"
+sudo sed -i '1a export CATALINA_OPTS="$CATALINA_OPTS -Dspring.profiles.active='"$SPRING_PROFILE"'"' "$SETENV"
+echo "Updated spring.profiles.active=$SPRING_PROFILE in $SETENV"
 
 # Remove old deployment
 rm -rf "$TOMCAT_WEBAPPS/ROOT"
