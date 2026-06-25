@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e  # stop on any error
+
 echo "=========================================="
 echo "  Matchmaking Backend — Deployment Start"
 echo "=========================================="
@@ -7,21 +8,36 @@ echo "=========================================="
 # ── Config ────────────────────────────────────────────────────────────────────
 APP_DIR="/home/ec2-user/mm/MatchmakingApplication"
 TOMCAT_WEBAPPS="/opt/tomcat/webapps"
-WAR_NAME="v1.war"   # set by <finalName>v1</finalName> in pom.xml
-DEPLOY_NAME="ROOT.war"                        # deployed as ROOT so it serves on /
+WAR_NAME="v1.war"
+DEPLOY_NAME="ROOT.war"
+
+# ── Detect branch → profile ───────────────────────────────────────────────────
+cd "$APP_DIR"
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+if [ "$CURRENT_BRANCH" = "main" ]; then
+  SPRING_PROFILE="prod"
+elif [ "$CURRENT_BRANCH" = "uat" ]; then
+  SPRING_PROFILE="dev"
+else
+  echo "ERROR: Unsupported branch '$CURRENT_BRANCH'. Deploy from 'main' (prod) or 'uat' (dev)."
+  exit 1
+fi
+
+echo ""
+echo "Branch  : $CURRENT_BRANCH"
+echo "Profile : $SPRING_PROFILE"
+echo ""
 
 # ── Pull latest code ──────────────────────────────────────────────────────────
-echo ""
-echo "[1/4] Pulling latest code from main..."
-cd "$APP_DIR"
-git pull origin main
+echo "[1/4] Pulling latest code from $CURRENT_BRANCH..."
+git pull origin "$CURRENT_BRANCH"
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 echo ""
 echo "[2/4] Building WAR (skipping tests)..."
 MAVEN_OPTS="-Xms256m -Xmx768m" mvn clean package -DskipTests
 
-# Confirm WAR was created
 if [ ! -f "target/$WAR_NAME" ]; then
   echo "ERROR: WAR file not found at target/$WAR_NAME — build may have failed."
   exit 1
@@ -30,8 +46,22 @@ echo "WAR built successfully: target/$WAR_NAME"
 
 # ── Deploy to Tomcat ──────────────────────────────────────────────────────────
 echo ""
-echo "[3/4] Deploying to Tomcat..."
+echo "[3/4] Deploying to Tomcat with profile=$SPRING_PROFILE..."
 sudo systemctl stop tomcat
+
+# Inject Spring profile into Tomcat environment
+TOMCAT_ENV_FILE="/opt/tomcat/conf/tomcat.conf"
+if [ -f "$TOMCAT_ENV_FILE" ]; then
+  # Remove any existing SPRING_PROFILES_ACTIVE line and re-add
+  sudo sed -i '/SPRING_PROFILES_ACTIVE/d' "$TOMCAT_ENV_FILE"
+  echo "SPRING_PROFILES_ACTIVE=$SPRING_PROFILE" | sudo tee -a "$TOMCAT_ENV_FILE" > /dev/null
+  echo "Set SPRING_PROFILES_ACTIVE=$SPRING_PROFILE in $TOMCAT_ENV_FILE"
+else
+  # Fallback: write to /etc/environment
+  sudo sed -i '/SPRING_PROFILES_ACTIVE/d' /etc/environment
+  echo "SPRING_PROFILES_ACTIVE=$SPRING_PROFILE" | sudo tee -a /etc/environment > /dev/null
+  echo "Set SPRING_PROFILES_ACTIVE=$SPRING_PROFILE in /etc/environment"
+fi
 
 # Remove old deployment
 rm -rf "$TOMCAT_WEBAPPS/ROOT"
@@ -52,7 +82,9 @@ sudo systemctl reload nginx
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
-echo "[4/4] Deployment completed!"
+echo "[4/4] Deployment complete!"
+echo "  Branch  : $CURRENT_BRANCH"
+echo "  Profile : $SPRING_PROFILE"
 echo "=========================================="
 echo "  Tailing Tomcat logs (Ctrl+C to exit)"
 echo "=========================================="

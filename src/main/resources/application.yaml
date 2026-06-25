@@ -2,19 +2,13 @@ spring:
   application:
     name: matchmaking
 
-  datasource:
-    url: jdbc:mysql://database-2.chasis6a0sx0.ap-south-1.rds.amazonaws.com:3306/matchmaking?useSSL=true&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: admin
-    password: databaseis100%SECURE
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
 
   jpa:
-    hibernate:
-      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
         physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
 
@@ -24,7 +18,7 @@ spring:
       port: ${REDIS_PORT:6379}
 
   scheduling:
-    enabled: true                  # required for @Scheduled jobs
+    enabled: true
 
 springdoc:
   swagger-ui:
@@ -46,12 +40,12 @@ webrtc:
     username: ${TURN_USERNAME:changeme}
     credential: ${TURN_CREDENTIAL:changeme}
 
-# Meeting fixed slot window (7 PM – 9 PM IST daily)
 meeting:
   slot:
     hour: 19
     durationMinutes: 30
+
 anthropic:
   api:
     key: ${ANTHROPIC_API_KEY}
-    model: claude-sonnet-4-6
+    model: claude-haiku-4-5-20251001
