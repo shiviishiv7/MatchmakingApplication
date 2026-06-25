@@ -217,7 +217,7 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
 
     // ─── Claude call ───────────────────────────────────────────────────────────
 
-    private String callClaude(String prompt) throws Exception {
+    protected String callClaude(String prompt) throws Exception {
         String requestBody = objectMapper.writeValueAsString(Map.of(
                 "model", model,
                 "max_tokens", 1500,
