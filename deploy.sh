@@ -49,19 +49,20 @@ echo ""
 echo "[3/4] Deploying to Tomcat with profile=$SPRING_PROFILE..."
 sudo systemctl stop tomcat
 
-# Inject Spring profile into Tomcat environment
-TOMCAT_ENV_FILE="/opt/tomcat/conf/tomcat.conf"
-if [ -f "$TOMCAT_ENV_FILE" ]; then
-  # Remove any existing SPRING_PROFILES_ACTIVE line and re-add
-  sudo sed -i '/SPRING_PROFILES_ACTIVE/d' "$TOMCAT_ENV_FILE"
-  echo "SPRING_PROFILES_ACTIVE=$SPRING_PROFILE" | sudo tee -a "$TOMCAT_ENV_FILE" > /dev/null
-  echo "Set SPRING_PROFILES_ACTIVE=$SPRING_PROFILE in $TOMCAT_ENV_FILE"
-else
-  # Fallback: write to /etc/environment
-  sudo sed -i '/SPRING_PROFILES_ACTIVE/d' /etc/environment
-  echo "SPRING_PROFILES_ACTIVE=$SPRING_PROFILE" | sudo tee -a /etc/environment > /dev/null
-  echo "Set SPRING_PROFILES_ACTIVE=$SPRING_PROFILE in /etc/environment"
+# Inject Spring profile via setenv.sh — the standard Tomcat mechanism for JVM env vars
+SETENV="/opt/tomcat/bin/setenv.sh"
+sudo tee "$SETENV" > /dev/null <<EOF
+#!/bin/bash
+export SPRING_PROFILES_ACTIVE=$SPRING_PROFILE
+# Load remaining env vars from tomcat.conf (DB, Redis, API keys)
+if [ -f /opt/tomcat/conf/tomcat.conf ]; then
+  set -a
+  source /opt/tomcat/conf/tomcat.conf
+  set +a
 fi
+EOF
+sudo chmod +x "$SETENV"
+echo "Written SPRING_PROFILES_ACTIVE=$SPRING_PROFILE to $SETENV"
 
 # Remove old deployment
 rm -rf "$TOMCAT_WEBAPPS/ROOT"
