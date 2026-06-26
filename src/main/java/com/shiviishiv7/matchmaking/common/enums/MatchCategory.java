@@ -1,5 +1,17 @@
 package com.shiviishiv7.matchmaking.common.enums;
 
+// ──────────────────────────────────────────────────────────────────────────────
+// LEGACY: MatchCategory enum is kept for backward compatibility.
+// Existing JPA columns (CategoryProfileRegistry.matchCategory, MatchResult.matchCategory)
+// still use @Enumerated(EnumType.STRING) and rely on these enum constant names.
+//
+// For the chat UI and any new features, use MatchCategoryEntity + CategoryCacheService
+// (DB-backed, Caffeine-cached). New categories should be added via SQL INSERT into
+// MATCH_CATEGORY and MATCH_CATEGORY_GROUP tables, NOT here.
+//
+// DO NOT DELETE this file until all existing columns are migrated to use String enumKey.
+// ──────────────────────────────────────────────────────────────────────────────
+
 
 import java.util.Arrays;
 import java.util.List;

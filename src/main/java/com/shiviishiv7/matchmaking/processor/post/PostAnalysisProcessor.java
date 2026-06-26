@@ -275,8 +275,10 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
 
                 Read the user's draft post below and:
                 1. Infer the most suitable match category from this list: %s
-                2. Identify 2–4 important pieces of information that are missing or unclear.
-                3. For each missing piece, generate a focused follow-up question with the most appropriate UI input type.
+                2. Generate at least 10 focused follow-up questions that help build a detailed profile.
+                   Cover a broad range of aspects: preferences, personality, lifestyle, goals, deal-breakers,
+                   location, availability, experience, and anything specific to the inferred category.
+                3. For each question choose the most appropriate UI input type.
 
                 Respond ONLY with valid JSON — no preamble, no markdown. Use exactly this structure:
 
@@ -305,7 +307,10 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
                 - Only include "options" for single_choice, multi_choice, or dropdown types.
                 - Only include "min"/"max" for range type.
                 - Only include "placeholder" for text type.
-                - Ask only about things genuinely missing from the post.
+                - You MUST return exactly 10 questions — no more, no fewer.
+                - Number them q1 through q10.
+                - Vary the types: use a mix of single_choice, multi_choice, boolean, range, dropdown, and text.
+                - Make questions specific to the inferred category, not generic.
 
                 USER POST:
                 %s
