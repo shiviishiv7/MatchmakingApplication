@@ -8,6 +8,7 @@ import com.shiviishiv7.matchmaking.provider.model.profile.BaseUserProfile;
 import com.shiviishiv7.matchmaking.provider.vo.ws.InstantSearchFilterVO;
 import com.shiviishiv7.matchmaking.provider.vo.ws.PoolUserVO;
 import com.shiviishiv7.matchmaking.provider.vo.ws.WebRTCSignalVO;
+import com.shiviishiv7.matchmaking.service.match.MatchConnectService;
 import com.shiviishiv7.matchmaking.service.pool.UserPoolService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,10 +44,11 @@ public class MatchmakingWebSocketController {
 
     private static final String USER_QUEUE = "/queue/webrtc";
 
-    @Autowired private SimpMessagingTemplate           messagingTemplate;
-    @Autowired private BaseUserProfileRepository       baseUserProfileRepository;
-    @Autowired private CategoryProfileRegistryRepository categoryProfileRegistryRepository;
-    @Autowired private UserPoolService                 userPoolService;
+    @Autowired private SimpMessagingTemplate              messagingTemplate;
+    @Autowired private BaseUserProfileRepository          baseUserProfileRepository;
+    @Autowired private CategoryProfileRegistryRepository  categoryProfileRegistryRepository;
+    @Autowired private UserPoolService                    userPoolService;
+    @Autowired private MatchConnectService                matchConnectService;
 
     // ─── Step 1: User Joins Pool ──────────────────────────────────────────────
 
@@ -69,6 +71,9 @@ public class MatchmakingWebSocketController {
                 messagingTemplate.convertAndSendToUser(requesterSub, USER_QUEUE, joiner);
                 log.info("[JOIN] Notified pending requester {} of new joiner {}", requesterSub, sub);
             });
+
+            // Check if any waiting user has a saved PENDING match with this new joiner
+            matchConnectService.notifyWaitingMatchersOnJoin(sub);
         } else {
             log.info("[JOIN] User already in pool, skipping add: {}", sub);
         }

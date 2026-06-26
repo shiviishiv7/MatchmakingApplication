@@ -37,11 +37,12 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class MatchmakingWebSocketControllerTest {
 
-    @Mock private SimpMessagingTemplate           messaging;
-    @Mock private BaseUserProfileRepository       profileRepo;
-    @Mock private CategoryProfileRegistryRepository registryRepo;
-    @Mock private UserPoolService                 poolService;
-    @Mock private SimpMessageHeaderAccessor       accessor;
+    @Mock private SimpMessagingTemplate                                          messaging;
+    @Mock private BaseUserProfileRepository                                      profileRepo;
+    @Mock private CategoryProfileRegistryRepository                              registryRepo;
+    @Mock private UserPoolService                                                poolService;
+    @Mock private com.shiviishiv7.matchmaking.service.match.MatchConnectService  matchConnectService;
+    @Mock private SimpMessageHeaderAccessor                                      accessor;
 
     @InjectMocks
     private MatchmakingWebSocketController controller;

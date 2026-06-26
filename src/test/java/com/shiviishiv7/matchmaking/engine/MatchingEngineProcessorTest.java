@@ -2,44 +2,42 @@ package com.shiviishiv7.matchmaking.engine;
 
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
 import com.shiviishiv7.matchmaking.common.enums.MatchStatus;
-import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.processor.matchingengine.CategoryScorer;
 import com.shiviishiv7.matchmaking.processor.matchingengine.MatchingEngineProcessor;
 import com.shiviishiv7.matchmaking.provider.implementation.BlockListRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.MatchResultRepository;
+import com.shiviishiv7.matchmaking.provider.implementation.MeetingRepository;
 import com.shiviishiv7.matchmaking.provider.model.MatchResult;
+import com.shiviishiv7.matchmaking.provider.vo.MatchCandidateVO;
+import com.shiviishiv7.matchmaking.provider.vo.MatchDiscoveryRequestVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for MatchingEngineProcessor.recordAction() —
- * validates that mutual match detection works correctly after the
- * countMutualLike fix (enum param instead of string literal).
+ * Unit tests for MatchingEngineProcessor.discover() —
+ * verifies that the engine persists MatchResult rows and auto-schedules
+ * meetings when candidates are found.
  */
 @ExtendWith(MockitoExtension.class)
 class MatchingEngineProcessorTest {
 
-    @Mock
-    private MatchResultRepository matchResultRepository;
-
-    @Mock
-    private BlockListRepository blockListRepository;
-
-    @Mock
-    private CategoryScorer dummyScorer;
+    @Mock private MatchResultRepository matchResultRepository;
+    @Mock private MeetingRepository meetingRepository;
+    @Mock private BlockListRepository blockListRepository;
+    @Mock private CategoryScorer dummyScorer;
 
     private MatchingEngineProcessor engine;
 
@@ -51,106 +49,101 @@ class MatchingEngineProcessorTest {
     void setUp() {
         when(dummyScorer.supports()).thenReturn(CAT);
         engine = new MatchingEngineProcessor(List.of(dummyScorer));
-
-        // Inject mocked repos via reflection-friendly constructor approach
         injectField(engine, "matchResultRepository", matchResultRepository);
+        injectField(engine, "meetingRepository", meetingRepository);
         injectField(engine, "blockListRepository", blockListRepository);
     }
 
-    // ── recordAction: LIKE with no mutual ─────────────────────────────────────
-
     @Test
-    @DisplayName("When A likes B and B has not liked A, status stays LIKED — no mutual match")
-    void recordAction_aLikesB_noMutual_staysLiked() throws MatchmakingException {
-        MatchResult existing = buildResult(USER_A, USER_B, MatchStatus.PENDING);
-        when(matchResultRepository.findByCognitoSubAAndCognitoSubBAndMatchCategory(USER_A, USER_B, CAT))
-                .thenReturn(Optional.of(existing));
+    @DisplayName("discover: no candidates → returns empty list, no MatchResult or meeting saved")
+    void discover_noCandidates_returnsEmpty() throws Exception {
+        when(matchResultRepository.findSeenCandidateIds(USER_A, CAT)).thenReturn(Set.of());
+        when(dummyScorer.fetchCandidateIds(eq(USER_A), any())).thenReturn(Collections.emptyList());
 
-        // B has NOT liked A yet
-        when(matchResultRepository.countMutualLike(USER_B, USER_A, CAT, MatchStatus.LIKED))
-                .thenReturn(0L);
+        List<MatchCandidateVO> result = engine.discover(buildRequest(USER_A));
 
-        engine.recordAction(USER_A, USER_B, CAT, MatchStatus.LIKED);
-
-        assertThat(existing.getStatus()).isEqualTo(MatchStatus.LIKED);
-        assertThat(existing.getIsMutual()).isFalse();
-        verify(matchResultRepository, times(1)).save(existing);
+        assertThat(result).isEmpty();
+        verify(matchResultRepository, never()).save(any());
+        verifyNoInteractions(meetingRepository);
     }
 
     @Test
-    @DisplayName("When A likes B and B already liked A, both rows become CONNECTED with isMutual=true")
-    void recordAction_mutualLike_bothBecomeConnected() throws MatchmakingException {
-        MatchResult aRow = buildResult(USER_A, USER_B, MatchStatus.PENDING);
-        MatchResult bRow = buildResult(USER_B, USER_A, MatchStatus.LIKED);
+    @DisplayName("discover: new candidate found → MatchResult saved with PENDING status")
+    void discover_newCandidate_matchResultSavedAsPending() throws Exception {
+        when(matchResultRepository.findSeenCandidateIds(USER_A, CAT)).thenReturn(Set.of());
+        when(dummyScorer.fetchCandidateIds(eq(USER_A), any())).thenReturn(List.of(USER_B));
+        when(dummyScorer.score(USER_A, USER_B)).thenReturn(buildCandidate(USER_B, 85));
+        when(matchResultRepository.existsByCognitoSubAAndCognitoSubBAndMatchCategory(USER_A, USER_B, CAT))
+                .thenReturn(false);
 
-        when(matchResultRepository.findByCognitoSubAAndCognitoSubBAndMatchCategory(USER_A, USER_B, CAT))
-                .thenReturn(Optional.of(aRow));
+        engine.discover(buildRequest(USER_A));
 
-        // B already liked A → mutual = 1
-        when(matchResultRepository.countMutualLike(USER_B, USER_A, CAT, MatchStatus.LIKED))
-                .thenReturn(1L);
-
-        // B's row lookup for mirror update
-        when(matchResultRepository.findByCognitoSubAAndCognitoSubBAndMatchCategory(USER_B, USER_A, CAT))
-                .thenReturn(Optional.of(bRow));
-
-        engine.recordAction(USER_A, USER_B, CAT, MatchStatus.LIKED);
-
-        // A's row
-        assertThat(aRow.getStatus()).isEqualTo(MatchStatus.CONNECTED);
-        assertThat(aRow.getIsMutual()).isTrue();
-
-        // B's mirror row
-        assertThat(bRow.getStatus()).isEqualTo(MatchStatus.CONNECTED);
-        assertThat(bRow.getIsMutual()).isTrue();
+        ArgumentCaptor<MatchResult> captor = ArgumentCaptor.forClass(MatchResult.class);
+        verify(matchResultRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(MatchStatus.PENDING);
+        assertThat(captor.getValue().getCognitoSubA()).isEqualTo(USER_A);
+        assertThat(captor.getValue().getCognitoSubB()).isEqualTo(USER_B);
     }
 
     @Test
-    @DisplayName("When A SKIPs B, mutual check is never called and status becomes SKIPPED")
-    void recordAction_skip_noMutualCheck() throws MatchmakingException {
-        MatchResult existing = buildResult(USER_A, USER_B, MatchStatus.PENDING);
-        when(matchResultRepository.findByCognitoSubAAndCognitoSubBAndMatchCategory(USER_A, USER_B, CAT))
-                .thenReturn(Optional.of(existing));
+    @DisplayName("discover: new candidate found → no meeting scheduled (online check is deferred to MatchConnectService)")
+    void discover_newCandidate_noMeetingScheduledImmediately() throws Exception {
+        when(matchResultRepository.findSeenCandidateIds(USER_A, CAT)).thenReturn(Set.of());
+        when(dummyScorer.fetchCandidateIds(eq(USER_A), any())).thenReturn(List.of(USER_B));
+        when(dummyScorer.score(USER_A, USER_B)).thenReturn(buildCandidate(USER_B, 85));
+        when(matchResultRepository.existsByCognitoSubAAndCognitoSubBAndMatchCategory(USER_A, USER_B, CAT))
+                .thenReturn(false);
 
-        engine.recordAction(USER_A, USER_B, CAT, MatchStatus.SKIPPED);
+        engine.discover(buildRequest(USER_A));
 
-        assertThat(existing.getStatus()).isEqualTo(MatchStatus.SKIPPED);
-        // countMutualLike must never be called for a SKIP
-        verify(matchResultRepository, never()).countMutualLike(any(), any(), any(), any());
+        verifyNoInteractions(meetingRepository);
     }
 
     @Test
-    @DisplayName("recordAction creates a new MatchResult on-the-fly if user acted via deep link (no existing row)")
-    void recordAction_noExistingRow_createsOnTheFly() throws MatchmakingException {
-        when(matchResultRepository.findByCognitoSubAAndCognitoSubBAndMatchCategory(USER_A, USER_B, CAT))
-                .thenReturn(Optional.empty());
-        when(matchResultRepository.countMutualLike(USER_B, USER_A, CAT, MatchStatus.LIKED))
-                .thenReturn(0L);
+    @DisplayName("discover: candidate already matched → no duplicate MatchResult or meeting")
+    void discover_alreadyMatched_noNewRowCreated() throws Exception {
+        when(matchResultRepository.findSeenCandidateIds(USER_A, CAT)).thenReturn(Set.of());
+        when(dummyScorer.fetchCandidateIds(eq(USER_A), any())).thenReturn(List.of(USER_B));
+        when(dummyScorer.score(USER_A, USER_B)).thenReturn(buildCandidate(USER_B, 85));
+        when(matchResultRepository.existsByCognitoSubAAndCognitoSubBAndMatchCategory(USER_A, USER_B, CAT))
+                .thenReturn(true);
 
-        engine.recordAction(USER_A, USER_B, CAT, MatchStatus.LIKED);
+        engine.discover(buildRequest(USER_A));
 
-        // A new MatchResult should have been saved
-        verify(matchResultRepository).save(argThat(r ->
-                USER_A.equals(r.getCognitoSubA()) &&
-                USER_B.equals(r.getCognitoSubB()) &&
-                r.getStatus() == MatchStatus.LIKED
-        ));
+        verify(matchResultRepository, never()).save(any());
+        verifyNoInteractions(meetingRepository);
+    }
+
+    @Test
+    @DisplayName("discover: already-seen candidates are excluded from scoring phase")
+    void discover_seenCandidatesExcluded() throws Exception {
+        when(matchResultRepository.findSeenCandidateIds(USER_A, CAT)).thenReturn(Set.of(USER_B));
+        when(dummyScorer.fetchCandidateIds(eq(USER_A), argThat(list -> list.contains(USER_B))))
+                .thenReturn(Collections.emptyList());
+
+        List<MatchCandidateVO> result = engine.discover(buildRequest(USER_A));
+
+        assertThat(result).isEmpty();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private MatchResult buildResult(String subA, String subB, MatchStatus status) {
-        return MatchResult.builder()
-                .cognitoSubA(subA)
-                .cognitoSubB(subB)
-                .matchCategory(CAT)
-                .status(status)
-                .isMutual(false)
-                .shownAt(LocalDateTime.now())
-                .build();
+    private MatchDiscoveryRequestVO buildRequest(String userId) {
+        MatchDiscoveryRequestVO req = new MatchDiscoveryRequestVO();
+        req.setCognitoSubA(userId);
+        req.setMatchCategory(CAT);
+        req.setPage(0);
+        req.setPageSize(10);
+        return req;
     }
 
-    /** Injects a field via reflection (avoids needing @InjectMocks with constructor injection). */
+    private MatchCandidateVO buildCandidate(String subB, int score) {
+        MatchCandidateVO vo = new MatchCandidateVO();
+        vo.setCognitoSubB(subB);
+        vo.setCompatibilityScore(score);
+        return vo;
+    }
+
     private void injectField(Object target, String fieldName, Object value) {
         try {
             var field = target.getClass().getDeclaredField(fieldName);

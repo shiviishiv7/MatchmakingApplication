@@ -40,6 +40,7 @@ class PostAnalysisProcessorTest {
 
     @Mock private UserPostRepository postRepo;
     @Mock private MatchingEngineProcessor matchingEngine;
+    @Mock private com.shiviishiv7.matchmaking.service.match.MatchConnectService matchConnectService;
     @Mock private SimpMessagingTemplate messaging;
     @Mock private IMatrimonialExtProfileProcessor matrimonialProcessor;
     @Mock private IDatingExtProfileProcessor datingProcessor;
@@ -60,7 +61,7 @@ class PostAnalysisProcessorTest {
     @BeforeEach
     void setUp() {
         processor = new PostAnalysisProcessor(
-                postRepo, objectMapper, matchingEngine, messaging,
+                postRepo, objectMapper, matchingEngine, matchConnectService, messaging,
                 matrimonialProcessor, datingProcessor, fitnessProcessor,
                 flatmateProcessor, gamingProcessor, professionalProcessor, travelProcessor
         );
@@ -295,8 +296,8 @@ class PostAnalysisProcessorTest {
         }
 
         @Test
-        @DisplayName("Sends POST_MATCH_FOUND WebSocket notification when candidates found")
-        void submit_candidatesFound_sendsMatchFoundNotification() throws Exception {
+        @DisplayName("Sends POST_MATCH_CONNECTING when candidates found and one is online")
+        void submit_candidatesFound_onlineMatch_sendsConnectingNotification() throws Exception {
             PostAnalysisProcessor spy = spyWithClaude(matrimonialSubmitJson());
 
             UserPost saved = buildSavedPost(7L, MatchCategory.PROFESSIONAL_MATRIMONY);
@@ -307,13 +308,14 @@ class PostAnalysisProcessorTest {
             candidate.setCognitoSubB("matched-user");
             candidate.setCompatibilityScore(85);
             when(matchingEngine.discover(any())).thenReturn(List.of(candidate));
+            when(matchConnectService.connectNextOnlineMatch(COGNITO_SUB)).thenReturn(true);
 
             spy.submit(COGNITO_SUB, buildRequest(MATRIMONIAL_POST));
             Thread.sleep(300);
 
             ArgumentCaptor<MatchNotificationVO> wsCaptor = ArgumentCaptor.forClass(MatchNotificationVO.class);
             verify(messaging).convertAndSendToUser(eq(COGNITO_SUB), eq("/queue/matches"), wsCaptor.capture());
-            assertThat(wsCaptor.getValue().getEvent()).isEqualTo("POST_MATCH_FOUND");
+            assertThat(wsCaptor.getValue().getEvent()).isEqualTo("POST_MATCH_CONNECTING");
         }
 
         @Test
@@ -365,7 +367,7 @@ class PostAnalysisProcessorTest {
                 .id(id)
                 .cognitoSub(COGNITO_SUB)
                 .postText(MATRIMONIAL_POST)
-                .inferredCategory(category)
+                .inferredCategory(category != null ? category.name() : null)
                 .profileUpdated(false)
                 .build();
     }

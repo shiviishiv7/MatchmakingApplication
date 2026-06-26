@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+
 @Repository
 public interface MatchResultRepository extends JpaRepository<MatchResult, Integer> {
 
@@ -29,23 +30,17 @@ public interface MatchResultRepository extends JpaRepository<MatchResult, Intege
             @Param("userId") String userId,
             @Param("category") MatchCategory category);
 
-    /** Check if both sides have LIKED each other — used to detect mutual match */
-    @Query("SELECT COUNT(m) FROM MatchResult m " +
-           "WHERE m.cognitoSubA = :userA AND m.cognitoSubB = :userB " +
-           "AND m.matchCategory = :category AND m.status = :status")
-    long countMutualLike(
-            @Param("userA") String userA,
-            @Param("userB") String userB,
-            @Param("category") MatchCategory category,
-            @Param("status") MatchStatus status);
-
-
-
     boolean existsByCognitoSubAAndCognitoSubBAndMatchCategory(String cognitoSubA, String cognitoSubB, MatchCategory matchCategory);
 
-    Optional<MatchResult> findMatchByCognitoSubAOrCognitoSubB(String userId, String userId1);
+    /** PENDING matches for a user, best score first — used to find next online match */
+    @Query("SELECT m FROM MatchResult m WHERE m.cognitoSubA = :sub AND m.status = 'PENDING' ORDER BY m.compatibilityScore DESC")
+    List<MatchResult> findPendingMatchesForUser(@Param("sub") String sub);
 
-    boolean existsByCognitoSubAAndCognitoSubB(String cognitoSub, String cognitoSub1);
+    /** PENDING matches where the given user is the candidate — used to notify waiting users on join */
+    @Query("SELECT m FROM MatchResult m WHERE m.cognitoSubB = :sub AND m.status = 'PENDING'")
+    List<MatchResult> findPendingByCandidateSub(@Param("sub") String sub);
+
+    Optional<MatchResult> findMatchByCognitoSubAOrCognitoSubB(String userId, String userId1);
 
     List<MatchResult> findByStatus(MatchStatus matchStatus);
 }

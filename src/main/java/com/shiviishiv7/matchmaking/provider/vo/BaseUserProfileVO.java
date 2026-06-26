@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.shiviishiv7.matchmaking.common.enums.Gender;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -29,7 +31,7 @@ public class BaseUserProfileVO {
     private Boolean isPhotoVerified;
     private String tagline;
     private String aboutMe;
-    private String languagesKnown;
+    private List<String> languages = new ArrayList<>();
     private Boolean isProfileVerified;
     private Boolean isActive;
     private LocalDateTime lastActiveAt;

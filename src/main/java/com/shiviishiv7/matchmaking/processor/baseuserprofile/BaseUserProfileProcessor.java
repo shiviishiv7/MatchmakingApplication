@@ -82,7 +82,7 @@ public class BaseUserProfileProcessor implements IBaseUserProfileProcessor {
             profile.setProfilePhotoUrl(vo.getProfilePhotoUrl());
             profile.setTagline(vo.getTagline());
             profile.setAboutMe(vo.getAboutMe());
-            profile.setLanguagesKnown(vo.getLanguagesKnown());
+            if (vo.getLanguages() != null) profile.setLanguages(vo.getLanguages());
             if (vo.getIsActive() != null) {
                 profile.setIsActive(vo.getIsActive());
             }

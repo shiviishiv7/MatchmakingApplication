@@ -74,7 +74,7 @@ class MeetingSchedulerJobTest {
     @Test
     @DisplayName("openWaitingRooms: notifies both users when match is found")
     void openWaitingRooms_matchFound_notifiesBothUsers() {
-        MatchResult match = buildMatch(99, "sub-a", "sub-b", MatchStatus.CONNECTED);
+        MatchResult match = buildMatch(99, "sub-a", "sub-b", MatchStatus.ENDED);
         Meeting meeting = buildMeeting(String.valueOf(match.getId()), MeetingStatus.SCHEDULED);
 
         when(meetingRepository.findReadyToOpenWaitingRoom(any())).thenReturn(List.of(meeting));
@@ -132,17 +132,17 @@ class MeetingSchedulerJobTest {
     }
 
     @Test
-    @DisplayName("markExpiredMeetings: does NOT change match status if match is not MEETING_SCHEDULED")
+    @DisplayName("markExpiredMeetings: does NOT change match status when match is already in terminal state (ENDED)")
     void markExpiredMeetings_matchAlreadyConnected_doesNotChangeMatchStatus() {
         Meeting meeting = buildMeeting("42", MeetingStatus.IN_PROGRESS);
-        MatchResult match = buildMatch(99, "sub-a", "sub-b", MatchStatus.CONNECTED);
+        MatchResult match = buildMatch(99, "sub-a", "sub-b", MatchStatus.ENDED);
 
         when(meetingRepository.findExpiredActiveMeetings(any())).thenReturn(List.of(meeting));
         when(matchRepository.findById(any(Integer.class))).thenReturn(Optional.of(match));
 
         job.markExpiredMeetingsCompleted();
 
-        assertThat(match.getStatus()).isEqualTo(MatchStatus.CONNECTED); // unchanged
+        assertThat(match.getStatus()).isEqualTo(MatchStatus.ENDED); // unchanged
         verify(matchRepository, never()).save(match);
     }
 
@@ -151,7 +151,7 @@ class MeetingSchedulerJobTest {
     private Meeting buildMeeting(String matchId, MeetingStatus status) {
         return Meeting.builder()
                 .id(1)
-                .matchId(matchId)
+                .matchResultId(Integer.valueOf(matchId))
                 .roundNumber(1)
                 .status(status)
                 .scheduledAt(LocalDateTime.now().minusMinutes(5))
@@ -166,8 +166,6 @@ class MeetingSchedulerJobTest {
                 .cognitoSubB(subB)
                 .matchCategory(com.shiviishiv7.matchmaking.common.enums.MatchCategory.CASUAL_DATING)
                 .status(status)
-                .isMutual(true)
-                .shownAt(LocalDateTime.now())
                 .build();
     }
 }

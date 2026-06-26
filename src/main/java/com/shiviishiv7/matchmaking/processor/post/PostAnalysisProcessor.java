@@ -6,6 +6,7 @@ import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.processor.matchingengine.MatchingEngineProcessor;
 import com.shiviishiv7.matchmaking.processor.userprofile.*;
+import com.shiviishiv7.matchmaking.service.match.MatchConnectService;
 import com.shiviishiv7.matchmaking.provider.implementation.UserPostRepository;
 import com.shiviishiv7.matchmaking.provider.model.UserPost;
 import com.shiviishiv7.matchmaking.provider.vo.MatchCandidateVO;
@@ -49,6 +50,7 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
     private final UserPostRepository userPostRepository;
     private final ObjectMapper objectMapper;
     private final MatchingEngineProcessor matchingEngineProcessor;
+    private final MatchConnectService matchConnectService;
     private final SimpMessagingTemplate messagingTemplate;
     private final IMatrimonialExtProfileProcessor matrimonialExtProfileProcessor;
     private final IDatingExtProfileProcessor datingExtProfileProcessor;
@@ -90,7 +92,7 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
                     .cognitoSub(cognitoSub)
                     .postText(request.getPostText())
                     .answersJson(answersJson)
-                    .inferredCategory(category)
+                    .inferredCategory(category != null ? category.name() : null)
                     .profileUpdated(false)
                     .build();
             post = userPostRepository.save(post);
@@ -136,37 +138,53 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
             discoveryRequest.setPage(0);
             discoveryRequest.setPageSize(20);
 
+            // Run search ONCE — all candidates saved as PENDING MatchResults
             List<MatchCandidateVO> candidates = matchingEngineProcessor.discover(discoveryRequest);
-            log.info("Discovery found {} candidates for cognitoSub={}", candidates.size(), cognitoSub);
+            log.info("Discovery saved {} PENDING matches for cognitoSub={}", candidates.size(), cognitoSub);
 
-            // Push result to user over WebSocket
-            if (!candidates.isEmpty()) {
-                MatchCandidateVO top = candidates.get(0);
-                MatchNotificationVO notification = MatchNotificationVO.builder()
-                        .event("POST_MATCH_FOUND")
-                        .matchedUserId(top.getCognitoSubB())
-                        .matchedUserName(top.getCognitoSubB())
-                        .compatibilityScore((double) top.getCompatibilityScore())
-                        .message(candidates.size() + " match(es) found based on your post. Open the app to connect!")
-                        .build();
-                messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES, notification);
-                log.info("WebSocket notification sent to {} with {} matches", cognitoSub, candidates.size());
+            if (candidates.isEmpty()) {
+                // No candidates at all — nothing to connect
+                messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
+                        MatchNotificationVO.builder()
+                                .event("POST_NO_MATCH_FOUND")
+                                .message("No match found yet. We'll notify you when someone matches your profile.")
+                                .build());
+                log.info("No candidates found for cognitoSub={}", cognitoSub);
+                return;
+            }
+
+            // Try to connect with the first online candidate right now
+            boolean connected = matchConnectService.connectNextOnlineMatch(cognitoSub);
+
+            if (connected) {
+                // connectNextOnlineMatch already pushed WAITING_ROOM to both users via /queue/meeting
+                // Send a supplementary matches notification so the UI can show context
+                messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
+                        MatchNotificationVO.builder()
+                                .event("POST_MATCH_CONNECTING")
+                                .message("Match found and connecting now! Check your call screen.")
+                                .build());
             } else {
-                MatchNotificationVO notification = MatchNotificationVO.builder()
-                        .event("POST_NO_MATCH_FOUND")
-                        .message("Your profile is set up! We'll notify you when a match becomes available.")
-                        .build();
-                messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES, notification);
-                log.info("WebSocket no-match notification sent to {}", cognitoSub);
+                // Candidates exist but none are online right now
+                // Email both sides: user A (saved match), top candidate B (someone is waiting)
+                MatchCandidateVO top = candidates.get(0);
+                matchConnectService.sendNoOnlineMatchEmails(cognitoSub, top.getCognitoSubB());
+
+                messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
+                        MatchNotificationVO.builder()
+                                .event("POST_NO_ACTIVE_MATCH")
+                                .message("Match saved! No one is online right now. We'll notify you when your match comes online.")
+                                .build());
+                log.info("No online candidate found for cognitoSub={} — emails sent, waiting", cognitoSub);
             }
 
         } catch (Exception e) {
             log.error("ALERT_FOR_ERROR: Post-submit enrichment failed for postId={}: {}", postId, e.getMessage(), e);
-            MatchNotificationVO errorNotification = MatchNotificationVO.builder()
-                    .event("POST_MATCH_ERROR")
-                    .message("We saved your post but couldn't run matching right now. Please try again shortly.")
-                    .build();
-            messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES, errorNotification);
+            messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
+                    MatchNotificationVO.builder()
+                            .event("POST_MATCH_ERROR")
+                            .message("We saved your post but couldn't run matching right now. Please try again shortly.")
+                            .build());
         }
     }
 

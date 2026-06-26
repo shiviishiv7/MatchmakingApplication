@@ -12,17 +12,18 @@ import lombok.*;
 
 /**
  * MeetingFeedback — one user's response after one meeting.
- * Each meeting has exactly 2 feedback rows (one per user).
- * The FeedbackService evaluates both to determine the next state.
+ * Each meeting has exactly 2 rows (one per user).
  *
  * Decision matrix:
- *   INTERESTED    + INTERESTED    → COMPLETED  (share phone)
- *   ANOTHER_ROUND + ANOTHER_ROUND → ANOTHER_ROUND (new meeting)
- *   INTERESTED    + ANOTHER_ROUND → ANOTHER_ROUND (conservative)
- *   Either        + NOT_INTERESTED → ENDED
+ *   YES + YES → ANOTHER_ROUND  (engine schedules next meeting)
+ *   NO  + *  → ENDED
  */
 @Entity
-@Table(name = "MEETING_FEEDBACK")
+@Table(name = "MEETING_FEEDBACK", indexes = {
+        @Index(name = "idx_meeting_feedback_meeting_id", columnList = "meetingId"),
+        @Index(name = "idx_meeting_feedback_cognito_sub", columnList = "cognitoSub"),
+        @Index(name = "idx_meeting_feedback_meeting_sub", columnList = "meetingId, cognitoSub", unique = true)
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -43,7 +44,7 @@ public class MeetingFeedback extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "response", nullable = false, length = 20)
-    private FeedbackResponse response;          // INTERESTED | ANOTHER_ROUND | NOT_INTERESTED
+    private FeedbackResponse response;          // YES | NO
 
     @Column(name = "notes", length = 300)
     private String notes;                       // optional private note (never shown to match)

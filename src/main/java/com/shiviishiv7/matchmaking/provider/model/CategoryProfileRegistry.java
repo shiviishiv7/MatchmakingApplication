@@ -8,7 +8,10 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "CATEGORY_PROFILE_REGISTRY")
+@Table(name = "CATEGORY_PROFILE_REGISTRY", indexes = {
+        @Index(name = "idx_cpr_cognito_sub", columnList = "cognitoSub"),
+        @Index(name = "idx_cpr_sub_category", columnList = "cognitoSub, matchCategory", unique = true)
+})
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class CategoryProfileRegistry extends BaseEntity {
 

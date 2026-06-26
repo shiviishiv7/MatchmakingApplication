@@ -1,17 +1,10 @@
 package com.shiviishiv7.matchmaking.common.enums;
 
-
 public enum MatchStatus {
     PENDING,            // match created, first meeting not yet scheduled
-    MEETING_SCHEDULED,  // zoom link sent, waiting for meeting
-    AWAITING_FEEDBACK,  // meeting done, waiting for both feedbacks
-    ANOTHER_ROUND,      // both agreed to one more round
-    COMPLETED,          // both liked — phone numbers shared
-    ENDED,               // one or both not interested
-    LIKED,         // user expressed interest
-    SKIPPED,       // user passed
-    CONNECTED,     // both liked — mutual match
-    REPORTED,      // flagged by user
-    EXPIRED        // shown but user never acted (TTL passed)
+    MEETING_SCHEDULED,  // meeting is booked, waiting for meeting day
+    AWAITING_FEEDBACK,  // meeting done, waiting for both users to respond
+    ANOTHER_ROUND,      // both said YES, next meeting being scheduled
+    COMPLETED,          // all rounds done, both kept saying YES
+    ENDED               // at least one user said NO
 }
-

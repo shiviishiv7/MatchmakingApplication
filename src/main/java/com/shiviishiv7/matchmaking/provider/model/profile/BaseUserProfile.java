@@ -8,6 +8,8 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "BASE_USER_PROFILES")
@@ -62,8 +64,11 @@ public class BaseUserProfile extends BaseEntity {
     @Column(name = "aboutMe", columnDefinition = "TEXT")
     private String aboutMe;
 
-    @Column(name = "languagesKnown", length = 300)
-    private String languagesKnown;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "USER_LANGUAGES", joinColumns = @JoinColumn(name = "userId"))
+    @Column(name = "language", length = 60, nullable = false)
+    @Builder.Default
+    private List<String> languages = new ArrayList<>();
 
     @Column(name = "isProfileVerified")
     @Builder.Default
@@ -93,7 +98,7 @@ public class BaseUserProfile extends BaseEntity {
         this.setIsPhotoVerified(vo.getIsPhotoVerified());
         this.setTagline(vo.getTagline());
         this.setAboutMe(vo.getAboutMe());
-        this.setLanguagesKnown(vo.getLanguagesKnown());
+        this.setLanguages(vo.getLanguages() != null ? vo.getLanguages() : new ArrayList<>());
         this.setIsProfileVerified(vo.getIsProfileVerified());
         this.setIsActive(vo.getIsActive());
         this.setLastActiveAt(vo.getLastActiveAt());
@@ -116,7 +121,7 @@ public class BaseUserProfile extends BaseEntity {
         vo.setIsPhotoVerified(this.getIsPhotoVerified());
         vo.setTagline(this.getTagline());
         vo.setAboutMe(this.getAboutMe());
-        vo.setLanguagesKnown(this.getLanguagesKnown());
+        vo.setLanguages(this.getLanguages());
         vo.setIsProfileVerified(this.getIsProfileVerified());
         vo.setIsActive(this.getIsActive());
         vo.setLastActiveAt(this.getLastActiveAt());

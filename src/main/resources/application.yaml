@@ -20,6 +20,18 @@ spring:
   scheduling:
     enabled: true
 
+  mail:
+    host: ${MAIL_HOST:email-smtp.us-east-1.amazonaws.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -49,3 +61,8 @@ anthropic:
   api:
     key: ${ANTHROPIC_API_KEY}
     model: claude-haiku-4-5-20251001
+
+app:
+  mail:
+    from: ${MAIL_FROM:noreply@matchmaking.app}
+    enabled: ${MAIL_ENABLED:false}

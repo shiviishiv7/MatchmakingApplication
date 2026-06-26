@@ -6,15 +6,17 @@ import com.shiviishiv7.matchmaking.provider.vo.MatchResultVO;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 /**
- * Persisted record of a match suggestion shown to a user.
- * Created when a candidate appears in a user's discovery results.
- * Updated when the user acts on it (liked, skipped, connected).
+ * One engine-assigned match between two users.
+ * Created by the matching engine; progresses through rounds of meetings
+ * until one user says NO (ENDED) or all rounds complete (COMPLETED).
  */
 @Entity
-@Table(name = "MATCH_RESULT")
+@Table(name = "MATCH_RESULT", indexes = {
+        @Index(name = "idx_match_result_sub_a", columnList = "cognitoSubA"),
+        @Index(name = "idx_match_result_sub_b", columnList = "cognitoSubB"),
+        @Index(name = "idx_match_result_sub_a_category", columnList = "cognitoSubA, matchCategory")
+})
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class MatchResult extends BaseEntity {
 
@@ -23,7 +25,6 @@ public class MatchResult extends BaseEntity {
     @Column(name = "id", updatable = false, nullable = false)
     private Integer id;
 
-    // ── The two matched users ─────────────────────────────────────────────
     @Column(name = "cognitoSubA", nullable = false)
     private String cognitoSubA;
 
@@ -35,29 +36,23 @@ public class MatchResult extends BaseEntity {
     private MatchCategory matchCategory;
 
     @Column(name = "compatibilityScore")
-    private Double compatibilityScore;            // 0-100
+    private Double compatibilityScore;
 
     @Column(name = "scoreBreakdown", columnDefinition = "JSON")
-    private String scoreBreakdown;                 // JSON: {religion:20, caste:15, ...}
+    private String scoreBreakdown;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
     @Builder.Default
     private MatchStatus status = MatchStatus.PENDING;
 
-    @Column(name = "isMutual")
-    @Builder.Default
-    private Boolean isMutual = false;              // true when both users liked each other
-
-    @Column(name = "shownAt")
-    private LocalDateTime shownAt;
-
-    @Column(name = "actedAt")
-    private LocalDateTime actedAt;
     @Column(name = "roundCount")
-    private Integer roundCount;
+    @Builder.Default
+    private Integer roundCount = 0;
+
     @Column(name = "maxRounds")
-    private Integer maxRounds;
+    @Builder.Default
+    private Integer maxRounds = 3;
 
     public MatchResult fromVO(MatchResultVO vo) {
         if (vo == null) return null;
@@ -65,12 +60,11 @@ public class MatchResult extends BaseEntity {
         this.setCognitoSubA(vo.getCognitoSubA());
         this.setCognitoSubB(vo.getCognitoSubB());
         this.setMatchCategory(vo.getMatchCategory());
-        this.setCompatibilityScore(Double.valueOf(vo.getCompatibilityScore()));
+        this.setCompatibilityScore(vo.getCompatibilityScore());
         this.setScoreBreakdown(vo.getScoreBreakdown());
         this.setStatus(vo.getStatus());
-        this.setIsMutual(vo.getIsMutual());
-        this.setShownAt(vo.getShownAt());
-        this.setActedAt(vo.getActedAt());
+        this.setRoundCount(vo.getRoundCount());
+        this.setMaxRounds(vo.getMaxRounds());
         return this;
     }
 
@@ -80,12 +74,11 @@ public class MatchResult extends BaseEntity {
         vo.setCognitoSubA(this.getCognitoSubA());
         vo.setCognitoSubB(this.getCognitoSubB());
         vo.setMatchCategory(this.getMatchCategory());
-        vo.setCompatibilityScore(this.compatibilityScore);
+        vo.setCompatibilityScore(this.getCompatibilityScore());
         vo.setScoreBreakdown(this.getScoreBreakdown());
         vo.setStatus(this.getStatus());
-        vo.setIsMutual(this.getIsMutual());
-        vo.setShownAt(this.getShownAt());
-        vo.setActedAt(this.getActedAt());
+        vo.setRoundCount(this.getRoundCount());
+        vo.setMaxRounds(this.getMaxRounds());
         return vo;
     }
 }

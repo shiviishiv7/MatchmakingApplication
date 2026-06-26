@@ -18,7 +18,9 @@ import java.util.List;
  * each with its own scheduling and feedback entries.
  */
 @Entity
-@Table(name = "MEETING")
+@Table(name = "MEETING", indexes = {
+        @Index(name = "idx_meeting_match_result_id", columnList = "matchResultId")
+})
 @Getter
 @Setter
 @NoArgsConstructor

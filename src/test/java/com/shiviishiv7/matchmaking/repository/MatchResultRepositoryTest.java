@@ -12,16 +12,10 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 
-import java.time.LocalDateTime;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Validates the JPQL queries in MatchResultRepository —
- * specifically the countMutualLike fix (was using a string literal 'LIKED'
- * instead of a proper enum param, so it always returned 0).
- */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @TestPropertySource(properties = {
@@ -43,56 +37,14 @@ class MatchResultRepositoryTest {
         repo.deleteAll();
     }
 
-    // ── countMutualLike ────────────────────────────────────────────────────────
-
-    @Test
-    @DisplayName("countMutualLike returns 0 when B has not yet liked A")
-    void countMutualLike_noLikeYet_returnsZero() {
-        // A liked B, but B hasn't acted yet
-        save(USER_A, USER_B, MatchStatus.LIKED);
-
-        long count = repo.countMutualLike(USER_B, USER_A, CAT, MatchStatus.LIKED);
-        assertThat(count).isZero();
-    }
-
-    @Test
-    @DisplayName("countMutualLike returns 1 when B has already liked A — mutual match detected")
-    void countMutualLike_bAlreadyLikedA_returnsOne() {
-        // B liked A first
-        save(USER_B, USER_A, MatchStatus.LIKED);
-
-        // Now A is liking B — check if B already liked A
-        long count = repo.countMutualLike(USER_B, USER_A, CAT, MatchStatus.LIKED);
-        assertThat(count).isEqualTo(1);
-    }
-
-    @Test
-    @DisplayName("countMutualLike returns 0 when B SKIPPED A, not liked")
-    void countMutualLike_bSkippedA_returnsZero() {
-        save(USER_B, USER_A, MatchStatus.SKIPPED);
-
-        long count = repo.countMutualLike(USER_B, USER_A, CAT, MatchStatus.LIKED);
-        assertThat(count).isZero();
-    }
-
-    @Test
-    @DisplayName("countMutualLike is category-scoped — like in different category is not counted")
-    void countMutualLike_differentCategory_returnsZero() {
-        // B liked A, but for a different category
-        save(USER_B, USER_A, MatchStatus.LIKED, MatchCategory.MENTORSHIP);
-
-        long count = repo.countMutualLike(USER_B, USER_A, CAT, MatchStatus.LIKED);
-        assertThat(count).isZero();
-    }
-
     // ── findSeenCandidateIds ───────────────────────────────────────────────────
 
     @Test
-    @DisplayName("findSeenCandidateIds returns all candidates A has seen, regardless of status")
+    @DisplayName("findSeenCandidateIds returns all candidates A has been matched with")
     void findSeenCandidates_returnsAll() {
-        save(USER_A, USER_B, MatchStatus.PENDING);
-        save(USER_A, "sub-user-c", MatchStatus.LIKED);
-        save(USER_A, "sub-user-d", MatchStatus.SKIPPED);
+        save(USER_A, USER_B, MatchStatus.MEETING_SCHEDULED);
+        save(USER_A, "sub-user-c", MatchStatus.ANOTHER_ROUND);
+        save(USER_A, "sub-user-d", MatchStatus.ENDED);
 
         Set<String> seen = repo.findSeenCandidateIds(USER_A, CAT);
         assertThat(seen).containsExactlyInAnyOrder(USER_B, "sub-user-c", "sub-user-d");
@@ -101,7 +53,7 @@ class MatchResultRepositoryTest {
     @Test
     @DisplayName("findSeenCandidateIds is scoped per user — other users' results are excluded")
     void findSeenCandidates_otherUserNotIncluded() {
-        save(USER_B, "sub-user-c", MatchStatus.LIKED);
+        save(USER_B, "sub-user-c", MatchStatus.MEETING_SCHEDULED);
 
         Set<String> seen = repo.findSeenCandidateIds(USER_A, CAT);
         assertThat(seen).isEmpty();
@@ -122,6 +74,26 @@ class MatchResultRepositoryTest {
         assertThat(repo.existsByCognitoSubAAndCognitoSubBAndMatchCategory(USER_A, USER_B, CAT)).isFalse();
     }
 
+    @Test
+    @DisplayName("exists check is category-scoped — different category returns false")
+    void exists_differentCategory_returnsFalse() {
+        save(USER_A, USER_B, MatchStatus.PENDING, MatchCategory.MENTORSHIP);
+        assertThat(repo.existsByCognitoSubAAndCognitoSubBAndMatchCategory(USER_A, USER_B, CAT)).isFalse();
+    }
+
+    // ── findByStatus ──────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("findByStatus returns only matches in the given status")
+    void findByStatus_returnsMatchingRows() {
+        save(USER_A, USER_B, MatchStatus.AWAITING_FEEDBACK);
+        save(USER_A, "sub-user-c", MatchStatus.ENDED);
+
+        assertThat(repo.findByStatus(MatchStatus.AWAITING_FEEDBACK)).hasSize(1);
+        assertThat(repo.findByStatus(MatchStatus.ENDED)).hasSize(1);
+        assertThat(repo.findByStatus(MatchStatus.PENDING)).isEmpty();
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private void save(String subA, String subB, MatchStatus status) {
@@ -134,8 +106,6 @@ class MatchResultRepositoryTest {
                 .cognitoSubB(subB)
                 .matchCategory(category)
                 .status(status)
-                .isMutual(false)
-                .shownAt(LocalDateTime.now())
                 .build());
     }
 }

@@ -20,15 +20,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * Tests that a scheduled meeting (scheduledAt = now+3h) is auto-created
- * exactly when a mutual match is detected in recordAction().
+ * Tests that the engine auto-schedules a meeting immediately when
+ * a new MatchResult is created (engine-assigned flow, no user swiping).
  */
 @ExtendWith(MockitoExtension.class)
 class MutualMatchMeetingCreationTest {
@@ -40,8 +40,6 @@ class MutualMatchMeetingCreationTest {
 
     private MatchingEngineProcessor engine;
 
-    private static final String USER_A = "sub-a";
-    private static final String USER_B = "sub-b";
     private static final MatchCategory CAT = MatchCategory.MENTORSHIP;
 
     @BeforeEach
@@ -54,38 +52,36 @@ class MutualMatchMeetingCreationTest {
     }
 
     @Test
-    @DisplayName("TC-S01: mutual match → one Meeting row saved with status SCHEDULED")
-    void mutualMatch_meetingSavedWithScheduledStatus() throws Exception {
-        setupMutualMatch();
+    @DisplayName("scheduleRoundMeeting: meeting saved with SCHEDULED status")
+    void scheduleRoundMeeting_statusIsScheduled() {
+        MatchResult match = buildMatch(99);
 
-        engine.recordAction(USER_A, USER_B, CAT, MatchStatus.LIKED);
-
-        ArgumentCaptor<Meeting> captor = ArgumentCaptor.forClass(Meeting.class);
-        verify(meetingRepository).save(captor.capture());
-
-        Meeting saved = captor.getValue();
-        assertThat(saved.getStatus()).isEqualTo(MeetingStatus.SCHEDULED);
-    }
-
-    @Test
-    @DisplayName("TC-S02: mutual match → meeting roundNumber is 1")
-    void mutualMatch_meetingRoundNumberIsOne() throws Exception {
-        setupMutualMatch();
-
-        engine.recordAction(USER_A, USER_B, CAT, MatchStatus.LIKED);
+        engine.scheduleRoundMeeting(match, 1);
 
         ArgumentCaptor<Meeting> captor = ArgumentCaptor.forClass(Meeting.class);
         verify(meetingRepository).save(captor.capture());
-        assertThat(captor.getValue().getRoundNumber()).isEqualTo(1);
+        assertThat(captor.getValue().getStatus()).isEqualTo(MeetingStatus.SCHEDULED);
     }
 
     @Test
-    @DisplayName("TC-S03: mutual match → scheduledAt is approximately now + 3 hours")
-    void mutualMatch_scheduledAtIsThreeHoursFromNow() throws Exception {
-        setupMutualMatch();
+    @DisplayName("scheduleRoundMeeting: round number is passed through correctly")
+    void scheduleRoundMeeting_roundNumberSetCorrectly() {
+        MatchResult match = buildMatch(99);
+
+        engine.scheduleRoundMeeting(match, 2);
+
+        ArgumentCaptor<Meeting> captor = ArgumentCaptor.forClass(Meeting.class);
+        verify(meetingRepository).save(captor.capture());
+        assertThat(captor.getValue().getRoundNumber()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("scheduleRoundMeeting: scheduledAt is approximately now + 3 hours")
+    void scheduleRoundMeeting_scheduledAtIsThreeHoursFromNow() {
         LocalDateTime before = LocalDateTime.now();
+        MatchResult match = buildMatch(99);
 
-        engine.recordAction(USER_A, USER_B, CAT, MatchStatus.LIKED);
+        engine.scheduleRoundMeeting(match, 1);
 
         LocalDateTime after = LocalDateTime.now();
         ArgumentCaptor<Meeting> captor = ArgumentCaptor.forClass(Meeting.class);
@@ -97,77 +93,36 @@ class MutualMatchMeetingCreationTest {
     }
 
     @Test
-    @DisplayName("TC-S04: mutual match → matchId on Meeting equals the MatchResult id")
-    void mutualMatch_meetingMatchIdMatchesMatchResultId() throws Exception {
-        MatchResult aRow = buildResult(99, USER_A, USER_B, MatchStatus.PENDING);
-        MatchResult bRow = buildResult(100, USER_B, USER_A, MatchStatus.LIKED);
+    @DisplayName("scheduleRoundMeeting: matchResultId on meeting equals the MatchResult id")
+    void scheduleRoundMeeting_matchResultIdLinkedCorrectly() {
+        MatchResult match = buildMatch(42);
 
-        when(matchResultRepository.findByCognitoSubAAndCognitoSubBAndMatchCategory(USER_A, USER_B, CAT))
-                .thenReturn(Optional.of(aRow));
-        when(matchResultRepository.countMutualLike(USER_B, USER_A, CAT, MatchStatus.LIKED)).thenReturn(1L);
-        when(matchResultRepository.findByCognitoSubAAndCognitoSubBAndMatchCategory(USER_B, USER_A, CAT))
-                .thenReturn(Optional.of(bRow));
-
-        engine.recordAction(USER_A, USER_B, CAT, MatchStatus.LIKED);
+        engine.scheduleRoundMeeting(match, 1);
 
         ArgumentCaptor<Meeting> captor = ArgumentCaptor.forClass(Meeting.class);
         verify(meetingRepository).save(captor.capture());
-        assertThat(captor.getValue().getMatchId()).isEqualTo("99");
+        assertThat(captor.getValue().getMatchResultId()).isEqualTo(42);
     }
 
     @Test
-    @DisplayName("TC-S05: no mutual match → NO meeting is created")
-    void noMutualMatch_noMeetingCreated() throws Exception {
-        MatchResult aRow = buildResult(99, USER_A, USER_B, MatchStatus.PENDING);
-        when(matchResultRepository.findByCognitoSubAAndCognitoSubBAndMatchCategory(USER_A, USER_B, CAT))
-                .thenReturn(Optional.of(aRow));
-        when(matchResultRepository.countMutualLike(USER_B, USER_A, CAT, MatchStatus.LIKED)).thenReturn(0L);
-
-        engine.recordAction(USER_A, USER_B, CAT, MatchStatus.LIKED);
-
-        verifyNoInteractions(meetingRepository);
-    }
-
-    @Test
-    @DisplayName("TC-S06: SKIP action → no meeting created")
-    void skipAction_noMeetingCreated() throws Exception {
-        MatchResult aRow = buildResult(99, USER_A, USER_B, MatchStatus.PENDING);
-        when(matchResultRepository.findByCognitoSubAAndCognitoSubBAndMatchCategory(USER_A, USER_B, CAT))
-                .thenReturn(Optional.of(aRow));
-
-        engine.recordAction(USER_A, USER_B, CAT, MatchStatus.SKIPPED);
-
-        verifyNoInteractions(meetingRepository);
-    }
-
-    @Test
-    @DisplayName("TC-S07: meetingRepository.save failure does not crash recordAction (graceful error handling)")
-    void meetingSaveFails_doesNotCrashRecordAction() throws Exception {
-        setupMutualMatch();
+    @DisplayName("scheduleRoundMeeting: meetingRepository failure does not propagate (graceful error handling)")
+    void scheduleRoundMeeting_saveFails_doesNotThrow() {
         doThrow(new RuntimeException("DB down")).when(meetingRepository).save(any());
+        MatchResult match = buildMatch(99);
 
-        // Should not propagate — error is swallowed with a log
-        org.assertj.core.api.Assertions.assertThatNoException()
-                .isThrownBy(() -> engine.recordAction(USER_A, USER_B, CAT, MatchStatus.LIKED));
+        assertThatNoException().isThrownBy(() -> engine.scheduleRoundMeeting(match, 1));
     }
 
     // ─── helpers ──────────────────────────────────────────────────────────────
 
-    private void setupMutualMatch() {
-        MatchResult aRow = buildResult(99, USER_A, USER_B, MatchStatus.PENDING);
-        MatchResult bRow = buildResult(100, USER_B, USER_A, MatchStatus.LIKED);
-        when(matchResultRepository.findByCognitoSubAAndCognitoSubBAndMatchCategory(USER_A, USER_B, CAT))
-                .thenReturn(Optional.of(aRow));
-        when(matchResultRepository.countMutualLike(USER_B, USER_A, CAT, MatchStatus.LIKED)).thenReturn(1L);
-        when(matchResultRepository.findByCognitoSubAAndCognitoSubBAndMatchCategory(USER_B, USER_A, CAT))
-                .thenReturn(Optional.of(bRow));
-    }
-
-    private MatchResult buildResult(int id, String subA, String subB, MatchStatus status) {
+    private MatchResult buildMatch(int id) {
         return MatchResult.builder()
-                .id(id).cognitoSubA(subA).cognitoSubB(subB)
-                .matchCategory(CAT).status(status).isMutual(false)
-                .shownAt(LocalDateTime.now()).build();
+                .id(id)
+                .cognitoSubA("sub-a")
+                .cognitoSubB("sub-b")
+                .matchCategory(CAT)
+                .status(MatchStatus.MEETING_SCHEDULED)
+                .build();
     }
 
     private void injectField(Object target, String name, Object value) {

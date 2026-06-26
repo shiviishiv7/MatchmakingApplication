@@ -1,11 +1,7 @@
 package com.shiviishiv7.matchmaking.processor.matchingengine;
 
-import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
-import com.shiviishiv7.matchmaking.common.enums.MatchStatus;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
-
 import com.shiviishiv7.matchmaking.provider.model.BlockList;
-import com.shiviishiv7.matchmaking.provider.model.MatchResult;
 import com.shiviishiv7.matchmaking.provider.implementation.BlockListRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.MatchResultRepository;
 import com.shiviishiv7.matchmaking.provider.vo.*;
@@ -16,7 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus.*;
 
@@ -45,57 +40,6 @@ public class MatchingProcessor implements IMatchingProcessor {
             log.error("ALERT_FOR_ERROR: Error during discovery for userId: {}. Error: {}",
                     request.getCognitoSubA(), ex.getMessage(), ex);
             throw new MatchmakingException("Error during discovery: " + ex.getMessage(), UNKNOWN_EXCEPTION);
-        }
-    }
-
-    @Override
-    public BaseVO like(String cognitoSubA, String cognitoSubB, String matchCategory) throws MatchmakingException {
-        try {
-            log.info("LIKE action: userId={} candidateUserId={} category={}", cognitoSubA, cognitoSubB, matchCategory);
-            MatchCategory category = MatchCategory.valueOf(matchCategory.toUpperCase());
-            matchingEngineProcessor.recordAction(cognitoSubA,cognitoSubB, category, MatchStatus.LIKED);
-            return new BaseVO(SUCCESS, "Like recorded", "Like recorded");
-        } catch (MatchmakingException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            log.error("ALERT_FOR_ERROR: Error recording like. Error: {}", ex.getMessage(), ex);
-            throw new MatchmakingException("Error recording like: " + ex.getMessage(), UNKNOWN_EXCEPTION);
-        }
-    }
-
-    @Override
-    public BaseVO skip(String cognitoSubA, String cognitoSubB, String matchCategory) throws MatchmakingException {
-        try {
-            log.info("SKIP action: userId={} candidateUserId={} category={}", cognitoSubA, cognitoSubB, matchCategory);
-            MatchCategory category = MatchCategory.valueOf(matchCategory.toUpperCase());
-            matchingEngineProcessor.recordAction(cognitoSubA,cognitoSubB,category, MatchStatus.SKIPPED);
-            return new BaseVO(SUCCESS, "Skip recorded", "Skip recorded");
-        } catch (MatchmakingException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            log.error("ALERT_FOR_ERROR: Error recording skip. Error: {}", ex.getMessage(), ex);
-            throw new MatchmakingException("Error recording skip: " + ex.getMessage(), UNKNOWN_EXCEPTION);
-        }
-    }
-
-    @Override
-    public BaseVO getConnections(String userId, String matchCategory) throws MatchmakingException {
-        try {
-            log.info("Fetching connections for userId: {} category: {}", userId, matchCategory);
-            MatchCategory category = MatchCategory.valueOf(matchCategory.toUpperCase());
-            List<MatchResult> connections = matchResultRepository
-                    .findByCognitoSubAAndMatchCategoryAndStatus(
-                            (userId), category, MatchStatus.CONNECTED);
-            List<MatchResultVO> voList = connections.stream()
-                    .map(MatchResult::toVO)
-                    .collect(Collectors.toList());
-            log.info("Found {} connections for userId: {}", voList.size(), userId);
-            return new BaseVO(SUCCESS, "Connections fetched", "Connections fetched", voList);
-        } catch (MatchmakingException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            log.error("ALERT_FOR_ERROR: Error fetching connections. Error: {}", ex.getMessage(), ex);
-            throw new MatchmakingException("Error fetching connections: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
 
