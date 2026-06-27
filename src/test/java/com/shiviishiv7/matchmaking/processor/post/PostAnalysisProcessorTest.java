@@ -3,13 +3,8 @@ package com.shiviishiv7.matchmaking.processor.post;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
-import com.shiviishiv7.matchmaking.processor.matchingengine.MatchingEngineProcessor;
-import com.shiviishiv7.matchmaking.processor.post.PostAnalysisProcessor;
-import com.shiviishiv7.matchmaking.processor.userprofile.*;
 import com.shiviishiv7.matchmaking.provider.implementation.UserPostRepository;
 import com.shiviishiv7.matchmaking.provider.model.UserPost;
-import com.shiviishiv7.matchmaking.provider.vo.MatchCandidateVO;
-import com.shiviishiv7.matchmaking.provider.vo.ws.MatchNotificationVO;
 import com.shiviishiv7.matchmaking.provider.vo.post.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,11 +15,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -33,24 +26,17 @@ import static org.mockito.Mockito.*;
 /**
  * Unit tests for PostAnalysisProcessor.
  *
+ * Responsibility after refactor: Claude calls, post persistence, queue enqueue.
+ * Profile routing and WS notification tests live in PostEnrichmentProcessorTest.
+ *
  * callClaude() is stubbed via spy — no real HTTP calls made.
  */
 @ExtendWith(MockitoExtension.class)
 class PostAnalysisProcessorTest {
 
     @Mock private UserPostRepository postRepo;
-    @Mock private MatchingEngineProcessor matchingEngine;
-    @Mock private com.shiviishiv7.matchmaking.service.match.MatchConnectService matchConnectService;
-    @Mock private SimpMessagingTemplate messaging;
-    @Mock private IMatrimonialExtProfileProcessor matrimonialProcessor;
-    @Mock private IDatingExtProfileProcessor datingProcessor;
-    @Mock private IFitnessExtProfileProcessor fitnessProcessor;
-    @Mock private IFlatmateExtProfileProcessor flatmateProcessor;
-    @Mock private IGamingExtProfileProcessor gamingProcessor;
-    @Mock private IProfessionalExtProfileProcessor professionalProcessor;
-    @Mock private ITravelExtProfileProcessor travelProcessor;
-
-    @Spy private ObjectMapper objectMapper = new ObjectMapper();
+    @Mock private PostEnrichmentQueue enrichmentQueue;
+    @Spy  private ObjectMapper objectMapper = new ObjectMapper();
 
     private PostAnalysisProcessor processor;
 
@@ -60,11 +46,7 @@ class PostAnalysisProcessorTest {
 
     @BeforeEach
     void setUp() {
-        processor = new PostAnalysisProcessor(
-                postRepo, objectMapper, matchingEngine, matchConnectService, messaging,
-                matrimonialProcessor, datingProcessor, fitnessProcessor,
-                flatmateProcessor, gamingProcessor, professionalProcessor, travelProcessor
-        );
+        processor = new PostAnalysisProcessor(postRepo, objectMapper, enrichmentQueue);
         ReflectionTestUtils.setField(processor, "apiKey", "test-api-key");
         ReflectionTestUtils.setField(processor, "model", "claude-haiku-4-5-20251001");
     }
@@ -199,8 +181,6 @@ class PostAnalysisProcessorTest {
 
             UserPost savedPost = buildSavedPost(42L, MatchCategory.PROFESSIONAL_MATRIMONY);
             when(postRepo.save(any())).thenReturn(savedPost);
-            when(postRepo.findById(42L)).thenReturn(Optional.of(savedPost));
-            when(matchingEngine.discover(any())).thenReturn(List.of());
 
             PostSubmitResponseVO result = spy.submit(COGNITO_SUB, buildRequest(MATRIMONIAL_POST));
 
@@ -216,8 +196,6 @@ class PostAnalysisProcessorTest {
 
             UserPost saved = buildSavedPost(1L, MatchCategory.PROFESSIONAL_MATRIMONY);
             when(postRepo.save(any())).thenReturn(saved);
-            when(postRepo.findById(1L)).thenReturn(Optional.of(saved));
-            when(matchingEngine.discover(any())).thenReturn(List.of());
 
             PostAnswerVO a1 = new PostAnswerVO(); a1.setQuestionId("q1"); a1.setValue("Mumbai");
             PostAnswerVO a2 = new PostAnswerVO(); a2.setQuestionId("q2"); a2.setValue("Yes");
@@ -227,113 +205,41 @@ class PostAnalysisProcessorTest {
             spy.submit(COGNITO_SUB, request);
 
             ArgumentCaptor<UserPost> captor = ArgumentCaptor.forClass(UserPost.class);
-            verify(postRepo, atLeastOnce()).save(captor.capture());
-            UserPost firstSave = captor.getAllValues().get(0);
-            assertThat(firstSave.getAnswersJson()).contains("q1").contains("Mumbai");
+            verify(postRepo).save(captor.capture());
+            assertThat(captor.getValue().getAnswersJson()).contains("q1").contains("Mumbai");
         }
 
         @Test
-        @DisplayName("Routes PROFESSIONAL_MATRIMONY to matrimonial profile processor")
-        void submit_matrimonialCategory_upsertsCategoryProfile() throws Exception {
-            PostAnalysisProcessor spy = spyWithClaude(matrimonialSubmitJson());
-
-            UserPost saved = buildSavedPost(1L, MatchCategory.PROFESSIONAL_MATRIMONY);
-            when(postRepo.save(any())).thenReturn(saved);
-            when(postRepo.findById(1L)).thenReturn(Optional.of(saved));
-            when(matchingEngine.discover(any())).thenReturn(List.of());
-
-            spy.submit(COGNITO_SUB, buildRequest(MATRIMONIAL_POST));
-            Thread.sleep(300);
-
-            verify(matrimonialProcessor, atLeastOnce()).upsertFromFilter(argThat(vo ->
-                    COGNITO_SUB.equals(vo.getCognitoSub()) &&
-                    "PROFESSIONAL_MATRIMONY".equals(vo.getChildCategory())
-            ));
-        }
-
-        @Test
-        @DisplayName("Routes CASUAL_DATING to dating profile processor")
-        void submit_datingCategory_upsertsDatingProfile() throws Exception {
-            String claudeJson = """
-                    {
-                      "inferredCategory": "CASUAL_DATING",
-                      "profile": { "relationshipGoal": "Long-Term" }
-                    }
-                    """;
-
-            PostAnalysisProcessor spy = spyWithClaude(claudeJson);
-
-            UserPost saved = buildSavedPost(2L, MatchCategory.CASUAL_DATING);
-            when(postRepo.save(any())).thenReturn(saved);
-            when(postRepo.findById(2L)).thenReturn(Optional.of(saved));
-            when(matchingEngine.discover(any())).thenReturn(List.of());
-
-            spy.submit(COGNITO_SUB, buildRequest("26F looking for long-term."));
-            Thread.sleep(300);
-
-            verify(datingProcessor, atLeastOnce()).upsertFromFilter(argThat(vo ->
-                    "CASUAL_DATING".equals(vo.getChildCategory())
-            ));
-        }
-
-        @Test
-        @DisplayName("Triggers match discovery after profile upsert")
-        void submit_afterUpsert_triggersDiscovery() throws Exception {
+        @DisplayName("Enqueues enrichment task after saving post")
+        void submit_validRequest_enqueuesEnrichmentTask() throws Exception {
             PostAnalysisProcessor spy = spyWithClaude(matrimonialSubmitJson());
 
             UserPost saved = buildSavedPost(5L, MatchCategory.PROFESSIONAL_MATRIMONY);
             when(postRepo.save(any())).thenReturn(saved);
-            when(postRepo.findById(5L)).thenReturn(Optional.of(saved));
-            when(matchingEngine.discover(any())).thenReturn(List.of());
 
             spy.submit(COGNITO_SUB, buildRequest(MATRIMONIAL_POST));
-            Thread.sleep(300);
 
-            verify(matchingEngine).discover(argThat(req ->
-                    COGNITO_SUB.equals(req.getCognitoSubA()) &&
-                    req.getMatchCategory() == MatchCategory.PROFESSIONAL_MATRIMONY
-            ));
+            ArgumentCaptor<PostEnrichmentTask> captor = ArgumentCaptor.forClass(PostEnrichmentTask.class);
+            verify(enrichmentQueue).enqueue(captor.capture());
+            assertThat(captor.getValue().postId()).isEqualTo(5L);
+            assertThat(captor.getValue().filterVO().getCognitoSub()).isEqualTo(COGNITO_SUB);
+            assertThat(captor.getValue().filterVO().getChildCategory()).isEqualTo("PROFESSIONAL_MATRIMONY");
         }
 
         @Test
-        @DisplayName("Sends POST_MATCH_CONNECTING when candidates found and one is online")
-        void submit_candidatesFound_onlineMatch_sendsConnectingNotification() throws Exception {
-            PostAnalysisProcessor spy = spyWithClaude(matrimonialSubmitJson());
+        @DisplayName("Does not enqueue when Claude returns no profile block")
+        void submit_noProfile_doesNotEnqueue() throws Exception {
+            String noProfileJson = """
+                    { "inferredCategory": "PROFESSIONAL_MATRIMONY" }
+                    """;
+            PostAnalysisProcessor spy = spyWithClaude(noProfileJson);
 
-            UserPost saved = buildSavedPost(7L, MatchCategory.PROFESSIONAL_MATRIMONY);
+            UserPost saved = buildSavedPost(6L, MatchCategory.PROFESSIONAL_MATRIMONY);
             when(postRepo.save(any())).thenReturn(saved);
-            when(postRepo.findById(7L)).thenReturn(Optional.of(saved));
-
-            MatchCandidateVO candidate = new MatchCandidateVO();
-            candidate.setCognitoSubB("matched-user");
-            candidate.setCompatibilityScore(85);
-            when(matchingEngine.discover(any())).thenReturn(List.of(candidate));
-            when(matchConnectService.connectNextOnlineMatch(COGNITO_SUB)).thenReturn(true);
 
             spy.submit(COGNITO_SUB, buildRequest(MATRIMONIAL_POST));
-            Thread.sleep(300);
 
-            ArgumentCaptor<MatchNotificationVO> wsCaptor = ArgumentCaptor.forClass(MatchNotificationVO.class);
-            verify(messaging).convertAndSendToUser(eq(COGNITO_SUB), eq("/queue/matches"), wsCaptor.capture());
-            assertThat(wsCaptor.getValue().getEvent()).isEqualTo("POST_MATCH_CONNECTING");
-        }
-
-        @Test
-        @DisplayName("Sends POST_NO_MATCH_FOUND WebSocket notification when no candidates")
-        void submit_noCandidates_sendsNoMatchNotification() throws Exception {
-            PostAnalysisProcessor spy = spyWithClaude(matrimonialSubmitJson());
-
-            UserPost saved = buildSavedPost(8L, MatchCategory.PROFESSIONAL_MATRIMONY);
-            when(postRepo.save(any())).thenReturn(saved);
-            when(postRepo.findById(8L)).thenReturn(Optional.of(saved));
-            when(matchingEngine.discover(any())).thenReturn(List.of());
-
-            spy.submit(COGNITO_SUB, buildRequest(MATRIMONIAL_POST));
-            Thread.sleep(300);
-
-            ArgumentCaptor<MatchNotificationVO> wsCaptor = ArgumentCaptor.forClass(MatchNotificationVO.class);
-            verify(messaging).convertAndSendToUser(eq(COGNITO_SUB), eq("/queue/matches"), wsCaptor.capture());
-            assertThat(wsCaptor.getValue().getEvent()).isEqualTo("POST_NO_MATCH_FOUND");
+            verify(enrichmentQueue, never()).enqueue(any());
         }
 
         @Test
