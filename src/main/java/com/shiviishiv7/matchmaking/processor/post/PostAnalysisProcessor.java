@@ -8,9 +8,11 @@ import com.shiviishiv7.matchmaking.provider.implementation.UserPostRepository;
 import com.shiviishiv7.matchmaking.provider.model.UserPost;
 import com.shiviishiv7.matchmaking.provider.vo.MatchFilterVO;
 import com.shiviishiv7.matchmaking.provider.vo.post.*;
+import com.shiviishiv7.matchmaking.provider.vo.ws.MatchNotificationVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -37,9 +39,12 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
     @Value("${anthropic.api.model:claude-haiku-4-5-20251001}")
     private String model;
 
+    private static final String USER_QUEUE_MATCHES = "/queue/matches";
+
     private final UserPostRepository userPostRepository;
     private final ObjectMapper objectMapper;
     private final PostEnrichmentQueue enrichmentQueue;
+    private final SimpMessagingTemplate messagingTemplate;
 
     // ─── analyze ───────────────────────────────────────────────────────────────
 
@@ -78,10 +83,20 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
                     .build();
             post = userPostRepository.save(post);
 
-            // Enrich profile + run matching via background queue (non-blocking)
-            if (category != null && root.has("profile")) {
-                MatchFilterVO filterVO = buildFilterVO(cognitoSub, category, root.path("profile"));
+            // Always enqueue so discovery runs and the user gets a WS notification.
+            // If Claude returned no profile block, filterVO will have only cognitoSub + category.
+            if (category != null) {
+                JsonNode profileNode = root.has("profile") ? root.path("profile") : objectMapper.createObjectNode();
+                MatchFilterVO filterVO = buildFilterVO(cognitoSub, category, profileNode);
                 enrichmentQueue.enqueue(new PostEnrichmentTask(filterVO, post.getId()));
+            } else {
+                // Claude couldn't determine a category — notify the user immediately so the page doesn't hang
+                log.warn("Claude returned no valid category for cognitoSub={}", cognitoSub);
+                messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
+                        MatchNotificationVO.builder()
+                                .event("POST_MATCH_ERROR")
+                                .message("We couldn't determine your match category. Please try rephrasing your post.")
+                                .build());
             }
 
             return PostSubmitResponseVO.builder()

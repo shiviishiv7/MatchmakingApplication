@@ -15,6 +15,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -36,6 +37,7 @@ class PostAnalysisProcessorTest {
 
     @Mock private UserPostRepository postRepo;
     @Mock private PostEnrichmentQueue enrichmentQueue;
+    @Mock private SimpMessagingTemplate messaging;
     @Spy  private ObjectMapper objectMapper = new ObjectMapper();
 
     private PostAnalysisProcessor processor;
@@ -46,7 +48,7 @@ class PostAnalysisProcessorTest {
 
     @BeforeEach
     void setUp() {
-        processor = new PostAnalysisProcessor(postRepo, objectMapper, enrichmentQueue);
+        processor = new PostAnalysisProcessor(postRepo, objectMapper, enrichmentQueue, messaging);
         ReflectionTestUtils.setField(processor, "apiKey", "test-api-key");
         ReflectionTestUtils.setField(processor, "model", "claude-haiku-4-5-20251001");
     }
@@ -227,8 +229,8 @@ class PostAnalysisProcessorTest {
         }
 
         @Test
-        @DisplayName("Does not enqueue when Claude returns no profile block")
-        void submit_noProfile_doesNotEnqueue() throws Exception {
+        @DisplayName("Still enqueues when Claude returns no profile block — discovery still runs")
+        void submit_noProfile_stillEnqueues() throws Exception {
             String noProfileJson = """
                     { "inferredCategory": "PROFESSIONAL_MATRIMONY" }
                     """;
@@ -239,7 +241,7 @@ class PostAnalysisProcessorTest {
 
             spy.submit(COGNITO_SUB, buildRequest(MATRIMONIAL_POST));
 
-            verify(enrichmentQueue, never()).enqueue(any());
+            verify(enrichmentQueue).enqueue(any());
         }
 
         @Test
