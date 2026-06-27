@@ -53,9 +53,7 @@ public class PostEnrichmentProcessor {
             log.info("Discovery saved {} PENDING matches for cognitoSub={}", candidates.size(), cognitoSub);
 
             if (candidates.isEmpty()) {
-                // Mark this user as actively waiting so they can be reverse-notified
-                // when a future submission finds them as a candidate
-                userPresenceService.markAsLooking(cognitoSub);
+                tryMarkAsLooking(cognitoSub);
                 messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
                         MatchNotificationVO.builder()
                                 .event("POST_NO_MATCH_FOUND")
@@ -64,13 +62,11 @@ public class PostEnrichmentProcessor {
                 return;
             }
 
-            // Notify any waiting users who appear in our candidate list —
-            // they were in POST_NO_MATCH_FOUND state and are still on the waiting page
             matchConnectService.notifyWaitingPostMatchCandidates(candidates, cognitoSub);
 
             boolean connected = matchConnectService.connectNextOnlineMatch(cognitoSub);
             if (connected) {
-                userPresenceService.markAsNotLooking(cognitoSub);
+                tryMarkAsNotLooking(cognitoSub);
                 messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
                         MatchNotificationVO.builder()
                                 .event("POST_MATCH_CONNECTING")
@@ -80,8 +76,7 @@ public class PostEnrichmentProcessor {
                 MatchCandidateVO top = candidates.get(0);
                 matchConnectService.sendNoOnlineMatchEmails(cognitoSub, top.getCognitoSubB());
 
-                // Mark current user as waiting too — if their matched candidate comes online later
-                userPresenceService.markAsLooking(cognitoSub);
+                tryMarkAsLooking(cognitoSub);
                 messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
                         MatchNotificationVO.builder()
                                 .event("POST_NO_ACTIVE_MATCH")
@@ -97,6 +92,22 @@ public class PostEnrichmentProcessor {
                             .event("POST_MATCH_ERROR")
                             .message("We saved your post but couldn't run matching right now. Please try again shortly.")
                             .build());
+        }
+    }
+
+    private void tryMarkAsLooking(String cognitoSub) {
+        try {
+            userPresenceService.markAsLooking(cognitoSub);
+        } catch (Exception e) {
+            log.warn("Redis unavailable — skipping markAsLooking for {}: {}", cognitoSub, e.getMessage());
+        }
+    }
+
+    private void tryMarkAsNotLooking(String cognitoSub) {
+        try {
+            userPresenceService.markAsNotLooking(cognitoSub);
+        } catch (Exception e) {
+            log.warn("Redis unavailable — skipping markAsNotLooking for {}: {}", cognitoSub, e.getMessage());
         }
     }
 }

@@ -141,7 +141,8 @@ public class MatchConnectService {
         for (MatchCandidateVO candidate : candidates) {
             String waiterSub = candidate.getCognitoSubB();
 
-            if (!userPresenceService.isLooking(waiterSub)) continue;
+            try { if (!userPresenceService.isLooking(waiterSub)) continue; }
+            catch (Exception e) { log.warn("Redis unavailable — skipping isLooking check: {}", e.getMessage()); continue; }
             if (simpUserRegistry.getUser(waiterSub) == null) continue; // WebSocket disconnected
 
             // Find the MatchResult where waiter is subA and newUser is subB,
@@ -185,7 +186,9 @@ public class MatchConnectService {
                             .message("Your match just arrived! Connecting you now...")
                             .build());
 
-            userPresenceService.markAsNotLooking(waiterSub);
+            try { userPresenceService.markAsNotLooking(waiterSub); } catch (Exception e) {
+                log.warn("Redis unavailable — skipping markAsNotLooking for {}: {}", waiterSub, e.getMessage());
+            }
             log.info("Reverse-notified waiting user {} — matched with new submitter {}", waiterSub, newUserSub);
             break; // connect one waiter per new submission; others remain in queue
         }
