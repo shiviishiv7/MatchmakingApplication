@@ -8,6 +8,7 @@ import com.shiviishiv7.matchmaking.provider.vo.MatchFilterVO;
 import com.shiviishiv7.matchmaking.provider.vo.ws.MatchNotificationVO;
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
 import com.shiviishiv7.matchmaking.service.match.MatchConnectService;
+import com.shiviishiv7.matchmaking.service.presence.UserPresenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -27,6 +28,7 @@ public class PostEnrichmentProcessor {
     private final MatchConnectService matchConnectService;
     private final SimpMessagingTemplate messagingTemplate;
     private final IPostProfileUpsertService postProfileUpsertService;
+    private final UserPresenceService userPresenceService;
 
     public void enrich(PostEnrichmentTask task) {
         MatchFilterVO filterVO = task.filterVO();
@@ -51,6 +53,9 @@ public class PostEnrichmentProcessor {
             log.info("Discovery saved {} PENDING matches for cognitoSub={}", candidates.size(), cognitoSub);
 
             if (candidates.isEmpty()) {
+                // Mark this user as actively waiting so they can be reverse-notified
+                // when a future submission finds them as a candidate
+                userPresenceService.markAsLooking(cognitoSub);
                 messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
                         MatchNotificationVO.builder()
                                 .event("POST_NO_MATCH_FOUND")
@@ -59,8 +64,13 @@ public class PostEnrichmentProcessor {
                 return;
             }
 
+            // Notify any waiting users who appear in our candidate list —
+            // they were in POST_NO_MATCH_FOUND state and are still on the waiting page
+            matchConnectService.notifyWaitingPostMatchCandidates(candidates, cognitoSub);
+
             boolean connected = matchConnectService.connectNextOnlineMatch(cognitoSub);
             if (connected) {
+                userPresenceService.markAsNotLooking(cognitoSub);
                 messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
                         MatchNotificationVO.builder()
                                 .event("POST_MATCH_CONNECTING")
@@ -70,6 +80,8 @@ public class PostEnrichmentProcessor {
                 MatchCandidateVO top = candidates.get(0);
                 matchConnectService.sendNoOnlineMatchEmails(cognitoSub, top.getCognitoSubB());
 
+                // Mark current user as waiting too — if their matched candidate comes online later
+                userPresenceService.markAsLooking(cognitoSub);
                 messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
                         MatchNotificationVO.builder()
                                 .event("POST_NO_ACTIVE_MATCH")

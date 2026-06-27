@@ -9,13 +9,16 @@ import com.shiviishiv7.matchmaking.provider.implementation.MeetingRepository;
 import com.shiviishiv7.matchmaking.provider.model.MatchResult;
 import com.shiviishiv7.matchmaking.provider.model.Meeting;
 import com.shiviishiv7.matchmaking.provider.model.profile.BaseUserProfile;
+import com.shiviishiv7.matchmaking.provider.vo.MatchCandidateVO;
 import com.shiviishiv7.matchmaking.provider.vo.ws.MatchNotificationVO;
 import com.shiviishiv7.matchmaking.provider.vo.ws.MeetingNotificationVO;
 import com.shiviishiv7.matchmaking.service.email.EmailService;
 import com.shiviishiv7.matchmaking.service.pool.UserPoolService;
+import com.shiviishiv7.matchmaking.service.presence.UserPresenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +48,8 @@ public class MatchConnectService {
     private final SimpMessagingTemplate messagingTemplate;
     private final BaseUserProfileRepository userProfileRepository;
     private final EmailService emailService;
+    private final UserPresenceService userPresenceService;
+    private final SimpUserRegistry simpUserRegistry;
 
     /**
      * Scans PENDING MatchResults for the given user (best score first).
@@ -121,6 +126,68 @@ public class MatchConnectService {
                                 .build());
                 break; // one connection at a time per new joiner
             }
+        }
+    }
+
+    /**
+     * Called after B's discovery finds candidates. For each candidate that is currently
+     * in the "looking" (POST_NO_MATCH_FOUND) state AND still WebSocket-connected,
+     * sends them a POST_MATCH_FOUND notification and creates an instant meeting.
+     *
+     * This is the reverse-notify path: A waited, B arrived, A should be told immediately.
+     */
+    @Transactional
+    public void notifyWaitingPostMatchCandidates(List<MatchCandidateVO> candidates, String newUserSub) {
+        for (MatchCandidateVO candidate : candidates) {
+            String waiterSub = candidate.getCognitoSubB();
+
+            if (!userPresenceService.isLooking(waiterSub)) continue;
+            if (simpUserRegistry.getUser(waiterSub) == null) continue; // WebSocket disconnected
+
+            // Find the MatchResult where waiter is subA and newUser is subB,
+            // or fall back to the reverse direction saved by B's discovery
+            MatchResult match = matchResultRepository
+                    .findByCognitoSubAAndCognitoSubBAndMatchCategory(waiterSub, newUserSub, candidate.getMatchCategory())
+                    .orElse(null);
+
+            if (match == null) {
+                // B's discovery saved it as B→waiter; look in that direction
+                match = matchResultRepository
+                        .findByCognitoSubAAndCognitoSubBAndMatchCategory(newUserSub, waiterSub, candidate.getMatchCategory())
+                        .orElse(null);
+            }
+
+            if (match == null || match.getStatus() != MatchStatus.PENDING) continue;
+
+            // Create instant meeting and push WAITING_ROOM to both
+            Meeting meeting = Meeting.builder()
+                    .matchResultId(match.getId())
+                    .roundNumber(match.getRoundCount() + 1)
+                    .scheduledAt(LocalDateTime.now())
+                    .meetingType(MeetingType.INSTANT)
+                    .status(MeetingStatus.WAITING_ROOM)
+                    .durationMinutes(30)
+                    .build();
+            meetingRepository.save(meeting);
+
+            match.setStatus(MatchStatus.MEETING_SCHEDULED);
+            matchResultRepository.save(match);
+
+            MeetingNotificationVO waitingRoom = MeetingNotificationVO.waitingRoom(
+                    meeting.getId().toString(), match.getId().toString());
+            messagingTemplate.convertAndSendToUser(waiterSub, QUEUE_MEETING, waitingRoom);
+            messagingTemplate.convertAndSendToUser(newUserSub, QUEUE_MEETING, waitingRoom);
+
+            // Tell the waiter's /queue/matches so the UI can update the post-match screen
+            messagingTemplate.convertAndSendToUser(waiterSub, QUEUE_MATCHES,
+                    MatchNotificationVO.builder()
+                            .event("POST_MATCH_FOUND")
+                            .message("Your match just arrived! Connecting you now...")
+                            .build());
+
+            userPresenceService.markAsNotLooking(waiterSub);
+            log.info("Reverse-notified waiting user {} — matched with new submitter {}", waiterSub, newUserSub);
+            break; // connect one waiter per new submission; others remain in queue
         }
     }
 
