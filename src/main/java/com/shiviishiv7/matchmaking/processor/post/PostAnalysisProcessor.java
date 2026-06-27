@@ -4,21 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
-import com.shiviishiv7.matchmaking.processor.matchingengine.MatchingEngineProcessor;
 import com.shiviishiv7.matchmaking.processor.userprofile.*;
-import com.shiviishiv7.matchmaking.service.match.MatchConnectService;
 import com.shiviishiv7.matchmaking.provider.implementation.UserPostRepository;
 import com.shiviishiv7.matchmaking.provider.model.UserPost;
-import com.shiviishiv7.matchmaking.provider.vo.MatchCandidateVO;
-import com.shiviishiv7.matchmaking.provider.vo.MatchDiscoveryRequestVO;
 import com.shiviishiv7.matchmaking.provider.vo.MatchFilterVO;
 import com.shiviishiv7.matchmaking.provider.vo.post.*;
-import com.shiviishiv7.matchmaking.provider.vo.ws.MatchNotificationVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -34,7 +27,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class PostAnalysisProcessor implements IPostAnalysisProcessor {
+public class PostAnalysisProcessor implements IPostAnalysisProcessor, IPostProfileUpsertService {
 
     private static final String ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
     private static final String ANTHROPIC_VERSION = "2023-06-01";
@@ -45,13 +38,9 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
     @Value("${anthropic.api.model:claude-haiku-4-5-20251001}")
     private String model;
 
-    private static final String USER_QUEUE_MATCHES = "/queue/matches";
-
     private final UserPostRepository userPostRepository;
     private final ObjectMapper objectMapper;
-    private final MatchingEngineProcessor matchingEngineProcessor;
-    private final MatchConnectService matchConnectService;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final PostEnrichmentQueue enrichmentQueue;
     private final IMatrimonialExtProfileProcessor matrimonialExtProfileProcessor;
     private final IDatingExtProfileProcessor datingExtProfileProcessor;
     private final IFitnessExtProfileProcessor fitnessExtProfileProcessor;
@@ -97,10 +86,10 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
                     .build();
             post = userPostRepository.save(post);
 
-            // Enrich profile from extracted fields + trigger matching (async)
+            // Enrich profile + run matching via background queue (non-blocking)
             if (category != null && root.has("profile")) {
                 MatchFilterVO filterVO = buildFilterVO(cognitoSub, category, root.path("profile"));
-                enrichProfileAndDiscover(filterVO, post.getId());
+                enrichmentQueue.enqueue(new PostEnrichmentTask(filterVO, post.getId()));
             }
 
             return PostSubmitResponseVO.builder()
@@ -118,79 +107,10 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
         }
     }
 
-    // ─── async: upsert profile + run discovery ─────────────────────────────────
+    // ─── route upsert by category group (IPostProfileUpsertService) ────────────
 
-    @Async
-    protected void enrichProfileAndDiscover(MatchFilterVO filterVO, Long postId) {
-        String cognitoSub = filterVO.getCognitoSub();
-        try {
-            upsertCategoryProfile(filterVO);
-            log.info("Profile upserted for cognitoSub={} category={}", cognitoSub, filterVO.getChildCategory());
-
-            userPostRepository.findById(postId).ifPresent(p -> {
-                p.setProfileUpdated(true);
-                userPostRepository.save(p);
-            });
-
-            MatchDiscoveryRequestVO discoveryRequest = new MatchDiscoveryRequestVO();
-            discoveryRequest.setCognitoSubA(cognitoSub);
-            discoveryRequest.setMatchCategory(MatchCategory.valueOf(filterVO.getChildCategory()));
-            discoveryRequest.setPage(0);
-            discoveryRequest.setPageSize(20);
-
-            // Run search ONCE — all candidates saved as PENDING MatchResults
-            List<MatchCandidateVO> candidates = matchingEngineProcessor.discover(discoveryRequest);
-            log.info("Discovery saved {} PENDING matches for cognitoSub={}", candidates.size(), cognitoSub);
-
-            if (candidates.isEmpty()) {
-                // No candidates at all — nothing to connect
-                messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
-                        MatchNotificationVO.builder()
-                                .event("POST_NO_MATCH_FOUND")
-                                .message("No match found yet. We'll notify you when someone matches your profile.")
-                                .build());
-                log.info("No candidates found for cognitoSub={}", cognitoSub);
-                return;
-            }
-
-            // Try to connect with the first online candidate right now
-            boolean connected = matchConnectService.connectNextOnlineMatch(cognitoSub);
-
-            if (connected) {
-                // connectNextOnlineMatch already pushed WAITING_ROOM to both users via /queue/meeting
-                // Send a supplementary matches notification so the UI can show context
-                messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
-                        MatchNotificationVO.builder()
-                                .event("POST_MATCH_CONNECTING")
-                                .message("Match found and connecting now! Check your call screen.")
-                                .build());
-            } else {
-                // Candidates exist but none are online right now
-                // Email both sides: user A (saved match), top candidate B (someone is waiting)
-                MatchCandidateVO top = candidates.get(0);
-                matchConnectService.sendNoOnlineMatchEmails(cognitoSub, top.getCognitoSubB());
-
-                messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
-                        MatchNotificationVO.builder()
-                                .event("POST_NO_ACTIVE_MATCH")
-                                .message("Match saved! No one is online right now. We'll notify you when your match comes online.")
-                                .build());
-                log.info("No online candidate found for cognitoSub={} — emails sent, waiting", cognitoSub);
-            }
-
-        } catch (Exception e) {
-            log.error("ALERT_FOR_ERROR: Post-submit enrichment failed for postId={}: {}", postId, e.getMessage(), e);
-            messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
-                    MatchNotificationVO.builder()
-                            .event("POST_MATCH_ERROR")
-                            .message("We saved your post but couldn't run matching right now. Please try again shortly.")
-                            .build());
-        }
-    }
-
-    // ─── route upsert by category group ────────────────────────────────────────
-
-    private void upsertCategoryProfile(MatchFilterVO vo) throws MatchmakingException {
+    @Override
+    public void upsert(MatchFilterVO vo) {
         MatchCategory category = MatchCategory.fromName(vo.getChildCategory());
         if (category == null) return;
 
