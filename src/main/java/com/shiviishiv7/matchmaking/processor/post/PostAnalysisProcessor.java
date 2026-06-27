@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
-import com.shiviishiv7.matchmaking.processor.userprofile.*;
 import com.shiviishiv7.matchmaking.provider.implementation.UserPostRepository;
 import com.shiviishiv7.matchmaking.provider.model.UserPost;
 import com.shiviishiv7.matchmaking.provider.vo.MatchFilterVO;
@@ -27,7 +26,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class PostAnalysisProcessor implements IPostAnalysisProcessor, IPostProfileUpsertService {
+public class PostAnalysisProcessor implements IPostAnalysisProcessor {
 
     private static final String ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
     private static final String ANTHROPIC_VERSION = "2023-06-01";
@@ -41,13 +40,6 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor, IPostProfi
     private final UserPostRepository userPostRepository;
     private final ObjectMapper objectMapper;
     private final PostEnrichmentQueue enrichmentQueue;
-    private final IMatrimonialExtProfileProcessor matrimonialExtProfileProcessor;
-    private final IDatingExtProfileProcessor datingExtProfileProcessor;
-    private final IFitnessExtProfileProcessor fitnessExtProfileProcessor;
-    private final IFlatmateExtProfileProcessor flatmateExtProfileProcessor;
-    private final IGamingExtProfileProcessor gamingExtProfileProcessor;
-    private final IProfessionalExtProfileProcessor professionalExtProfileProcessor;
-    private final ITravelExtProfileProcessor travelExtProfileProcessor;
 
     // ─── analyze ───────────────────────────────────────────────────────────────
 
@@ -104,41 +96,6 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor, IPostProfi
         } catch (Exception e) {
             log.error("Post submit failed", e);
             throw new MatchmakingException("Failed to save post. Please try again.", 500);
-        }
-    }
-
-    // ─── route upsert by category group (IPostProfileUpsertService) ────────────
-
-    @Override
-    public void upsert(MatchFilterVO vo) {
-        MatchCategory category = MatchCategory.fromName(vo.getChildCategory());
-        if (category == null) return;
-
-        switch (category.getParentGroup()) {
-            case "Personal & Lifestyle Connections" -> {
-                if (category == MatchCategory.PROFESSIONAL_MATRIMONY) {
-                    matrimonialExtProfileProcessor.upsertFromFilter(vo);
-                } else if (category == MatchCategory.CASUAL_DATING) {
-                    datingExtProfileProcessor.upsertFromFilter(vo);
-                }
-            }
-            case "Health & Wellness", "Shared Activities & Daily Routines" -> {
-                if (category == MatchCategory.GYM_PARTNER || category == MatchCategory.YOGA_MEDITATION
-                        || category == MatchCategory.CYCLING_RUNNING || category == MatchCategory.FITNESS_SPORTS) {
-                    fitnessExtProfileProcessor.upsertFromFilter(vo);
-                } else if (category == MatchCategory.GAMING_BUDDIES) {
-                    gamingExtProfileProcessor.upsertFromFilter(vo);
-                }
-            }
-            case "Travel & Exploration" -> {
-                if (category == MatchCategory.FLATMATE_FINDER) {
-                    flatmateExtProfileProcessor.upsertFromFilter(vo);
-                } else {
-                    travelExtProfileProcessor.upsertFromFilter(vo);
-                }
-            }
-            case "Professional & Career Growth" -> professionalExtProfileProcessor.upsertFromFilter(vo);
-            default -> log.warn("No ext profile upsert mapped for category: {}", category);
         }
     }
 
