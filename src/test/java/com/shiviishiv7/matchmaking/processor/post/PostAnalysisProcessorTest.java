@@ -1,8 +1,10 @@
 package com.shiviishiv7.matchmaking.processor.post;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shiviishiv7.matchmaking.common.enums.Gender;
 import com.shiviishiv7.matchmaking.common.enums.IntentType;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
+import com.shiviishiv7.matchmaking.provider.implementation.BaseUserProfileRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.PartnerPreferenceRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.UserPostRepository;
 import com.shiviishiv7.matchmaking.provider.model.UserPost;
@@ -28,6 +30,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PostAnalysisProcessorTest {
 
+    @Mock private BaseUserProfileRepository baseUserProfileRepository;
     @Mock private UserPostRepository postRepo;
     @Mock private PartnerPreferenceRepository partnerPreferenceRepository;
     @Spy  private ObjectMapper objectMapper = new ObjectMapper();
@@ -40,7 +43,7 @@ class PostAnalysisProcessorTest {
 
     @BeforeEach
     void setUp() {
-        processor = new PostAnalysisProcessor(postRepo, partnerPreferenceRepository, objectMapper);
+        processor = new PostAnalysisProcessor(baseUserProfileRepository, postRepo, partnerPreferenceRepository, objectMapper);
         ReflectionTestUtils.setField(processor, "apiKey", "test-api-key");
         ReflectionTestUtils.setField(processor, "model", "claude-haiku-4-5-20251001");
     }
@@ -60,7 +63,7 @@ class PostAnalysisProcessorTest {
                         {
                           "id": "m3",
                           "question": "Current city",
-                          "type": "text",
+                          "type": "city",
                           "placeholder": "e.g. Delhi"
                         },
                         {
@@ -74,11 +77,12 @@ class PostAnalysisProcessorTest {
                     """;
 
             PostAnalysisProcessor spy = spyWithClaude(claudeJson);
-            PostAnalyzeResponseVO result = spy.analyze(MATRIMONIAL_POST, IntentType.MATRIMONIAL);
+            PostAnalyzeResponseVO result = spy.analyze(MATRIMONIAL_POST, IntentType.MATRIMONIAL, COGNITO_SUB);
 
             assertThat(result.getQuestions()).hasSize(2);
-            assertThat(result.getQuestions().get(0).getId()).isEqualTo("m3");
-            assertThat(result.getQuestions().get(1).getType()).isEqualTo("dropdown");
+            // Unpaired questions land in aboutYou
+            assertThat(result.getQuestions().get(0).getAboutYou().getId()).isEqualTo("m3");
+            assertThat(result.getQuestions().get(1).getAboutYou().getType()).isEqualTo("dropdown");
         }
 
         @Test
@@ -89,7 +93,7 @@ class PostAnalysisProcessorTest {
                     """;
 
             PostAnalysisProcessor spy = spyWithClaude(claudeJson);
-            PostAnalyzeResponseVO result = spy.analyze(MATRIMONIAL_POST, IntentType.MATRIMONIAL);
+            PostAnalyzeResponseVO result = spy.analyze(MATRIMONIAL_POST, IntentType.MATRIMONIAL, COGNITO_SUB);
 
             assertThat(result.getQuestions()).isEmpty();
         }
@@ -99,7 +103,7 @@ class PostAnalysisProcessorTest {
         void analyze_malformedJson_throwsException() throws Exception {
             PostAnalysisProcessor spy = spyWithClaude("this is not json");
 
-            assertThatThrownBy(() -> spy.analyze(MATRIMONIAL_POST, IntentType.MATRIMONIAL))
+            assertThatThrownBy(() -> spy.analyze(MATRIMONIAL_POST, IntentType.MATRIMONIAL, COGNITO_SUB))
                     .isInstanceOf(MatchmakingException.class)
                     .hasMessageContaining("AI analysis failed");
         }
@@ -147,17 +151,17 @@ class PostAnalysisProcessorTest {
         }
 
         @Test
-        @DisplayName("Saves partner preferences when provided")
-        void submit_withPartnerPrefs_savesPrefs() throws Exception {
+        @DisplayName("Saves partner preferences when p* answers are provided")
+        void submit_withPartnerPrefAnswers_savesPrefs() throws Exception {
             UserPost saved = buildSavedPost(5L);
             when(postRepo.save(any())).thenReturn(saved);
 
+            PostAnswerVO pAns = new PostAnswerVO();
+            pAns.setQuestionId("p5");
+            pAns.setValue("Hindu");
+
             PostSubmitRequestVO request = buildRequest(MATRIMONIAL_POST, IntentType.MATRIMONIAL);
-            PartnerPreferenceRequestVO pref = new PartnerPreferenceRequestVO();
-            pref.setAgeMin(25);
-            pref.setAgeMax(32);
-            pref.setGenderPref("Female");
-            request.setPartnerPreference(pref);
+            request.setAnswers(List.of(pAns));
 
             processor.submit(COGNITO_SUB, request);
 

@@ -2,6 +2,7 @@ package com.shiviishiv7.matchmaking.processor.meeting.scoreengine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
+import com.shiviishiv7.matchmaking.common.enums.Religion;
 import com.shiviishiv7.matchmaking.processor.matchingengine.CategoryScorer;
 
 import com.shiviishiv7.matchmaking.provider.implementation.BaseUserProfileRepository;
@@ -111,7 +112,7 @@ public class MatrimonialScorer implements CategoryScorer {
 
             // Hard filter 3: religion (if user has set religion preference)
             if (pref != null && pref.getReligionPref() != null) {
-                if (!pref.getReligionPref().name().equalsIgnoreCase(candidate.getReligion())) continue;
+                if (pref.getReligionPref() != mapReligionDisplay(candidate.getReligion())) continue;
             }
 
             result.add(candidate.getCognitoSub());
@@ -225,7 +226,22 @@ public class MatrimonialScorer implements CategoryScorer {
 
     private int scoreReligion(PartnerPreference pref, String candidateReligion) {
         if (pref == null || pref.getReligionPref() == null) return SCORE_RELIGION;
-        return pref.getReligionPref().name().equalsIgnoreCase(candidateReligion) ? SCORE_RELIGION : 0;
+        return pref.getReligionPref() == mapReligionDisplay(candidateReligion) ? SCORE_RELIGION : 0;
+    }
+
+    private Religion mapReligionDisplay(String v) {
+        if (v == null || v.isBlank()) return null;
+        return switch (v.trim()) {
+            case "Hindu"     -> Religion.HINDUISM;
+            case "Muslim"    -> Religion.ISLAM;
+            case "Christian" -> Religion.CHRISTIANITY;
+            case "Sikh"      -> Religion.SIKHISM;
+            case "Buddhist"  -> Religion.BUDDHISM;
+            default -> {
+                try { yield Religion.valueOf(v.trim().toUpperCase()); }
+                catch (Exception e) { yield Religion.OTHER; }
+            }
+        };
     }
 
     private int scoreCaste(PartnerPreference pref, String candCaste, String candGotram, String myGotram) {
@@ -295,7 +311,7 @@ public class MatrimonialScorer implements CategoryScorer {
         if (candPref.getAgeMin() != null && myAge < candPref.getAgeMin()) return false;
         if (candPref.getAgeMax() != null && myAge > candPref.getAgeMax()) return false;
         if (candPref.getReligionPref() != null
-                && !candPref.getReligionPref().name().equalsIgnoreCase(me.getReligion())) return false;
+                && candPref.getReligionPref() != mapReligionDisplay(me.getReligion())) return false;
         return true;
     }
 }

@@ -1,8 +1,10 @@
 package com.shiviishiv7.matchmaking.processor.meeting.scoreengine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shiviishiv7.matchmaking.common.enums.DietPreference;
 import com.shiviishiv7.matchmaking.common.enums.Gender;
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
+import com.shiviishiv7.matchmaking.common.enums.Religion;
 import com.shiviishiv7.matchmaking.provider.implementation.BaseUserProfileRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.CategoryProfileRegistryRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.MatrimonialExtProfileRepository;
@@ -57,7 +59,7 @@ class MatrimonialScorerTest {
     @Test
     @DisplayName("score: religion match adds 20 pts")
     void score_religionMatch_adds20() {
-        PartnerPreference pref = PartnerPreference.builder().religionPref("Hindu").build();
+        PartnerPreference pref = PartnerPreference.builder().religionPref(Religion.HINDUISM).build();
         MatrimonialExtProfile me        = extProfile(USER_A, "Hindu", "Tamil", "Vegetarian", pref);
         MatrimonialExtProfile candidate = extProfile(USER_B, "Hindu", "Tamil", "Vegetarian", null);
         BaseUserProfile candBase = baseProfile(USER_B, 28);
@@ -73,7 +75,7 @@ class MatrimonialScorerTest {
     @Test
     @DisplayName("score: religion mismatch adds 0 pts for religion")
     void score_religionMismatch_adds0ForReligion() {
-        PartnerPreference pref = PartnerPreference.builder().religionPref("Hindu").build();
+        PartnerPreference pref = PartnerPreference.builder().religionPref(Religion.HINDUISM).build();
         MatrimonialExtProfile me        = extProfile(USER_A, "Hindu", "Tamil", "Vegetarian", pref);
         MatrimonialExtProfile candidate = extProfile(USER_B, "Muslim", "Tamil", "Vegetarian", null);
         BaseUserProfile candBase = baseProfile(USER_B, 28);
@@ -97,7 +99,6 @@ class MatrimonialScorerTest {
 
         setupMocks(me, candidate, candBase);
 
-        // Different mother tongue version for comparison
         MatrimonialExtProfile candidateDiff = extProfile("sub-c", "Hindu", "Telugu", "Vegetarian", null);
         BaseUserProfile candBaseDiff = baseProfile("sub-c", 28);
         when(matrimonialRepo.findByCognitoSub("sub-c")).thenReturn(Optional.of(candidateDiff));
@@ -129,7 +130,6 @@ class MatrimonialScorerTest {
         setupMocks(me, candidate, candBase);
 
         MatchCandidateVO result = scorer.score(USER_A, USER_B);
-        // Should include location points (10)
         assertThat(result.getCompatibilityScore()).isGreaterThanOrEqualTo(10);
     }
 
@@ -139,27 +139,25 @@ class MatrimonialScorerTest {
     @DisplayName("score: same education tier scores 10 pts")
     void score_sameEducationTier_scores10() {
         MatrimonialExtProfile me        = extProfileWithEducation(USER_A, "B.Tech");
-        MatrimonialExtProfile candidate = extProfileWithEducation(USER_B, "BE");   // same tier
+        MatrimonialExtProfile candidate = extProfileWithEducation(USER_B, "BE");
         BaseUserProfile candBase        = baseProfile(USER_B, 28);
 
         setupMocks(me, candidate, candBase);
 
         MatchCandidateVO result = scorer.score(USER_A, USER_B);
-        // Education contributes 10 pts
         assertThat(result.getCompatibilityScore()).isGreaterThanOrEqualTo(10);
     }
 
     @Test
     @DisplayName("score: education tier diff of 2 contributes 0 pts")
     void score_educationTierDiff2_scores0() {
-        MatrimonialExtProfile me        = extProfileWithEducation(USER_A, "PhD");  // tier 4
-        MatrimonialExtProfile candidate = extProfileWithEducation(USER_B, "Diploma"); // tier 1 — diff 3
+        MatrimonialExtProfile me        = extProfileWithEducation(USER_A, "PhD");
+        MatrimonialExtProfile candidate = extProfileWithEducation(USER_B, "Diploma");
         BaseUserProfile candBase        = baseProfile(USER_B, 28);
 
         setupMocks(me, candidate, candBase);
 
         MatchCandidateVO result = scorer.score(USER_A, USER_B);
-        // No education score; total should be lower
         assertThat(result.getCompatibilityScore()).isLessThanOrEqualTo(50);
     }
 
@@ -174,7 +172,7 @@ class MatrimonialScorerTest {
                 .build();
         MatrimonialExtProfile me = extProfile(USER_A, "Hindu", "Tamil", "Vegetarian", pref);
         MatrimonialExtProfile candidate = extProfile(USER_B, "Hindu", "Tamil", "Vegetarian", null);
-        candidate.setAnnualIncomeInr(new BigDecimal("1200000")); // 12 LPA — in range
+        candidate.setAnnualIncomeInr(new BigDecimal("1200000"));
         BaseUserProfile candBase = baseProfile(USER_B, 28);
 
         setupMocks(me, candidate, candBase);
@@ -188,23 +186,18 @@ class MatrimonialScorerTest {
     @Test
     @DisplayName("score: total is always capped at 100")
     void score_total_cappedAt100() {
-        // Perfect match on all dimensions
         PartnerPreference pref = PartnerPreference.builder()
-                .religionPref("Hindu")
-                
-                .dietaryPref("Vegetarian")
-                
+                .religionPref(Religion.HINDUISM)
+                .dietaryPref(DietPreference.VEGETARIAN)
                 .preferredStates("Tamil Nadu")
                 .ageMin(25).ageMax(32)
                 .build();
-        MatrimonialExtProfile me        = extProfile(USER_A, "Hindu", "Tamil", "Vegetarian", pref);
-        
-        
+        MatrimonialExtProfile me = extProfile(USER_A, "Hindu", "Tamil", "Vegetarian", pref);
         me.setHighestEducation("MBA");
 
         MatrimonialExtProfile candidate = extProfile(USER_B, "Hindu", "Tamil", "Vegetarian", null);
         candidate.setCaste("Brahmin");
-        candidate.setGotram("Kasyapa"); // different gotram — ok
+        candidate.setGotram("Kasyapa");
         candidate.setHighestEducation("MBA");
         candidate.setManglikStatus("Any");
         candidate.setAnnualIncomeInr(new BigDecimal("1500000"));
@@ -280,7 +273,6 @@ class MatrimonialScorerTest {
         when(matrimonialRepo.findByCognitoSub(me.getCognitoSub())).thenReturn(Optional.of(me));
         when(matrimonialRepo.findByCognitoSub(candidate.getCognitoSub())).thenReturn(Optional.of(candidate));
         when(baseProfileRepo.findByCognitoSub(candidate.getCognitoSub())).thenReturn(Optional.of(candBase));
-        // For mutual preference boost check
         lenient().when(baseProfileRepo.findByCognitoSub(me.getCognitoSub()))
                 .thenReturn(Optional.of(baseProfile(me.getCognitoSub(), 30)));
     }

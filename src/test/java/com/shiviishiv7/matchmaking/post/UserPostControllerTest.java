@@ -3,6 +3,7 @@ package com.shiviishiv7.matchmaking.post;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
+import com.shiviishiv7.matchmaking.common.security.MatchmakingSecurityUtility;
 import com.shiviishiv7.matchmaking.common.util.security.CurrentUserContext;
 import com.shiviishiv7.matchmaking.common.util.security.CurrentUserDetails;
 import com.shiviishiv7.matchmaking.controller.UserPostController;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -26,14 +28,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit tests for UserPostController — verifies HTTP layer routing,
- * request delegation, and response wrapping.
- */
 @ExtendWith(MockitoExtension.class)
 class UserPostControllerTest {
 
     @Mock private IPostAnalysisProcessor postAnalysisProcessor;
+    @Mock private MatchmakingSecurityUtility securityUtility;
 
     @InjectMocks private UserPostController controller;
 
@@ -41,9 +40,11 @@ class UserPostControllerTest {
 
     @BeforeEach
     void setUpSecurityContext() {
+        ReflectionTestUtils.setField(controller, "securityUtility", securityUtility);
         CurrentUserDetails user = new CurrentUserDetails();
         user.setUsername(COGNITO_SUB);
         CurrentUserContext.setCurrentUser(user);
+        lenient().when(securityUtility.getAuthenticatedUserSub()).thenReturn(COGNITO_SUB);
     }
 
     @AfterEach
@@ -56,16 +57,18 @@ class UserPostControllerTest {
     @Test
     @DisplayName("analyze() returns 200 with questions and inferred category")
     void analyze_validRequest_returns200WithQuestions() {
+        PostQuestionVO q1 = PostQuestionVO.builder().id("q1").question("City?").type("city").build();
+        PostQuestionVO q2 = PostQuestionVO.builder().id("q2").question("Relocate?").type("boolean").build();
         PostAnalyzeResponseVO analyzeResponse = PostAnalyzeResponseVO.builder()
                 .inferredCategory(MatchCategory.PROFESSIONAL_MATRIMONY)
                 .categoryDisplayName("Matrimonial (Verified)")
                 .questions(List.of(
-                        PostQuestionVO.builder().id("q1").question("City?").type("text").build(),
-                        PostQuestionVO.builder().id("q2").question("Relocate?").type("boolean").build()
+                        PostQuestionPairVO.builder().aboutYou(q1).build(),
+                        PostQuestionPairVO.builder().aboutYou(q2).build()
                 ))
                 .build();
 
-        when(postAnalysisProcessor.analyze(anyString(), any())).thenReturn(analyzeResponse);
+        when(postAnalysisProcessor.analyze(anyString(), any(), anyString())).thenReturn(analyzeResponse);
 
         PostAnalyzeRequestVO request = new PostAnalyzeRequestVO();
         request.setPostText("27M | Delhi | Looking for a sincere life partner.");
@@ -73,14 +76,14 @@ class UserPostControllerTest {
         ResponseEntity<?> response = controller.analyze(request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(postAnalysisProcessor).analyze(eq("27M | Delhi | Looking for a sincere life partner."), any());
+        verify(postAnalysisProcessor).analyze(eq("27M | Delhi | Looking for a sincere life partner."), any(), anyString());
     }
 
     @Test
     @DisplayName("analyze() passes post text to processor unchanged")
     void analyze_delegatesPostTextToProcessor() {
         String postText = "25F software engineer looking for companionship.";
-        when(postAnalysisProcessor.analyze(eq(postText), any()))
+        when(postAnalysisProcessor.analyze(eq(postText), any(), anyString()))
                 .thenReturn(PostAnalyzeResponseVO.builder().questions(List.of()).build());
 
         PostAnalyzeRequestVO request = new PostAnalyzeRequestVO();
@@ -88,13 +91,13 @@ class UserPostControllerTest {
 
         controller.analyze(request);
 
-        verify(postAnalysisProcessor, times(1)).analyze(eq(postText), any());
+        verify(postAnalysisProcessor, times(1)).analyze(eq(postText), any(), anyString());
     }
 
     @Test
     @DisplayName("analyze() propagates MatchmakingException from processor")
     void analyze_processorThrows_exceptionPropagates() {
-        when(postAnalysisProcessor.analyze(anyString(), any()))
+        when(postAnalysisProcessor.analyze(anyString(), any(), anyString()))
                 .thenThrow(new MatchmakingException("AI analysis failed. Please try again.", 500));
 
         PostAnalyzeRequestVO request = new PostAnalyzeRequestVO();
