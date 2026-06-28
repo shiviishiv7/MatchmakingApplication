@@ -72,4 +72,20 @@ public class Meeting extends BaseEntity {
     @Column(name = "zoomPassword", length = 50)
     private String zoomPassword;
 
+    // ── Email tracking ────────────────────────────────────────────────────
+    @Column(name = "emailSentA")
+    @Builder.Default
+    private Boolean emailSentA = false;   // email successfully sent to cognitoSubA
+
+    @Column(name = "emailSentB")
+    @Builder.Default
+    private Boolean emailSentB = false;   // email successfully sent to cognitoSubB
+
+    // cognitoSubs stored so the retry job can look up profiles without joining MatchResult
+    @Column(name = "cognitoSubA", length = 100)
+    private String cognitoSubA;
+
+    @Column(name = "cognitoSubB", length = 100)
+    private String cognitoSubB;
+
 }

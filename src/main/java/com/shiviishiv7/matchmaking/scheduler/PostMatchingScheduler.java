@@ -162,6 +162,64 @@ public class PostMatchingScheduler {
         if (saved > 0) log.info("Post {}: saved {} new PENDING matches", post.getId(), saved);
     }
 
+    // ─── Phase 1.5: retry failed emails for today's meetings ─────────────────
+
+    @Scheduled(fixedDelay = 30 * 60 * 1000) // every 30 minutes
+    @Transactional
+    public void retryPendingMeetingEmails() {
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay   = startOfDay.plusDays(1);
+
+        List<Meeting> pending = meetingRepository.findTodayMeetingsWithPendingEmails(startOfDay, endOfDay);
+        if (pending.isEmpty()) return;
+
+        log.info("Email retry batch: {} meeting(s) with unsent emails today", pending.size());
+
+        for (Meeting meeting : pending) {
+            try {
+                Optional<BaseUserProfile> profileA = meeting.getCognitoSubA() != null
+                        ? baseUserProfileRepository.findByCognitoSub(meeting.getCognitoSubA()) : Optional.empty();
+                Optional<BaseUserProfile> profileB = meeting.getCognitoSubB() != null
+                        ? baseUserProfileRepository.findByCognitoSub(meeting.getCognitoSubB()) : Optional.empty();
+
+                String formattedTime = meeting.getScheduledAt() != null
+                        ? meeting.getScheduledAt().format(EMAIL_DT) : "TBD";
+                boolean changed = false;
+
+                if (!Boolean.TRUE.equals(meeting.getEmailSentA()) && profileA.isPresent()) {
+                    try {
+                        BaseUserProfile a = profileA.get();
+                        String bName = profileB.map(BaseUserProfile::getName).orElse("your match");
+                        emailService.sendMeetingScheduledEmail(a.getEmail(), a.getName(), bName, meeting.getZoomJoinUrl(), formattedTime);
+                        meeting.setEmailSentA(true);
+                        changed = true;
+                        log.info("Retry email OK → cognitoSubA {} (meeting {})", meeting.getCognitoSubA(), meeting.getId());
+                    } catch (Exception ex) {
+                        log.error("Retry email FAILED → cognitoSubA {} (meeting {}): {}", meeting.getCognitoSubA(), meeting.getId(), ex.getMessage());
+                    }
+                }
+
+                if (!Boolean.TRUE.equals(meeting.getEmailSentB()) && profileB.isPresent()) {
+                    try {
+                        BaseUserProfile b = profileB.get();
+                        String aName = profileA.map(BaseUserProfile::getName).orElse("your match");
+                        emailService.sendMeetingScheduledEmail(b.getEmail(), b.getName(), aName, meeting.getZoomJoinUrl(), formattedTime);
+                        meeting.setEmailSentB(true);
+                        changed = true;
+                        log.info("Retry email OK → cognitoSubB {} (meeting {})", meeting.getCognitoSubB(), meeting.getId());
+                    } catch (Exception ex) {
+                        log.error("Retry email FAILED → cognitoSubB {} (meeting {}): {}", meeting.getCognitoSubB(), meeting.getId(), ex.getMessage());
+                    }
+                }
+
+                if (changed) meetingRepository.save(meeting);
+
+            } catch (Exception ex) {
+                log.error("ALERT_FOR_ERROR: Retry batch error for meeting {}: {}", meeting.getId(), ex.getMessage());
+            }
+        }
+    }
+
     // ─── Phase 2: daily job — send top 1 match per post ──────────────────────
 
     @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Kolkata")
@@ -253,8 +311,12 @@ public class PostMatchingScheduler {
                 .zoomJoinUrl(zoom.getJoinUrl())
                 .zoomStartUrl(zoom.getStartUrl())
                 .zoomPassword(zoom.getPassword())
+                .cognitoSubA(match.getCognitoSubA())
+                .cognitoSubB(match.getCognitoSubB())
+                .emailSentA(false)
+                .emailSentB(false)
                 .build();
-        meetingRepository.save(meeting);
+        meeting = meetingRepository.save(meeting);
 
         match.setStatus(MatchStatus.MEETING_SCHEDULED);
         match.setRoundCount(match.getRoundCount() + 1);
@@ -264,13 +326,34 @@ public class PostMatchingScheduler {
         Optional<BaseUserProfile> profileA = baseUserProfileRepository.findByCognitoSub(match.getCognitoSubA());
         Optional<BaseUserProfile> profileB = baseUserProfileRepository.findByCognitoSub(match.getCognitoSubB());
 
-        profileA.ifPresent(a -> profileB.ifPresent(b -> {
-            emailService.sendMeetingScheduledEmail(a.getEmail(), a.getName(), b.getName(), zoom.getJoinUrl(), formattedTime);
-            emailService.sendMeetingScheduledEmail(b.getEmail(), b.getName(), a.getName(), zoom.getJoinUrl(), formattedTime);
-        }));
+        if (profileA.isPresent()) {
+            try {
+                BaseUserProfile a = profileA.get();
+                String bName = profileB.map(BaseUserProfile::getName).orElse("your match");
+                emailService.sendMeetingScheduledEmail(a.getEmail(), a.getName(), bName, zoom.getJoinUrl(), formattedTime);
+                meeting.setEmailSentA(true);
+                log.info("Email sent to cognitoSubA ({})", match.getCognitoSubA());
+            } catch (Exception ex) {
+                log.error("ALERT_FOR_ERROR: Email failed for cognitoSubA {}: {}", match.getCognitoSubA(), ex.getMessage());
+            }
+        }
 
-        log.info("Scheduled Zoom meeting for match {} (score={}) at {} — Zoom ID: {}",
-                match.getId(), match.getCompatibilityScore(), meetingTime, zoom.getMeetingId());
+        if (profileB.isPresent()) {
+            try {
+                BaseUserProfile b = profileB.get();
+                String aName = profileA.map(BaseUserProfile::getName).orElse("your match");
+                emailService.sendMeetingScheduledEmail(b.getEmail(), b.getName(), aName, zoom.getJoinUrl(), formattedTime);
+                meeting.setEmailSentB(true);
+                log.info("Email sent to cognitoSubB ({})", match.getCognitoSubB());
+            } catch (Exception ex) {
+                log.error("ALERT_FOR_ERROR: Email failed for cognitoSubB {}: {}", match.getCognitoSubB(), ex.getMessage());
+            }
+        }
+
+        meetingRepository.save(meeting);
+        log.info("Scheduled Zoom meeting for match {} (score={}) at {} — Zoom ID: {} emailA={} emailB={}",
+                match.getId(), match.getCompatibilityScore(), meetingTime, zoom.getMeetingId(),
+                meeting.getEmailSentA(), meeting.getEmailSentB());
     }
 
     // ─── Scoring ──────────────────────────────────────────────────────────────

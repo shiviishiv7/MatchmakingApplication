@@ -43,6 +43,17 @@ public interface MeetingRepository extends JpaRepository<Meeting, Integer> {
     """)
     List<Meeting> findUpcomingForUser(String sub, LocalDateTime now);
 
+    /** Meetings created today where at least one email is still pending */
+    @Query("""
+        SELECT m FROM Meeting m
+        WHERE m.createdAt >= :startOfDay
+        AND m.createdAt < :endOfDay
+        AND (m.emailSentA = false OR m.emailSentB = false)
+    """)
+    List<Meeting> findTodayMeetingsWithPendingEmails(
+        @org.springframework.data.repository.query.Param("startOfDay") LocalDateTime startOfDay,
+        @org.springframework.data.repository.query.Param("endOfDay") LocalDateTime endOfDay);
+
     /** Check if user already has a meeting scheduled today */
     @Query("""
         SELECT COUNT(m) > 0 FROM Meeting m
