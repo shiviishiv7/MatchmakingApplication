@@ -16,8 +16,6 @@ import com.shiviishiv7.matchmaking.provider.model.Meeting;
 import com.shiviishiv7.matchmaking.provider.model.PartnerPreference;
 import com.shiviishiv7.matchmaking.provider.model.UserPost;
 import com.shiviishiv7.matchmaking.provider.model.profile.BaseUserProfile;
-import com.shiviishiv7.matchmaking.provider.model.profile.DatingExtProfile;
-import com.shiviishiv7.matchmaking.provider.model.profile.MatrimonialExtProfile;
 import com.shiviishiv7.matchmaking.service.email.EmailService;
 import com.shiviishiv7.matchmaking.service.zoom.ZoomService;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +24,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -34,9 +31,8 @@ import java.util.stream.Collectors;
 
 /**
  * Runs every 15 minutes.
- * Finds all ACTIVE posts with matchCount < 5 and not expired,
- * discovers compatible candidates, creates Zoom meetings (staggered by 1 day),
- * and notifies both parties by email.
+ * Matches active posts against other active posts with the same intent.
+ * Creates a Zoom meeting for each match and emails both users the join link.
  */
 @Component
 @Slf4j
@@ -54,13 +50,6 @@ public class PostMatchingScheduler {
     private final BaseUserProfileRepository baseUserProfileRepository;
     private final ZoomService zoomService;
     private final EmailService emailService;
-
-    // Lazy-load ext profile repos via Spring
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.shiviishiv7.matchmaking.provider.implementation.DatingExtProfileRepository datingExtProfileRepository;
-
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.shiviishiv7.matchmaking.provider.implementation.MatrimonialExtProfileRepository matrimonialExtProfileRepository;
 
     // ── expire stale posts ────────────────────────────────────────────────────
 
@@ -95,20 +84,17 @@ public class PostMatchingScheduler {
     // ── per-post processing ───────────────────────────────────────────────────
 
     private void processPost(UserPost post) {
+        // Optional partner preferences — if not provided, match on intent alone
         Optional<PartnerPreference> prefOpt = partnerPreferenceRepository.findByPostId(post.getId());
-        if (prefOpt.isEmpty()) {
-            log.warn("No partner preferences for post {} — skipping", post.getId());
-            return;
-        }
-        PartnerPreference pref = prefOpt.get();
+        PartnerPreference pref = prefOpt.orElse(null);
 
-        // Already-matched candidate IDs for this post
+        // Users already matched for this post
         Set<String> alreadyMatched = matchResultRepository
                 .findByPostId(post.getId())
                 .stream()
                 .map(MatchResult::getCognitoSubB)
                 .collect(Collectors.toSet());
-        alreadyMatched.add(post.getCognitoSub()); // exclude self
+        alreadyMatched.add(post.getCognitoSub());
 
         int slotsLeft = MAX_MATCHES_PER_POST - post.getMatchCount();
         if (slotsLeft <= 0) {
@@ -119,12 +105,10 @@ public class PostMatchingScheduler {
 
         List<String> candidates = findCandidates(post, pref, alreadyMatched, slotsLeft);
         if (candidates.isEmpty()) {
-            log.info("No new candidates for post {}", post.getId());
+            log.info("No new candidates for post {} (intent={})", post.getId(), post.getIntent());
             return;
         }
 
-        // Base time for staggered scheduling: first match uses next valid slot from now,
-        // each subsequent match adds one day.
         LocalDateTime baseSlot = nextValidSlot(LocalDateTime.now());
         int dayOffset = 0;
 
@@ -145,8 +129,88 @@ public class PostMatchingScheduler {
         userPostRepository.save(post);
     }
 
+    // ── candidate discovery — post-to-post matching ───────────────────────────
+
+    private List<String> findCandidates(UserPost post, PartnerPreference pref,
+                                         Set<String> exclude, int limit) {
+        // Find all OTHER active posts with the same intent
+        List<UserPost> otherPosts = userPostRepository.findActivePostsForMatching(LocalDateTime.now())
+                .stream()
+                .filter(p -> !p.getCognitoSub().equals(post.getCognitoSub()))
+                .filter(p -> p.getIntent() == post.getIntent())
+                .filter(p -> !exclude.contains(p.getCognitoSub()))
+                .collect(Collectors.toList());
+
+        // Deduplicate by user (one user may have multiple posts — pick the first)
+        Map<String, UserPost> byUser = new LinkedHashMap<>();
+        for (UserPost p : otherPosts) {
+            byUser.putIfAbsent(p.getCognitoSub(), p);
+        }
+
+        return byUser.values().stream()
+                .filter(candidatePost -> passesPreferenceFilter(post, pref, candidatePost))
+                .limit(limit)
+                .map(UserPost::getCognitoSub)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns true if the candidatePost's owner is acceptable given the
+     * post-owner's partner preferences (and vice versa for gender).
+     */
+    private boolean passesPreferenceFilter(UserPost post, PartnerPreference pref,
+                                            UserPost candidatePost) {
+        // No preferences set → accept all same-intent posts
+        if (pref == null) return true;
+
+        Optional<BaseUserProfile> candidateProfileOpt =
+                baseUserProfileRepository.findByCognitoSub(candidatePost.getCognitoSub());
+        if (candidateProfileOpt.isEmpty()) return true; // no profile yet → don't block
+
+        BaseUserProfile candidateProfile = candidateProfileOpt.get();
+
+        // Gender preference
+        if (pref.getGenderPref() != null && !pref.getGenderPref().isBlank()
+                && !pref.getGenderPref().equalsIgnoreCase("Any")) {
+            if (candidateProfile.getGender() != null &&
+                !candidateProfile.getGender().name().equalsIgnoreCase(pref.getGenderPref())) {
+                return false;
+            }
+        }
+
+        // Age preference (uses dateOfBirth from BaseUserProfile)
+        if (candidateProfile.getDateOfBirth() != null) {
+            int age = java.time.LocalDate.now().getYear() - candidateProfile.getDateOfBirth().getYear();
+            if (pref.getAgeMin() != null && age < pref.getAgeMin()) return false;
+            if (pref.getAgeMax() != null && age > pref.getAgeMax()) return false;
+        }
+
+        // Religion preference (matrimonial) — check if candidate's post mentions religion
+        // For now we check the candidate's partner prefs to ensure mutual compatibility
+        Optional<PartnerPreference> candidatePrefOpt =
+                partnerPreferenceRepository.findByPostId(candidatePost.getId());
+        if (candidatePrefOpt.isPresent()) {
+            PartnerPreference candidatePref = candidatePrefOpt.get();
+            // Check candidate's gender preference accepts the post owner
+            Optional<BaseUserProfile> ownerProfile =
+                    baseUserProfileRepository.findByCognitoSub(post.getCognitoSub());
+            if (ownerProfile.isPresent() && candidatePref.getGenderPref() != null
+                    && !candidatePref.getGenderPref().isBlank()
+                    && !candidatePref.getGenderPref().equalsIgnoreCase("Any")) {
+                BaseUserProfile owner = ownerProfile.get();
+                if (owner.getGender() != null &&
+                    !owner.getGender().name().equalsIgnoreCase(candidatePref.getGenderPref())) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    // ── schedule match + Zoom ─────────────────────────────────────────────────
+
     private void scheduleMatch(UserPost post, String candidateSub, LocalDateTime scheduledAt) {
-        // Persist match result
         MatchResult mr = MatchResult.builder()
                 .postId(post.getId())
                 .cognitoSubA(post.getCognitoSub())
@@ -161,12 +225,10 @@ public class PostMatchingScheduler {
                 .build();
         mr = matchResultRepository.save(mr);
 
-        // Create Zoom meeting
         String topic = "Shall We Connect — " +
                 (post.getIntent() == IntentType.DATING ? "Dating" : "Matrimonial") + " Meeting";
         ZoomService.ZoomMeetingResult zoom = zoomService.createMeeting(topic, scheduledAt, MEETING_DURATION_MINUTES);
 
-        // Persist meeting
         Meeting meeting = Meeting.builder()
                 .matchResultId(mr.getId())
                 .roundNumber(1)
@@ -181,12 +243,11 @@ public class PostMatchingScheduler {
                 .build();
         meetingRepository.save(meeting);
 
-        // Send emails to both users
         String formattedTime = scheduledAt.format(EMAIL_DT);
         sendMatchEmails(post.getCognitoSub(), candidateSub, zoom.getJoinUrl(), formattedTime);
 
-        log.info("Matched post {} with candidate {} → Zoom meeting {} at {}",
-                post.getId(), candidateSub, zoom.getMeetingId(), scheduledAt);
+        log.info("Matched post {} (user {}) with candidate {} → Zoom {} at {}",
+                post.getId(), post.getCognitoSub(), candidateSub, zoom.getMeetingId(), scheduledAt);
     }
 
     private void sendMatchEmails(String subA, String subB, String joinUrl, String formattedTime) {
@@ -199,125 +260,15 @@ public class PostMatchingScheduler {
         }));
     }
 
-    // ── candidate discovery ───────────────────────────────────────────────────
-
-    private List<String> findCandidates(UserPost post, PartnerPreference pref,
-                                         Set<String> exclude, int limit) {
-        if (post.getIntent() == IntentType.DATING) {
-            return findDatingCandidates(post, pref, exclude, limit);
-        } else {
-            return findMatrimonialCandidates(post, pref, exclude, limit);
-        }
-    }
-
-    private List<String> findDatingCandidates(UserPost post, PartnerPreference pref,
-                                               Set<String> exclude, int limit) {
-        Optional<BaseUserProfile> requesterProfile = baseUserProfileRepository.findByCognitoSub(post.getCognitoSub());
-        if (requesterProfile.isEmpty()) return Collections.emptyList();
-
-        List<DatingExtProfile> all = datingExtProfileRepository.findAll();
-        return all.stream()
-                .filter(p -> !exclude.contains(p.getCognitoSub()))
-                .filter(p -> passesDateFilter(p, pref, requesterProfile.get()))
-                .limit(limit)
-                .map(DatingExtProfile::getCognitoSub)
-                .collect(Collectors.toList());
-    }
-
-    private List<String> findMatrimonialCandidates(UserPost post, PartnerPreference pref,
-                                                    Set<String> exclude, int limit) {
-        Optional<BaseUserProfile> requesterProfile = baseUserProfileRepository.findByCognitoSub(post.getCognitoSub());
-        if (requesterProfile.isEmpty()) return Collections.emptyList();
-
-        List<MatrimonialExtProfile> all = matrimonialExtProfileRepository.findAll();
-        return all.stream()
-                .filter(p -> !exclude.contains(p.getCognitoSub()))
-                .filter(p -> passesMatrimonialFilter(p, pref, requesterProfile.get()))
-                .limit(limit)
-                .map(MatrimonialExtProfile::getCognitoSub)
-                .collect(Collectors.toList());
-    }
-
-    private boolean passesDateFilter(DatingExtProfile candidate, PartnerPreference pref,
-                                      BaseUserProfile requester) {
-        BaseUserProfile candidateBase = baseUserProfileRepository.findByCognitoSub(candidate.getCognitoSub()).orElse(null);
-        if (candidateBase == null) return false;
-
-        // Gender filter
-        if (pref.getGenderPref() != null && !pref.getGenderPref().isBlank()
-                && !pref.getGenderPref().equalsIgnoreCase("Any")) {
-            if (candidateBase.getGender() == null) return false;
-            if (!candidateBase.getGender().name().equalsIgnoreCase(pref.getGenderPref())) return false;
-        }
-
-        // Age filter
-        if (candidateBase.getDateOfBirth() != null) {
-            int age = LocalDate.now().getYear() - candidateBase.getDateOfBirth().getYear();
-            if (pref.getAgeMin() != null && age < pref.getAgeMin()) return false;
-            if (pref.getAgeMax() != null && age > pref.getAgeMax()) return false;
-        }
-
-        // Diet filter
-        if (pref.getDietaryPref() != null && !pref.getDietaryPref().isBlank()
-                && candidate.getDietaryHabits() != null) {
-            if (!candidate.getDietaryHabits().equalsIgnoreCase(pref.getDietaryPref())) return false;
-        }
-
-        return true;
-    }
-
-    private boolean passesMatrimonialFilter(MatrimonialExtProfile candidate, PartnerPreference pref,
-                                             BaseUserProfile requester) {
-        BaseUserProfile candidateBase = baseUserProfileRepository.findByCognitoSub(candidate.getCognitoSub()).orElse(null);
-        if (candidateBase == null) return false;
-
-        // Gender filter
-        if (pref.getGenderPref() != null && !pref.getGenderPref().isBlank()
-                && !pref.getGenderPref().equalsIgnoreCase("Any")) {
-            if (candidateBase.getGender() == null) return false;
-            if (!candidateBase.getGender().name().equalsIgnoreCase(pref.getGenderPref())) return false;
-        }
-
-        // Age filter
-        if (candidateBase.getDateOfBirth() != null) {
-            int age = LocalDate.now().getYear() - candidateBase.getDateOfBirth().getYear();
-            if (pref.getAgeMin() != null && age < pref.getAgeMin()) return false;
-            if (pref.getAgeMax() != null && age > pref.getAgeMax()) return false;
-        }
-
-        // Religion filter
-        if (pref.getReligionPref() != null && !pref.getReligionPref().isBlank()
-                && !pref.getReligionPref().equalsIgnoreCase("Any")
-                && candidate.getReligion() != null) {
-            if (!candidate.getReligion().equalsIgnoreCase(pref.getReligionPref())) return false;
-        }
-
-        // Marital status filter
-        if (pref.getMaritalStatusPref() != null && !pref.getMaritalStatusPref().isBlank()
-                && candidate.getMaritalStatus() != null) {
-            if (!candidate.getMaritalStatus().equalsIgnoreCase(pref.getMaritalStatusPref())) return false;
-        }
-
-        // Diet filter
-        if (pref.getDietaryPref() != null && !pref.getDietaryPref().isBlank()
-                && candidate.getDietaryHabits() != null) {
-            if (!candidate.getDietaryHabits().equalsIgnoreCase(pref.getDietaryPref())) return false;
-        }
-
-        return true;
-    }
-
     // ── meeting time window ───────────────────────────────────────────────────
 
     /**
-     * Valid window: 11:00 AM – 2:00 AM (next day).
+     * Valid window: 11:00 AM – 2:00 AM (crosses midnight).
      * Blackout:     2:00 AM – 10:59 AM.
-     * Given a candidate time (now + 3h), move forward to 11 AM if in blackout.
      */
     static LocalDateTime nextValidSlot(LocalDateTime from) {
         LocalDateTime candidate = from.plusHours(3);
         int hour = candidate.getHour();
-        // blackout: 02:00 to 10:59
         if (hour >= 2 && hour < 11) {
             candidate = candidate.toLocalDate().atTime(11, 0);
         }
