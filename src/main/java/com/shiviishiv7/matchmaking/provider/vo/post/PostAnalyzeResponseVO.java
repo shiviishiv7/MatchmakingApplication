@@ -12,5 +12,5 @@ import java.util.List;
 public class PostAnalyzeResponseVO {
     private MatchCategory inferredCategory;
     private String categoryDisplayName;
-    private List<PostQuestionVO> questions;
+    private List<PostQuestionPairVO> questions;
 }

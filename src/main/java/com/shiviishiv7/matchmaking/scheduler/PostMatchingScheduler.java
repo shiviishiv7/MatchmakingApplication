@@ -106,7 +106,7 @@ public class PostMatchingScheduler {
                 .stream()
                 .filter(p -> !p.getCognitoSub().equals(post.getCognitoSub()))
                 .filter(p -> p.getIntent() == post.getIntent())
-                .collect(Collectors.toList());
+                .toList();
 
         // Deduplicate by user (one candidate per user, best post first)
         Map<String, UserPost> byUser = new LinkedHashMap<>();
@@ -308,7 +308,7 @@ public class PostMatchingScheduler {
         // Relationship goal match (20 pts) — mutual
         if (myPref != null && theirPref != null
                 && myPref.getRelationshipGoalPref() != null && theirPref.getRelationshipGoalPref() != null
-                && myPref.getRelationshipGoalPref().equalsIgnoreCase(theirPref.getRelationshipGoalPref())) {
+                && myPref.getRelationshipGoalPref() == theirPref.getRelationshipGoalPref()) {
             score += 20;
         }
 
@@ -347,7 +347,7 @@ public class PostMatchingScheduler {
 
         // Religion match (20 pts)
         if (myPref != null && myPref.getReligionPref() != null && theirPref != null
-                && myPref.getReligionPref().equalsIgnoreCase(theirPref.getReligionPref())) {
+                && myPref.getReligionPref() == theirPref.getReligionPref()) {
             score += 20;
         }
 
@@ -357,14 +357,14 @@ public class PostMatchingScheduler {
         // Family values (10 pts)
         if (myPref != null && theirPref != null
                 && myPref.getFamilyValuesPref() != null && theirPref.getFamilyValuesPref() != null
-                && myPref.getFamilyValuesPref().equalsIgnoreCase(theirPref.getFamilyValuesPref())) {
+                && myPref.getFamilyValuesPref() == theirPref.getFamilyValuesPref()) {
             score += 10;
         }
 
         // Marital status (5 pts)
         if (myPref != null && myPref.getMaritalStatusPref() != null
                 && theirPref != null && theirPref.getMaritalStatusPref() != null
-                && myPref.getMaritalStatusPref().equalsIgnoreCase(theirPref.getMaritalStatusPref())) {
+                && myPref.getMaritalStatusPref() == theirPref.getMaritalStatusPref()) {
             score += 5;
         }
 
@@ -383,27 +383,25 @@ public class PostMatchingScheduler {
     private int scoreDiet(PartnerPreference myPref, PartnerPreference theirPref) {
         if (myPref == null || theirPref == null) return 0;
         if (myPref.getDietaryPref() == null || theirPref.getDietaryPref() == null) return 15; // no pref = ok
-        return myPref.getDietaryPref().equalsIgnoreCase(theirPref.getDietaryPref()) ? 15 : 0;
+        return myPref.getDietaryPref() == theirPref.getDietaryPref() ? 15 : 0;
     }
 
     private int smokingScore(PartnerPreference myPref, PartnerPreference theirPref) {
         if (myPref == null || theirPref == null) return 0;
         if (myPref.getSmokingPref() == null || theirPref.getSmokingPref() == null) return 5;
-        return myPref.getSmokingPref().equalsIgnoreCase(theirPref.getSmokingPref()) ? 5 : 0;
+        return myPref.getSmokingPref() == theirPref.getSmokingPref() ? 5 : 0;
     }
 
     private int drinkingScore(PartnerPreference myPref, PartnerPreference theirPref) {
         if (myPref == null || theirPref == null) return 0;
         if (myPref.getDrinkingPref() == null || theirPref.getDrinkingPref() == null) return 5;
-        return myPref.getDrinkingPref().equalsIgnoreCase(theirPref.getDrinkingPref()) ? 5 : 0;
+        return myPref.getDrinkingPref() == theirPref.getDrinkingPref() ? 5 : 0;
     }
 
     private boolean passesGenderFilter(PartnerPreference pref, BaseUserProfile candidate) {
-        if (pref == null || pref.getGenderPref() == null
-                || pref.getGenderPref().isBlank()
-                || pref.getGenderPref().equalsIgnoreCase("Any")) return true;
+        if (pref == null || pref.getGenderPref() == null) return true;
         if (candidate.getGender() == null) return true;
-        return candidate.getGender().name().equalsIgnoreCase(pref.getGenderPref());
+        return candidate.getGender() == pref.getGenderPref();
     }
 
     // ─── Meeting time window ──────────────────────────────────────────────────

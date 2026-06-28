@@ -1,5 +1,6 @@
 package com.shiviishiv7.matchmaking.provider.vo.post;
 
+import com.shiviishiv7.matchmaking.common.enums.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -10,24 +11,24 @@ public class PartnerPreferenceRequestVO {
     private Integer ageMax;
     private Integer heightMinCm;
     private Integer heightMaxCm;
-    private String genderPref;
-    private String maritalStatusPref;
+    private Gender genderPref;
+    private MaritalStatus maritalStatusPref;
     private String preferredStates;
     private Boolean openToRelocation;
-    private String religionPref;
-    private String motherTonguePref;
-    private String dietaryPref;
-    private String educationPref;
-    private String employmentTypePref;
+    private Religion religionPref;
+    private Language motherTonguePref;
+    private DietPreference dietaryPref;
+    private Qualification educationPref;
+    private Profession employmentTypePref;
     private BigDecimal incomeMinInr;
     private BigDecimal incomeMaxInr;
-    private String smokingPref;
-    private String drinkingPref;
-    private String familyTypePref;
-    private String familyValuesPref;
+    private SmokingHabit smokingPref;
+    private DrinkingHabit drinkingPref;
+    private FamilyType familyTypePref;
+    private FamilyValues familyValuesPref;
     private Boolean wantsChildrenPref;
-    private String marriageTimelinePref;
+    private MarriageTimeline marriageTimelinePref;
     private Boolean okWithPartnerWorkingPref;
-    private String relationshipGoalPref;
+    private RelationshipGoal relationshipGoalPref;
     private String aboutPartner;
 }

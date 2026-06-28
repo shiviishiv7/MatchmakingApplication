@@ -1,5 +1,7 @@
 package com.shiviishiv7.matchmaking.controller;
 
+
+import com.shiviishiv7.matchmaking.common.security.MatchmakingSecurityUtility;
 import com.shiviishiv7.matchmaking.common.util.security.CurrentUserContext;
 import com.shiviishiv7.matchmaking.common.enums.PostStatus;
 import com.shiviishiv7.matchmaking.processor.post.PostAnalysisProcessor;
@@ -12,6 +14,7 @@ import com.shiviishiv7.matchmaking.provider.vo.post.PostSubmitRequestVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,13 +29,16 @@ public class UserPostController {
     private final IPostAnalysisProcessor postAnalysisProcessor;
     private final PostAnalysisProcessor postAnalysisProcessorImpl;
     private final UserPostRepository userPostRepository;
+    @Autowired
+    private MatchmakingSecurityUtility securityUtility;
 
     /**
      * Step 1: Analyze the post — returns only the fixed questions not yet answered in the post.
      */
     @PostMapping("/analyze")
     public ResponseEntity<BaseVO> analyze(@Valid @RequestBody PostAnalyzeRequestVO request) {
-        var result = postAnalysisProcessor.analyze(request.getPostText(), request.getIntent());
+        String sub = securityUtility.getAuthenticatedUserSub();
+        var result = postAnalysisProcessor.analyze(request.getPostText(), request.getIntent(),sub);
         return ResponseEntity.ok(new BaseVO(200, "Analysis complete.", null, result));
     }
 

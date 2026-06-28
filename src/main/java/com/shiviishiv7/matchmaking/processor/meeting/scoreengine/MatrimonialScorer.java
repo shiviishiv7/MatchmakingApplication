@@ -94,7 +94,7 @@ public class MatrimonialScorer implements CategoryScorer {
             if (candBase == null) continue;
 
             // Hard filter 1: gender preference
-            if (pref != null && StringUtils.isNotEmpty(pref.getMaritalStatusPref())) {
+            if (pref != null && pref.getGenderPref() != null) {
                 String candGender = candBase.getGender() != null ? candBase.getGender().name() : "";
                 // Simple opposite-gender check (can be extended for other orientations)
                 if (myGender != null && myGender.equals(candGender)) continue;
@@ -110,8 +110,8 @@ public class MatrimonialScorer implements CategoryScorer {
             }
 
             // Hard filter 3: religion (if user has set religion preference)
-            if (pref != null && StringUtils.isNotEmpty(pref.getReligionPref())) {
-                if (!pref.getReligionPref().contains(candidate.getReligion())) continue;
+            if (pref != null && pref.getReligionPref() != null) {
+                if (!pref.getReligionPref().name().equalsIgnoreCase(candidate.getReligion())) continue;
             }
 
             result.add(candidate.getCognitoSub());
@@ -224,8 +224,8 @@ public class MatrimonialScorer implements CategoryScorer {
     // ── Scoring helpers ────────────────────────────────────────────────────────
 
     private int scoreReligion(PartnerPreference pref, String candidateReligion) {
-        if (pref == null || StringUtils.isEmpty(pref.getReligionPref())) return SCORE_RELIGION;
-        return pref.getReligionPref().contains(candidateReligion) ? SCORE_RELIGION : 0;
+        if (pref == null || pref.getReligionPref() == null) return SCORE_RELIGION;
+        return pref.getReligionPref().name().equalsIgnoreCase(candidateReligion) ? SCORE_RELIGION : 0;
     }
 
     private int scoreCaste(PartnerPreference pref, String candCaste, String candGotram, String myGotram) {
@@ -246,8 +246,8 @@ public class MatrimonialScorer implements CategoryScorer {
     }
 
     private int scoreDiet(PartnerPreference pref, String candDiet) {
-        if (pref == null || StringUtils.isEmpty(pref.getDietaryPref())) return SCORE_DIET;
-        return pref.getDietaryPref().contains(candDiet) ? SCORE_DIET : 0;
+        if (pref == null || pref.getDietaryPref() == null) return SCORE_DIET;
+        return pref.getDietaryPref().name().equalsIgnoreCase(candDiet) ? SCORE_DIET : 0;
     }
 
     private int scoreEducation(String mine, String theirs) {
@@ -294,8 +294,8 @@ public class MatrimonialScorer implements CategoryScorer {
         int myAge = Period.between(myBase.getDateOfBirth(), LocalDate.now()).getYears();
         if (candPref.getAgeMin() != null && myAge < candPref.getAgeMin()) return false;
         if (candPref.getAgeMax() != null && myAge > candPref.getAgeMax()) return false;
-        if (StringUtils.isNotEmpty(candPref.getReligionPref())
-                && !candPref.getReligionPref().contains(me.getReligion())) return false;
+        if (candPref.getReligionPref() != null
+                && !candPref.getReligionPref().name().equalsIgnoreCase(me.getReligion())) return false;
         return true;
     }
 }

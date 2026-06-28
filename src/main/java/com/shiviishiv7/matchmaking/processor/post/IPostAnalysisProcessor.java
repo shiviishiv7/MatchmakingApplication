@@ -6,6 +6,6 @@ import com.shiviishiv7.matchmaking.provider.vo.post.PostSubmitRequestVO;
 import com.shiviishiv7.matchmaking.provider.vo.post.PostSubmitResponseVO;
 
 public interface IPostAnalysisProcessor {
-    PostAnalyzeResponseVO analyze(String postText, IntentType intent);
+    PostAnalyzeResponseVO analyze(String postText, IntentType intent,String sub);
     PostSubmitResponseVO submit(String cognitoSub, PostSubmitRequestVO request);
 }

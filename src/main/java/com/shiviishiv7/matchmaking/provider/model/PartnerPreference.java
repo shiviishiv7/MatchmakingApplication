@@ -1,6 +1,6 @@
 package com.shiviishiv7.matchmaking.provider.model;
 
-import com.shiviishiv7.matchmaking.common.enums.IntentType;
+import com.shiviishiv7.matchmaking.common.enums.*;
 import com.shiviishiv7.matchmaking.provider.vo.PartnerPreferenceVO;
 import jakarta.persistence.*;
 import lombok.*;
@@ -42,11 +42,13 @@ public class PartnerPreference extends BaseEntity {
     @Column(name = "heightMaxCm")
     private Integer heightMaxCm;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "genderPref", length = 20)
-    private String genderPref;
+    private Gender genderPref;
 
-    @Column(name = "maritalStatusPref", length = 200)
-    private String maritalStatusPref;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "maritalStatusPref", length = 30)
+    private MaritalStatus maritalStatusPref;
 
     @Column(name = "preferredStates", length = 300)
     private String preferredStates;
@@ -55,20 +57,25 @@ public class PartnerPreference extends BaseEntity {
     @Builder.Default
     private Boolean openToRelocation = false;
 
-    @Column(name = "religionPref", length = 200)
-    private String religionPref;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "religionPref", length = 30)
+    private Religion religionPref;
 
-    @Column(name = "motherTonguePref", length = 300)
-    private String motherTonguePref;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "motherTonguePref", length = 30)
+    private Language motherTonguePref;
 
-    @Column(name = "dietaryPref", length = 200)
-    private String dietaryPref;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "dietaryPref", length = 30)
+    private DietPreference dietaryPref;
 
-    @Column(name = "educationPref", length = 300)
-    private String educationPref;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "educationPref", length = 30)
+    private Qualification educationPref;
 
-    @Column(name = "employmentTypePref", length = 200)
-    private String employmentTypePref;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "employmentTypePref", length = 40)
+    private Profession employmentTypePref;
 
     @Column(name = "incomeMinInr", precision = 15, scale = 2)
     private BigDecimal incomeMinInr;
@@ -76,29 +83,35 @@ public class PartnerPreference extends BaseEntity {
     @Column(name = "incomeMaxInr", precision = 15, scale = 2)
     private BigDecimal incomeMaxInr;
 
-    @Column(name = "smokingPref", length = 100)
-    private String smokingPref;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "smokingPref", length = 20)
+    private SmokingHabit smokingPref;
 
-    @Column(name = "drinkingPref", length = 100)
-    private String drinkingPref;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "drinkingPref", length = 20)
+    private DrinkingHabit drinkingPref;
 
-    @Column(name = "familyTypePref", length = 100)
-    private String familyTypePref;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "familyTypePref", length = 20)
+    private FamilyType familyTypePref;
 
-    @Column(name = "familyValuesPref", length = 100)
-    private String familyValuesPref;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "familyValuesPref", length = 20)
+    private FamilyValues familyValuesPref;
 
     @Column(name = "wantsChildrenPref")
     private Boolean wantsChildrenPref;
 
-    @Column(name = "marriageTimelinePref", length = 50)
-    private String marriageTimelinePref;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "marriageTimelinePref", length = 20)
+    private MarriageTimeline marriageTimelinePref;
 
     @Column(name = "okWithPartnerWorkingPref")
     private Boolean okWithPartnerWorkingPref;
 
-    @Column(name = "relationshipGoalPref", length = 50)
-    private String relationshipGoalPref;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "relationshipGoalPref", length = 30)
+    private RelationshipGoal relationshipGoalPref;
 
     @Column(name = "aboutPartner", columnDefinition = "TEXT")
     private String aboutPartner;
