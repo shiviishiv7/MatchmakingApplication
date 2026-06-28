@@ -148,7 +148,7 @@ public class PostMatchingScheduler {
                             ? MatchCategory.CASUAL_DATING
                             : MatchCategory.PROFESSIONAL_MATRIMONY)
                     .compatibilityScore((double) score)
-                    .scoreBreakdown("score=" + score)
+                    .scoreBreakdown("{\"score\":" + score + "}")
                     .status(MatchStatus.PENDING)
                     .roundCount(0)
                     .maxRounds(3)
