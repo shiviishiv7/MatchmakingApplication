@@ -42,4 +42,20 @@ public interface MeetingRepository extends JpaRepository<Meeting, Integer> {
         )
     """)
     List<Meeting> findUpcomingForUser(String sub, LocalDateTime now);
+
+    /** Check if user already has a meeting scheduled today */
+    @Query("""
+        SELECT COUNT(m) > 0 FROM Meeting m
+        WHERE m.status = 'SCHEDULED'
+        AND m.scheduledAt >= :startOfDay
+        AND m.scheduledAt < :endOfDay
+        AND m.matchResultId IN (
+            SELECT mr.id FROM MatchResult mr
+            WHERE mr.cognitoSubA = :sub OR mr.cognitoSubB = :sub
+        )
+    """)
+    boolean hasScheduledMeetingToday(
+        @org.springframework.data.repository.query.Param("sub") String sub,
+        @org.springframework.data.repository.query.Param("startOfDay") LocalDateTime startOfDay,
+        @org.springframework.data.repository.query.Param("endOfDay") LocalDateTime endOfDay);
 }

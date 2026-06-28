@@ -45,4 +45,21 @@ public interface MatchResultRepository extends JpaRepository<MatchResult, Intege
     List<MatchResult> findByStatus(MatchStatus matchStatus);
 
     List<MatchResult> findByPostId(Long postId);
+
+    /** Check if a match between these two users already exists in either direction */
+    @Query("""
+            SELECT COUNT(m) > 0 FROM MatchResult m
+            WHERE (m.cognitoSubA = :subA AND m.cognitoSubB = :subB)
+               OR (m.cognitoSubA = :subB AND m.cognitoSubB = :subA)
+            """)
+    boolean existsByUserPair(@Param("subA") String subA, @Param("subB") String subB);
+
+    /** Top PENDING matches for a post, sorted by score descending */
+    @Query("""
+            SELECT m FROM MatchResult m
+            WHERE m.postId = :postId
+              AND m.status = 'PENDING'
+            ORDER BY m.compatibilityScore DESC
+            """)
+    List<MatchResult> findPendingByPostIdOrderByScoreDesc(@Param("postId") Long postId);
 }
