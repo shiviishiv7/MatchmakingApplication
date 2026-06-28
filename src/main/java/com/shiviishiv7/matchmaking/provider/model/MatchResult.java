@@ -25,6 +25,9 @@ public class MatchResult extends BaseEntity {
     @Column(name = "id", updatable = false, nullable = false)
     private Integer id;
 
+    @Column(name = "postId")
+    private Long postId;
+
     @Column(name = "cognitoSubA", nullable = false)
     private String cognitoSubA;
 

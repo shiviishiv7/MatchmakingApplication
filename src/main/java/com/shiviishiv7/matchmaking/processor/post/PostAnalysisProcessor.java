@@ -2,25 +2,25 @@ package com.shiviishiv7.matchmaking.processor.post;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
+import com.shiviishiv7.matchmaking.common.enums.IntentType;
+import com.shiviishiv7.matchmaking.common.enums.PostStatus;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
+import com.shiviishiv7.matchmaking.provider.implementation.PartnerPreferenceRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.UserPostRepository;
+import com.shiviishiv7.matchmaking.provider.model.PartnerPreference;
 import com.shiviishiv7.matchmaking.provider.model.UserPost;
-import com.shiviishiv7.matchmaking.provider.vo.MatchFilterVO;
 import com.shiviishiv7.matchmaking.provider.vo.post.*;
-import com.shiviishiv7.matchmaking.provider.vo.ws.MatchNotificationVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,7 +31,8 @@ import java.util.stream.Collectors;
 public class PostAnalysisProcessor implements IPostAnalysisProcessor {
 
     private static final String ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
-    private static final String ANTHROPIC_VERSION = "2023-06-01";
+    private static final String ANTHROPIC_VERSION  = "2023-06-01";
+    private static final int POST_EXPIRY_DAYS      = 30;
 
     @Value("${anthropic.api.key}")
     private String apiKey;
@@ -39,20 +40,17 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
     @Value("${anthropic.api.model:claude-haiku-4-5-20251001}")
     private String model;
 
-    private static final String USER_QUEUE_MATCHES = "/queue/matches";
-
     private final UserPostRepository userPostRepository;
+    private final PartnerPreferenceRepository partnerPreferenceRepository;
     private final ObjectMapper objectMapper;
-    private final PostEnrichmentQueue enrichmentQueue;
-    private final SimpMessagingTemplate messagingTemplate;
 
     // ─── analyze ───────────────────────────────────────────────────────────────
 
     @Override
-    public PostAnalyzeResponseVO analyze(String postText) {
+    public PostAnalyzeResponseVO analyze(String postText, IntentType intent) {
         try {
-            String responseJson = callClaude(buildAnalyzePrompt(postText));
-            return parseAnalyzeResponse(responseJson);
+            String responseJson = callClaude(buildAnalyzePrompt(postText, intent));
+            return parseAnalyzeResponse(responseJson, intent);
         } catch (MatchmakingException e) {
             throw e;
         } catch (Exception e) {
@@ -66,44 +64,64 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
     @Override
     public PostSubmitResponseVO submit(String cognitoSub, PostSubmitRequestVO request) {
         try {
-            // Single Claude call: infer category + extract profile fields
-            String responseJson = callClaude(buildSubmitPrompt(request.getPostText(), request.getAnswers()));
-            JsonNode root = objectMapper.readTree(responseJson);
-
-            MatchCategory category = MatchCategory.fromName(root.path("inferredCategory").asText());
-
-            // Save post
             String answersJson = objectMapper.writeValueAsString(request.getAnswers());
+
             UserPost post = UserPost.builder()
                     .cognitoSub(cognitoSub)
+                    .intent(request.getIntent())
                     .postText(request.getPostText())
                     .answersJson(answersJson)
-                    .inferredCategory(category != null ? category.name() : null)
+                    .inferredCategory(request.getIntent().name())
+                    .status(PostStatus.ACTIVE)
+                    .matchCount(0)
+                    .expiresAt(LocalDateTime.now().plusDays(POST_EXPIRY_DAYS))
                     .profileUpdated(false)
                     .build();
             post = userPostRepository.save(post);
 
-            // Always enqueue so discovery runs and the user gets a WS notification.
-            // If Claude returned no profile block, filterVO will have only cognitoSub + category.
-            if (category != null) {
-                JsonNode profileNode = root.has("profile") ? root.path("profile") : objectMapper.createObjectNode();
-                MatchFilterVO filterVO = buildFilterVO(cognitoSub, category, profileNode);
-                enrichmentQueue.enqueue(new PostEnrichmentTask(filterVO, post.getId()));
-            } else {
-                // Claude couldn't determine a category — notify the user immediately so the page doesn't hang
-                log.warn("Claude returned no valid category for cognitoSub={}", cognitoSub);
-                messagingTemplate.convertAndSendToUser(cognitoSub, USER_QUEUE_MATCHES,
-                        MatchNotificationVO.builder()
-                                .event("POST_MATCH_ERROR")
-                                .message("We couldn't determine your match category. Please try rephrasing your post.")
-                                .build());
+            // Save partner preferences linked to this post
+            if (request.getPartnerPreference() != null) {
+                PartnerPreferenceRequestVO prefReq = request.getPartnerPreference();
+                PartnerPreference pref = PartnerPreference.builder()
+                        .postId(post.getId())
+                        .cognitoSub(cognitoSub)
+                        .intent(request.getIntent())
+                        .ageMin(prefReq.getAgeMin())
+                        .ageMax(prefReq.getAgeMax())
+                        .heightMinCm(prefReq.getHeightMinCm())
+                        .heightMaxCm(prefReq.getHeightMaxCm())
+                        .genderPref(prefReq.getGenderPref())
+                        .maritalStatusPref(prefReq.getMaritalStatusPref())
+                        .preferredStates(prefReq.getPreferredStates())
+                        .openToRelocation(prefReq.getOpenToRelocation() != null ? prefReq.getOpenToRelocation() : false)
+                        .religionPref(prefReq.getReligionPref())
+                        .motherTonguePref(prefReq.getMotherTonguePref())
+                        .dietaryPref(prefReq.getDietaryPref())
+                        .educationPref(prefReq.getEducationPref())
+                        .employmentTypePref(prefReq.getEmploymentTypePref())
+                        .incomeMinInr(prefReq.getIncomeMinInr())
+                        .incomeMaxInr(prefReq.getIncomeMaxInr())
+                        .smokingPref(prefReq.getSmokingPref())
+                        .drinkingPref(prefReq.getDrinkingPref())
+                        .familyTypePref(prefReq.getFamilyTypePref())
+                        .familyValuesPref(prefReq.getFamilyValuesPref())
+                        .wantsChildrenPref(prefReq.getWantsChildrenPref())
+                        .marriageTimelinePref(prefReq.getMarriageTimelinePref())
+                        .okWithPartnerWorkingPref(prefReq.getOkWithPartnerWorkingPref())
+                        .relationshipGoalPref(prefReq.getRelationshipGoalPref())
+                        .aboutPartner(prefReq.getAboutPartner())
+                        .build();
+                partnerPreferenceRepository.save(pref);
             }
+
+            log.info("Post {} submitted by {} (intent={}) — queued for matching",
+                    post.getId(), cognitoSub, request.getIntent());
 
             return PostSubmitResponseVO.builder()
                     .postId(post.getId())
-                    .inferredCategory(category)
-                    .categoryDisplayName(category != null ? category.getDisplayName() : null)
-                    .profileUpdated(category != null)
+                    .inferredCategory(null)
+                    .categoryDisplayName(request.getIntent().name())
+                    .profileUpdated(false)
                     .build();
 
         } catch (MatchmakingException e) {
@@ -114,15 +132,16 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
         }
     }
 
-    // ─── build MatchFilterVO from Claude's extracted profile JSON ───────────────
+    // ─── close post ────────────────────────────────────────────────────────────
 
-    private MatchFilterVO buildFilterVO(String cognitoSub, MatchCategory category, JsonNode profileNode) throws Exception {
-        // Deserialize extracted fields directly into MatchFilterVO (ignores unknown fields)
-        MatchFilterVO vo = objectMapper.treeToValue(profileNode, MatchFilterVO.class);
-        vo.setCognitoSub(cognitoSub);
-        vo.setChildCategory(category.name());
-        vo.setParentCategory(category.getParentGroup());
-        return vo;
+    public void closePost(Long postId, String cognitoSub) {
+        UserPost post = userPostRepository.findById(postId)
+                .orElseThrow(() -> new MatchmakingException("Post not found", 404));
+        if (!post.getCognitoSub().equals(cognitoSub)) {
+            throw new MatchmakingException("Not authorised to close this post", 403);
+        }
+        post.setStatus(PostStatus.CLOSED);
+        userPostRepository.save(post);
     }
 
     // ─── Claude call ───────────────────────────────────────────────────────────
@@ -130,7 +149,7 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
     protected String callClaude(String prompt) throws Exception {
         String requestBody = objectMapper.writeValueAsString(Map.of(
                 "model", model,
-                "max_tokens", 1500,
+                "max_tokens", 2000,
                 "messages", List.of(Map.of("role", "user", "content", prompt))
         ));
 
@@ -155,125 +174,105 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
         return text.replaceAll("(?s)```json\\s*", "").replaceAll("(?s)```\\s*", "").trim();
     }
 
+    // ─── fixed question banks ──────────────────────────────────────────────────
+
+    private static final String DATING_FIXED_QUESTIONS = """
+            [
+              {"id":"d1","label":"Relationship goal","type":"single_choice","options":["Serious relationship","Casual dating","Open to both"]},
+              {"id":"d2","label":"Your age","type":"text","placeholder":"e.g. 27"},
+              {"id":"d3","label":"Preferred age range of partner","type":"range","min":18,"max":60},
+              {"id":"d4","label":"Preferred gender of partner","type":"single_choice","options":["Male","Female","Any"]},
+              {"id":"d5","label":"Current city","type":"text","placeholder":"e.g. Mumbai"},
+              {"id":"d6","label":"Diet preference","type":"dropdown","options":["Vegetarian","Non-Vegetarian","Vegan","Jain","No preference"]},
+              {"id":"d7","label":"Smoking habit","type":"single_choice","options":["Non-Smoker","Occasional","Regular"]},
+              {"id":"d8","label":"Drinking habit","type":"single_choice","options":["Non-Drinker","Occasional","Regular"]},
+              {"id":"d9","label":"Willing to relocate for partner?","type":"boolean"},
+              {"id":"d10","label":"Religious practice level","type":"single_choice","options":["Very religious","Moderate","Non-religious"]},
+              {"id":"d11","label":"Partner working preference","type":"single_choice","options":["Working","Non-working","No preference"]},
+              {"id":"d12","label":"Want children?","type":"single_choice","options":["Yes","No","Already have children","Open"]}
+            ]
+            """;
+
+    private static final String MATRIMONIAL_FIXED_QUESTIONS = """
+            [
+              {"id":"m1","label":"Your age","type":"text","placeholder":"e.g. 28"},
+              {"id":"m2","label":"Height (cm)","type":"range","min":140,"max":220},
+              {"id":"m3","label":"Current city","type":"text","placeholder":"e.g. Delhi"},
+              {"id":"m4","label":"Native city / native place","type":"text","placeholder":"e.g. Jaipur"},
+              {"id":"m5","label":"Mother tongue","type":"dropdown","options":["Hindi","Tamil","Telugu","Kannada","Malayalam","Bengali","Marathi","Gujarati","Punjabi","Odia","Other"]},
+              {"id":"m6","label":"Religion","type":"dropdown","options":["Hindu","Muslim","Christian","Sikh","Jain","Buddhist","Other"]},
+              {"id":"m7","label":"Highest qualification","type":"dropdown","options":["High School","Graduate","Post Graduate","PhD","Other"]},
+              {"id":"m8","label":"Field of study","type":"text","placeholder":"e.g. Computer Science"},
+              {"id":"m9","label":"Current profession","type":"text","placeholder":"e.g. Software Engineer"},
+              {"id":"m10","label":"Sector","type":"dropdown","options":["IT","Government","Business / Self-employed","Healthcare","Education","Finance","Other"]},
+              {"id":"m11","label":"Annual income","type":"dropdown","options":["Below 5L","5–10L","10–20L","20–50L","50L+"]},
+              {"id":"m12","label":"Working status","type":"single_choice","options":["Employed","Business Owner","Not Working"]},
+              {"id":"m13","label":"Family type","type":"single_choice","options":["Nuclear","Joint"]},
+              {"id":"m14","label":"Family values","type":"single_choice","options":["Orthodox","Moderate","Liberal"]},
+              {"id":"m15","label":"Father's occupation","type":"text","placeholder":"e.g. Retired government officer"},
+              {"id":"m16","label":"Mother's occupation","type":"text","placeholder":"e.g. Homemaker"},
+              {"id":"m17","label":"Number of siblings","type":"range","min":0,"max":8},
+              {"id":"m18","label":"Diet preference","type":"dropdown","options":["Vegetarian","Non-Vegetarian","Jain","Vegan"]},
+              {"id":"m19","label":"Smoking habit","type":"single_choice","options":["Non-Smoker","Occasional","Regular"]},
+              {"id":"m20","label":"Drinking habit","type":"single_choice","options":["Non-Drinker","Occasional","Regular"]},
+              {"id":"m21","label":"Marital status","type":"dropdown","options":["Never Married","Divorced","Widowed"]},
+              {"id":"m22","label":"Do you have children?","type":"boolean"},
+              {"id":"m23","label":"When are you looking to get married?","type":"single_choice","options":["Immediately","Within 6 months","Within 1 year","No rush"]},
+              {"id":"m24","label":"Type of marriage","type":"single_choice","options":["Arranged","Love-Arranged"]},
+              {"id":"m25","label":"Want children?","type":"single_choice","options":["Yes","No","Open"]},
+              {"id":"m26","label":"Living preference after marriage","type":"single_choice","options":["Joint family","Independent","Flexible"]},
+              {"id":"m27","label":"OK with partner working after marriage?","type":"boolean"},
+              {"id":"m28","label":"Willing to relocate after marriage?","type":"boolean"}
+            ]
+            """;
+
     // ─── prompt: analyze ───────────────────────────────────────────────────────
 
-    private String buildAnalyzePrompt(String postText) {
-        String categories = Arrays.stream(MatchCategory.values())
-                .map(c -> c.name() + " (" + c.getDisplayName() + ")")
-                .collect(Collectors.joining(", "));
+    private String buildAnalyzePrompt(String postText, IntentType intent) {
+        String fixedQuestions = intent == IntentType.DATING ? DATING_FIXED_QUESTIONS : MATRIMONIAL_FIXED_QUESTIONS;
+        String intentLabel = intent == IntentType.DATING ? "Dating" : "Matrimonial";
 
         return """
-                You are a matchmaking assistant helping users write better connection posts.
+                You are a matchmaking assistant for the "%s" category.
 
-                Read the user's draft post below and:
-                1. Infer the most suitable match category from this list: %s
-                2. Generate at least 10 focused follow-up questions that help build a detailed profile.
-                   Cover a broad range of aspects: preferences, personality, lifestyle, goals, deal-breakers,
-                   location, availability, experience, and anything specific to the inferred category.
-                3. For each question choose the most appropriate UI input type.
+                The user has written a post. Read it carefully and extract which attributes from
+                the FIXED QUESTION LIST below are already clearly answered in the post.
+                Then return ONLY the questions that are NOT answered.
 
-                Respond ONLY with valid JSON — no preamble, no markdown. Use exactly this structure:
-
-                {
-                  "inferredCategory": "<ENUM_NAME from the list above>",
-                  "questions": [
-                    {
-                      "id": "q1",
-                      "question": "<the follow-up question>",
-                      "type": "<text|single_choice|multi_choice|range|boolean|dropdown>",
-                      "options": ["option1", "option2"],
-                      "placeholder": "<hint text, only for type=text>",
-                      "min": <number, only for type=range>,
-                      "max": <number, only for type=range>
-                    }
-                  ]
-                }
+                FIXED QUESTION LIST:
+                %s
 
                 Rules:
-                - Use "single_choice" when the answer is one of a small fixed set (2–5 options).
-                - Use "multi_choice" for multiple selections (e.g. languages, interests).
-                - Use "range" for numeric ranges like age (min/max required).
-                - Use "boolean" for simple yes/no questions (no options needed).
-                - Use "dropdown" for large fixed lists (e.g. Indian states, religions).
-                - Use "text" for open-ended answers.
-                - Only include "options" for single_choice, multi_choice, or dropdown types.
-                - Only include "min"/"max" for range type.
-                - Only include "placeholder" for text type.
-                - You MUST return exactly 10 questions — no more, no fewer.
-                - Number them q1 through q10.
-                - Vary the types: use a mix of single_choice, multi_choice, boolean, range, dropdown, and text.
-                - Make questions specific to the inferred category, not generic.
-
-                USER POST:
-                %s
-                """.formatted(categories, postText);
-    }
-
-    // ─── prompt: submit ────────────────────────────────────────────────────────
-
-    private String buildSubmitPrompt(String postText, List<PostAnswerVO> answers) {
-        String categories = Arrays.stream(MatchCategory.values())
-                .map(c -> c.name() + " (" + c.getDisplayName() + ")")
-                .collect(Collectors.joining(", "));
-
-        String answersText = answers == null ? "None" : answers.stream()
-                .map(a -> "- " + a.getQuestionId() + ": " + a.getValue())
-                .collect(Collectors.joining("\n"));
-
-        return """
-                Based on the matchmaking post and follow-up answers below, do two things:
-                1. Determine the best match category from this list: %s
-                2. Extract all available profile fields from the post and answers.
+                - Return ONLY unanswered questions from the list above — never invent new questions.
+                - If all are answered, return an empty questions array.
+                - Preserve the original id, label, type, options, min, max from the list.
+                - Rename "label" to "question" in your output.
 
                 Respond ONLY with valid JSON — no preamble, no markdown:
 
                 {
-                  "inferredCategory": "<ENUM_NAME>",
-                  "profile": {
-                    "religion": "<if mentioned>",
-                    "caste": "<if mentioned>",
-                    "motherTongue": "<if mentioned>",
-                    "dietaryHabits": "<Vegetarian|Non-Vegetarian|Vegan|Jain|Other>",
-                    "highestEducation": "<if mentioned>",
-                    "profession": "<if mentioned>",
-                    "nativeCity": "<if mentioned>",
-                    "nativeState": "<if mentioned>",
-                    "maritalStatus": "<Never Married|Divorced|Widowed|Awaiting Divorce>",
-                    "smokingHabit": "<Non-Smoker|Occasional|Regular>",
-                    "drinkingHabit": "<Non-Drinker|Occasional|Regular>",
-                    "preferredCity": "<preferred location if mentioned>",
-                    "preferredState": "<preferred state if mentioned>",
-                    "minAge": <preferred min age as integer, if mentioned>,
-                    "maxAge": <preferred max age as integer, if mentioned>,
-                    "preferredGender": "<Male|Female|Any>",
-                    "relationshipGoal": "<for dating: Long-Term|Casual|Marriage|Open>",
-                    "currentRole": "<for professional>",
-                    "industryDomain": "<for professional>",
-                    "travelStyle": "<for travel>",
-                    "fitnessLevel": "<for fitness>",
-                    "platforms": "<for gaming>",
-                    "lookingIn": "<for flatmate: city/area>"
-                  }
+                  "questions": [
+                    {
+                      "id": "<from fixed list>",
+                      "question": "<label from fixed list>",
+                      "type": "<from fixed list>",
+                      "options": ["..."],
+                      "placeholder": "<only for type=text>",
+                      "min": <only for type=range>,
+                      "max": <only for type=range>
+                    }
+                  ]
                 }
 
-                Rules:
-                - Only include fields that are clearly present or strongly implied in the post/answers.
-                - Omit fields entirely (do not set null/empty) if not mentioned.
-                - Do not guess or fabricate values.
-
-                POST:
+                USER POST:
                 %s
-
-                FOLLOW-UP ANSWERS:
-                %s
-                """.formatted(categories, postText, answersText);
+                """.formatted(intentLabel, fixedQuestions, postText);
     }
 
     // ─── response parsing ──────────────────────────────────────────────────────
 
-    private PostAnalyzeResponseVO parseAnalyzeResponse(String json) throws Exception {
+    private PostAnalyzeResponseVO parseAnalyzeResponse(String json, IntentType intent) throws Exception {
         JsonNode root = objectMapper.readTree(json);
-        MatchCategory category = MatchCategory.fromName(root.path("inferredCategory").asText());
 
         List<PostQuestionVO> questions = new ArrayList<>();
         for (JsonNode q : root.path("questions")) {
@@ -294,8 +293,8 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
         }
 
         return PostAnalyzeResponseVO.builder()
-                .inferredCategory(category)
-                .categoryDisplayName(category != null ? category.getDisplayName() : null)
+                .inferredCategory(null)
+                .categoryDisplayName(intent.name())
                 .questions(questions)
                 .build();
     }

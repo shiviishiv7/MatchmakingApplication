@@ -1,11 +1,16 @@
 package com.shiviishiv7.matchmaking.provider.model;
 
+import com.shiviishiv7.matchmaking.common.enums.IntentType;
+import com.shiviishiv7.matchmaking.common.enums.PostStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "USER_POSTS", indexes = {
-        @Index(name = "idx_user_posts_cognito_sub", columnList = "cognitoSub")
+        @Index(name = "idx_user_posts_cognito_sub", columnList = "cognitoSub"),
+        @Index(name = "idx_user_posts_status", columnList = "status")
 })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class UserPost extends BaseEntity {
@@ -18,15 +23,30 @@ public class UserPost extends BaseEntity {
     @Column(name = "cognitoSub", nullable = false)
     private String cognitoSub;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "intent", nullable = false, length = 20)
+    private IntentType intent;
+
     @Column(name = "postText", nullable = false, columnDefinition = "TEXT")
     private String postText;
 
     @Column(name = "answersJson", columnDefinition = "JSON")
     private String answersJson;
 
-    // Stored as VARCHAR so adding new categories never requires an ALTER TABLE
     @Column(name = "inferredCategory", length = 60)
     private String inferredCategory;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
+    private PostStatus status = PostStatus.ACTIVE;
+
+    @Column(name = "matchCount", nullable = false)
+    @Builder.Default
+    private Integer matchCount = 0;
+
+    @Column(name = "expiresAt", nullable = false)
+    private LocalDateTime expiresAt;
 
     @Column(name = "profileUpdated")
     @Builder.Default

@@ -23,6 +23,11 @@ public class MeetingVO {
     private MeetingStatus status;
     private MeetingType meetingType;
 
+    // Zoom
+    private String zoomMeetingId;
+    private String zoomJoinUrl;
+    private String zoomPassword;
+
     // Peer info — populated by getUpcomingMeetings
     private String peerFirstName;
     private String peerLastName;
@@ -62,6 +67,9 @@ public class MeetingVO {
         vo.setDurationMinutes(meeting.getDurationMinutes());
         vo.setStatus(meeting.getStatus());
         vo.setMeetingType(meeting.getMeetingType());
+        vo.setZoomMeetingId(meeting.getZoomMeetingId());
+        vo.setZoomJoinUrl(meeting.getZoomJoinUrl());
+        vo.setZoomPassword(meeting.getZoomPassword());
         return vo;
     }
 }

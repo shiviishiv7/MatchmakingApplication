@@ -65,7 +65,7 @@ class UserPostControllerTest {
                 ))
                 .build();
 
-        when(postAnalysisProcessor.analyze(anyString())).thenReturn(analyzeResponse);
+        when(postAnalysisProcessor.analyze(anyString(), any())).thenReturn(analyzeResponse);
 
         PostAnalyzeRequestVO request = new PostAnalyzeRequestVO();
         request.setPostText("27M | Delhi | Looking for a sincere life partner.");
@@ -73,14 +73,14 @@ class UserPostControllerTest {
         ResponseEntity<?> response = controller.analyze(request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(postAnalysisProcessor).analyze("27M | Delhi | Looking for a sincere life partner.");
+        verify(postAnalysisProcessor).analyze(eq("27M | Delhi | Looking for a sincere life partner."), any());
     }
 
     @Test
     @DisplayName("analyze() passes post text to processor unchanged")
     void analyze_delegatesPostTextToProcessor() {
         String postText = "25F software engineer looking for companionship.";
-        when(postAnalysisProcessor.analyze(postText))
+        when(postAnalysisProcessor.analyze(eq(postText), any()))
                 .thenReturn(PostAnalyzeResponseVO.builder().questions(List.of()).build());
 
         PostAnalyzeRequestVO request = new PostAnalyzeRequestVO();
@@ -88,13 +88,13 @@ class UserPostControllerTest {
 
         controller.analyze(request);
 
-        verify(postAnalysisProcessor, times(1)).analyze(postText);
+        verify(postAnalysisProcessor, times(1)).analyze(eq(postText), any());
     }
 
     @Test
     @DisplayName("analyze() propagates MatchmakingException from processor")
     void analyze_processorThrows_exceptionPropagates() {
-        when(postAnalysisProcessor.analyze(anyString()))
+        when(postAnalysisProcessor.analyze(anyString(), any()))
                 .thenThrow(new MatchmakingException("AI analysis failed. Please try again.", 500));
 
         PostAnalyzeRequestVO request = new PostAnalyzeRequestVO();

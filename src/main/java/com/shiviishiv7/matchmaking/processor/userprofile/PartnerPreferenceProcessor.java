@@ -3,13 +3,11 @@ package com.shiviishiv7.matchmaking.processor.userprofile;
 import com.shiviishiv7.matchmaking.common.exception.MatchmakingException;
 import com.shiviishiv7.matchmaking.provider.implementation.PartnerPreferenceRepository;
 import com.shiviishiv7.matchmaking.provider.model.PartnerPreference;
-
 import com.shiviishiv7.matchmaking.provider.vo.BaseVO;
 import com.shiviishiv7.matchmaking.provider.vo.PartnerPreferenceVO;
-
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -18,70 +16,55 @@ import static com.shiviishiv7.matchmaking.common.constants.MatchmakingHttpStatus
 
 @Component
 @Transactional
+@RequiredArgsConstructor
 @Slf4j
 public class PartnerPreferenceProcessor implements IPartnerPreferenceProcessor {
 
-    @Autowired
-    private PartnerPreferenceRepository partnerPreferenceRepository;
+    private final PartnerPreferenceRepository partnerPreferenceRepository;
 
     @Override
     public BaseVO add(PartnerPreferenceVO vo) throws MatchmakingException {
         try {
-            log.info("Validating inputs for partner preference creation. {}", vo.toString());
             vo.validate();
-            log.info("PartnerPreferenceVO validation completed successfully.");
-
-            log.trace("Checking for duplicate partner preference for userId: {}", vo.getCognitoSub());
-            if (partnerPreferenceRepository.existsByCognitoSub(vo.getCognitoSub())) {
-                log.error("ALERT_FOR_ERROR: partner preference already exists for userId: {}", vo.getCognitoSub());
-                throw new MatchmakingException("partner preference already exists for this user", DUPLICATE_RECORD);
-            }
-
-            log.trace("Saving partner preference for userId: {}", vo.getCognitoSub());
             PartnerPreference profile = new PartnerPreference();
             profile.fromVO(vo);
             profile = partnerPreferenceRepository.save(profile);
-            log.info("partner preference saved successfully for userId: {}", profile.getCognitoSub());
-
-            return new BaseVO(SUCCESS, "partner preference created", "partner preference created", profile.toVO());
+            log.info("Partner preference saved for cognitoSub={} postId={}", vo.getCognitoSub(), vo.getPostId());
+            return new BaseVO(SUCCESS, "Partner preference created", "Partner preference created", profile.toVO());
         } catch (MatchmakingException ex) {
             throw ex;
         } catch (Exception ex) {
-            log.error("ALERT_FOR_ERROR: Error occurred while adding partner preference. Error: {}", ex.getMessage(), ex);
-            throw new MatchmakingException("Error occurred while adding partner preference: " + ex.getMessage(), UNKNOWN_EXCEPTION);
+            log.error("ALERT_FOR_ERROR: Error adding partner preference: {}", ex.getMessage(), ex);
+            throw new MatchmakingException("Error adding partner preference: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
 
     @Override
     public BaseVO update(PartnerPreferenceVO vo) throws MatchmakingException {
         try {
-            log.info("Validating inputs for partner preference update.");
             if (vo.getCognitoSub() == null) {
                 throw new MatchmakingException("cognitoSub cannot be null for update", VALIDATION_ERROR);
             }
             vo.validate();
-            log.info("PartnerPreferenceVO validation completed successfully.");
 
-            log.trace("Fetching existing partner preference for cognitoSub: {}", vo.getCognitoSub());
-            Optional<PartnerPreference> fromDB = partnerPreferenceRepository.findByCognitoSub(vo.getCognitoSub());
+            Optional<PartnerPreference> fromDB = vo.getPostId() != null
+                    ? partnerPreferenceRepository.findByPostId(vo.getPostId())
+                    : partnerPreferenceRepository.findByCognitoSub(vo.getCognitoSub());
+
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: partner preference not found for cognitoSub: {}", vo.getCognitoSub());
-                throw new MatchmakingException("partner preference does not exist", DATA_NOT_FOUND);
+                throw new MatchmakingException("Partner preference does not exist", DATA_NOT_FOUND);
             }
 
             PartnerPreference profile = fromDB.get();
-            log.trace("partner preference found for cognitoSub: {}", vo.getCognitoSub());
-
             profile.setAgeMin(vo.getAgeMin());
             profile.setAgeMax(vo.getAgeMax());
             profile.setHeightMinCm(vo.getHeightMinCm());
             profile.setHeightMaxCm(vo.getHeightMaxCm());
+            profile.setGenderPref(vo.getGenderPref());
             profile.setMaritalStatusPref(vo.getMaritalStatusPref());
-            profile.setPreferredCountries(vo.getPreferredCountries());
             profile.setPreferredStates(vo.getPreferredStates());
             profile.setOpenToRelocation(vo.getOpenToRelocation());
             profile.setReligionPref(vo.getReligionPref());
-            profile.setCastePref(vo.getCastePref());
             profile.setMotherTonguePref(vo.getMotherTonguePref());
             profile.setDietaryPref(vo.getDietaryPref());
             profile.setEducationPref(vo.getEducationPref());
@@ -90,80 +73,60 @@ public class PartnerPreferenceProcessor implements IPartnerPreferenceProcessor {
             profile.setIncomeMaxInr(vo.getIncomeMaxInr());
             profile.setSmokingPref(vo.getSmokingPref());
             profile.setDrinkingPref(vo.getDrinkingPref());
-            profile.setBodyTypePref(vo.getBodyTypePref());
             profile.setFamilyTypePref(vo.getFamilyTypePref());
             profile.setFamilyValuesPref(vo.getFamilyValuesPref());
-            profile.setManglikPref(vo.getManglikPref());
-            profile.setHoroscopeMatchRequired(vo.getHoroscopeMatchRequired());
+            profile.setWantsChildrenPref(vo.getWantsChildrenPref());
+            profile.setMarriageTimelinePref(vo.getMarriageTimelinePref());
+            profile.setOkWithPartnerWorkingPref(vo.getOkWithPartnerWorkingPref());
+            profile.setRelationshipGoalPref(vo.getRelationshipGoalPref());
             profile.setAboutPartner(vo.getAboutPartner());
-
             profile = partnerPreferenceRepository.save(profile);
-            log.info("partner preference updated successfully for ID: {}", profile.getId());
-
-            return new BaseVO(SUCCESS, "partner preference updated", "partner preference updated", profile.toVO());
+            log.info("Partner preference updated for id={}", profile.getId());
+            return new BaseVO(SUCCESS, "Partner preference updated", "Partner preference updated", profile.toVO());
         } catch (MatchmakingException ex) {
             throw ex;
         } catch (Exception ex) {
-            log.error("ALERT_FOR_ERROR: Error occurred while updating partner preference. Error: {}", ex.getMessage(), ex);
-            throw new MatchmakingException("Error occurred while updating partner preference: " + ex.getMessage(), UNKNOWN_EXCEPTION);
+            log.error("ALERT_FOR_ERROR: Error updating partner preference: {}", ex.getMessage(), ex);
+            throw new MatchmakingException("Error updating partner preference: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
 
     @Override
     public BaseVO getByCognitoSub(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Fetching partner preference for cognitoSub: {}", cognitoSub);
             Optional<PartnerPreference> fromDB = partnerPreferenceRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: partner preference not found for cognitoSub: {}", cognitoSub);
-                throw new MatchmakingException("partner preference does not exist", DATA_NOT_FOUND);
+                throw new MatchmakingException("Partner preference does not exist", DATA_NOT_FOUND);
             }
-            log.info("partner preference found for cognitoSub: {}", cognitoSub);
-            return new BaseVO(SUCCESS, "partner preference fetched", "partner preference fetched", fromDB.get().toVO());
+            return new BaseVO(SUCCESS, "Partner preference fetched", "Partner preference fetched", fromDB.get().toVO());
         } catch (MatchmakingException ex) {
             throw ex;
         } catch (Exception ex) {
-            log.error("ALERT_FOR_ERROR: Error occurred while fetching partner preference. Error: {}", ex.getMessage(), ex);
-            throw new MatchmakingException("Error occurred while fetching partner preference: " + ex.getMessage(), UNKNOWN_EXCEPTION);
+            log.error("ALERT_FOR_ERROR: Error fetching partner preference: {}", ex.getMessage(), ex);
+            throw new MatchmakingException("Error fetching partner preference: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
 
     @Override
     public BaseVO getByUserId(String userId) throws MatchmakingException {
-        try {
-            log.info("Fetching partner preference for userId: {}", userId);
-            Optional<PartnerPreference> fromDB = partnerPreferenceRepository.findByCognitoSub(userId);
-            if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: partner preference not found for userId: {}", userId);
-                throw new MatchmakingException("partner preference does not exist for this user", DATA_NOT_FOUND);
-            }
-            log.info("partner preference found for userId: {}", userId);
-            return new BaseVO(SUCCESS, "partner preference fetched", "partner preference fetched", fromDB.get().toVO());
-        } catch (MatchmakingException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            log.error("ALERT_FOR_ERROR: Error occurred while fetching partner preference by userId. Error: {}", ex.getMessage(), ex);
-            throw new MatchmakingException("Error occurred while fetching partner preference: " + ex.getMessage(), UNKNOWN_EXCEPTION);
-        }
+        return getByCognitoSub(userId);
     }
 
     @Override
     public BaseVO delete(String cognitoSub) throws MatchmakingException {
         try {
-            log.info("Deleting partner preference for cognitoSub: {}", cognitoSub);
             Optional<PartnerPreference> fromDB = partnerPreferenceRepository.findByCognitoSub(cognitoSub);
             if (fromDB.isEmpty()) {
-                log.error("ALERT_FOR_ERROR: partner preference not found for cognitoSub: {}", cognitoSub);
-                throw new MatchmakingException("partner preference does not exist", DATA_NOT_FOUND);
+                throw new MatchmakingException("Partner preference does not exist", DATA_NOT_FOUND);
             }
             partnerPreferenceRepository.delete(fromDB.get());
-            log.info("partner preference hard-deleted for cognitoSub: {}", cognitoSub);
-            return new BaseVO(SUCCESS, "partner preference deleted", "partner preference deleted");
+            log.info("Partner preference deleted for cognitoSub={}", cognitoSub);
+            return new BaseVO(SUCCESS, "Partner preference deleted", "Partner preference deleted");
         } catch (MatchmakingException ex) {
             throw ex;
         } catch (Exception ex) {
-            log.error("ALERT_FOR_ERROR: Error occurred while deleting partner preference. Error: {}", ex.getMessage(), ex);
-            throw new MatchmakingException("Error occurred while deleting partner preference: " + ex.getMessage(), UNKNOWN_EXCEPTION);
+            log.error("ALERT_FOR_ERROR: Error deleting partner preference: {}", ex.getMessage(), ex);
+            throw new MatchmakingException("Error deleting partner preference: " + ex.getMessage(), UNKNOWN_EXCEPTION);
         }
     }
 }

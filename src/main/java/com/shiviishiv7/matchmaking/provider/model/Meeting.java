@@ -59,4 +59,17 @@ public class Meeting extends BaseEntity {
     @Builder.Default
     private MeetingStatus status = MeetingStatus.SCHEDULED;
 
+    // ── Zoom ──────────────────────────────────────────────────────────────
+    @Column(name = "zoomMeetingId", length = 50)
+    private String zoomMeetingId;
+
+    @Column(name = "zoomJoinUrl", length = 500)
+    private String zoomJoinUrl;
+
+    @Column(name = "zoomStartUrl", length = 1000)
+    private String zoomStartUrl;
+
+    @Column(name = "zoomPassword", length = 50)
+    private String zoomPassword;
+
 }

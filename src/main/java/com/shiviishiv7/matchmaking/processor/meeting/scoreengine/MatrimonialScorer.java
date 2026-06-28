@@ -229,9 +229,9 @@ public class MatrimonialScorer implements CategoryScorer {
     }
 
     private int scoreCaste(PartnerPreference pref, String candCaste, String candGotram, String myGotram) {
-        if (pref == null || StringUtils.isEmpty(pref.getCastePref())) return 0;
+        
         int score = 0;
-        if (pref.getCastePref().contains(candCaste)) score += 10;
+        
         // Gotram must NOT match (same gotram = prohibited in many South Indian traditions)
         if (StringUtils.isNotEmpty(myGotram) && StringUtils.isNotEmpty(candGotram)
                 && !myGotram.equalsIgnoreCase(candGotram)) {
@@ -279,17 +279,12 @@ public class MatrimonialScorer implements CategoryScorer {
                 && pref.getPreferredStates().contains(candBase.getCurrentState())) {
             return SCORE_LOCATION;
         }
-        if (StringUtils.isNotEmpty(pref.getPreferredCountries())
-                && pref.getPreferredCountries().contains(candBase.getCurrentCountry())) {
-            return SCORE_LOCATION / 2;
-        }
         return 0;
     }
 
     private int scoreManglik(PartnerPreference pref, String candManglik) {
-        if (pref == null || StringUtils.isEmpty(pref.getManglikPref())) return 0;
-        if ("Any".equalsIgnoreCase(pref.getManglikPref())) return SCORE_MANGLIK;
-        return pref.getManglikPref().equalsIgnoreCase(candManglik) ? SCORE_MANGLIK : 0;
+        // Manglik matching removed per product spec
+        return 0;
     }
 
     private boolean isMutualPreferenceMatch(PartnerPreference candPref,

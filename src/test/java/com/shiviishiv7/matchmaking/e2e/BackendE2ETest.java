@@ -2,16 +2,20 @@ package com.shiviishiv7.matchmaking.e2e;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shiviishiv7.matchmaking.common.enums.FeedbackResponse;
+import com.shiviishiv7.matchmaking.common.enums.IntentType;
 import com.shiviishiv7.matchmaking.common.enums.MatchCategory;
 import com.shiviishiv7.matchmaking.common.enums.MatchStatus;
 import com.shiviishiv7.matchmaking.common.enums.MeetingStatus;
 import com.shiviishiv7.matchmaking.common.enums.MeetingType;
+import com.shiviishiv7.matchmaking.common.enums.PostStatus;
 import com.shiviishiv7.matchmaking.provider.implementation.MatchResultRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.MeetingFeedbackRepository;
 import com.shiviishiv7.matchmaking.provider.implementation.MeetingRepository;
+import com.shiviishiv7.matchmaking.provider.implementation.UserPostRepository;
 import com.shiviishiv7.matchmaking.provider.model.MatchResult;
 import com.shiviishiv7.matchmaking.provider.model.Meeting;
 import com.shiviishiv7.matchmaking.provider.model.MeetingFeedback;
+import com.shiviishiv7.matchmaking.provider.model.UserPost;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,20 +66,22 @@ class BackendE2ETest {
 
     @Autowired MockMvc        mockMvc;
     @Autowired ObjectMapper   objectMapper;
-    @Autowired MatchResultRepository   matchRepo;
-    @Autowired MeetingRepository       meetingRepo;
+    @Autowired MatchResultRepository     matchRepo;
+    @Autowired MeetingRepository         meetingRepo;
     @Autowired MeetingFeedbackRepository feedbackRepo;
+    @Autowired UserPostRepository        postRepo;
 
-    // Suppress real Redis — mock both connection factory interfaces (Lettuce implements both)
     @MockBean(name = "redisConnectionFactory") RedisConnectionFactory redisConnectionFactory;
     @MockBean ReactiveRedisConnectionFactory reactiveRedisConnectionFactory;
     @MockBean SimpMessagingTemplate messagingTemplate;
+    @MockBean com.shiviishiv7.matchmaking.service.zoom.ZoomService zoomService;
 
     @BeforeEach
     void clean() {
         feedbackRepo.deleteAll();
         meetingRepo.deleteAll();
         matchRepo.deleteAll();
+        postRepo.deleteAll();
     }
 
     // ── E2E-01: Full feedback loop — both users say NO → match ENDED ─────────
@@ -255,13 +261,7 @@ class BackendE2ETest {
 
     // ── E2E-10: Next match — no pending → graceful no-active response ─────────
 
-    @Test
-    @DisplayName("E2E-10: POST /matches/next with no PENDING matches returns 200")
-    void e2e_nextMatch_noPending_returns200() throws Exception {
-        mockMvc.perform(post("/api/v1/matches/next")
-                        .header("Authorization", AUTH))
-                .andExpect(status().isOk());
-    }
+    // E2E-10: removed — /matches/next endpoint removed (WebRTC replaced by Zoom)
 
     // ── E2E-11: 401 without auth token ────────────────────────────────────────
 
@@ -284,7 +284,159 @@ class BackendE2ETest {
                 .andExpect(status().is4xxClientError());
     }
 
+    // ── E2E-13: POST /posts/submit creates ACTIVE post with 30-day expiry ─────
+
+    @Test
+    @DisplayName("E2E-13: POST /posts/submit creates an ACTIVE post with expiresAt ~30 days")
+    void e2e_submitPost_createsActivePost() throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of(
+                "intent",    "MATRIMONIAL",
+                "postText",  "28M | Delhi | Software engineer looking for a sincere life partner. Values family and honesty.",
+                "answers",   java.util.List.of()
+        ));
+
+        mockMvc.perform(post("/api/v1/posts/submit")
+                        .header("Authorization", AUTH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200));
+
+        UserPost saved = postRepo.findByCognitoSubOrderByCreatedAtDesc(ME).get(0);
+        assertThat(saved.getIntent()).isEqualTo(IntentType.MATRIMONIAL);
+        assertThat(saved.getStatus()).isEqualTo(PostStatus.ACTIVE);
+        assertThat(saved.getMatchCount()).isEqualTo(0);
+        assertThat(saved.getExpiresAt()).isAfter(LocalDateTime.now().plusDays(29));
+    }
+
+    // ── E2E-14: POST /posts/submit with DATING intent ─────────────────────────
+
+    @Test
+    @DisplayName("E2E-14: POST /posts/submit with DATING intent creates a dating post")
+    void e2e_submitDatingPost_createsWithDatingIntent() throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of(
+                "intent",    "DATING",
+                "postText",  "25F | Mumbai | Looking for a genuine connection. I enjoy hiking and coffee and good conversation.",
+                "answers",   java.util.List.of()
+        ));
+
+        mockMvc.perform(post("/api/v1/posts/submit")
+                        .header("Authorization", AUTH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk());
+
+        UserPost saved = postRepo.findByCognitoSubOrderByCreatedAtDesc(ME).get(0);
+        assertThat(saved.getIntent()).isEqualTo(IntentType.DATING);
+        assertThat(saved.getStatus()).isEqualTo(PostStatus.ACTIVE);
+    }
+
+    // ── E2E-15: GET /posts/my returns user's posts ────────────────────────────
+
+    @Test
+    @DisplayName("E2E-15: GET /posts/my returns all posts for the authenticated user")
+    void e2e_getMyPosts_returnsList() throws Exception {
+        postRepo.save(buildPost(IntentType.MATRIMONIAL));
+        postRepo.save(buildPost(IntentType.DATING));
+
+        mockMvc.perform(get("/api/v1/posts/my")
+                        .header("Authorization", AUTH))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(2));
+    }
+
+    // ── E2E-16: GET /posts/my/active returns only ACTIVE posts ───────────────
+
+    @Test
+    @DisplayName("E2E-16: GET /posts/my/active returns only ACTIVE posts")
+    void e2e_getMyActivePosts_returnsOnlyActive() throws Exception {
+        UserPost active = postRepo.save(buildPost(IntentType.MATRIMONIAL));
+        UserPost closed = buildPost(IntentType.DATING);
+        closed.setStatus(PostStatus.CLOSED);
+        postRepo.save(closed);
+
+        mockMvc.perform(get("/api/v1/posts/my/active")
+                        .header("Authorization", AUTH))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].status").value("ACTIVE"));
+    }
+
+    // ── E2E-17: DELETE /posts/{id} closes the post ────────────────────────────
+
+    @Test
+    @DisplayName("E2E-17: DELETE /posts/{id} closes the post (CLOSED status)")
+    void e2e_deletePost_closesPost() throws Exception {
+        UserPost post = postRepo.save(buildPost(IntentType.MATRIMONIAL));
+
+        mockMvc.perform(delete("/api/v1/posts/{id}", post.getId())
+                        .header("Authorization", AUTH))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200));
+
+        UserPost updated = postRepo.findById(post.getId()).orElseThrow();
+        assertThat(updated.getStatus()).isEqualTo(PostStatus.CLOSED);
+    }
+
+    // ── E2E-18: Meeting GET includes Zoom fields ───────────────────────────────
+
+    @Test
+    @DisplayName("E2E-18: GET /meetings/{id} response includes Zoom fields")
+    void e2e_getMeeting_includesZoomFields() throws Exception {
+        MatchResult match = saveMatch(ME, "sub-b", MatchStatus.MEETING_SCHEDULED);
+        Meeting meeting = meetingRepo.save(Meeting.builder()
+                .matchResultId(match.getId())
+                .roundNumber(1)
+                .scheduledAt(LocalDateTime.now().plusHours(3))
+                .durationMinutes(30)
+                .meetingType(MeetingType.SCHEDULED)
+                .status(MeetingStatus.SCHEDULED)
+                .zoomMeetingId("123456789")
+                .zoomJoinUrl("https://zoom.us/j/123456789")
+                .zoomPassword("abc123")
+                .build());
+
+        mockMvc.perform(get("/api/v1/meetings/{id}", meeting.getId())
+                        .header("Authorization", AUTH))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.zoomMeetingId").value("123456789"))
+                .andExpect(jsonPath("$.data.zoomJoinUrl").value("https://zoom.us/j/123456789"))
+                .andExpect(jsonPath("$.data.zoomPassword").value("abc123"));
+    }
+
+    // ── E2E-19: POST /posts/analyze requires intent field ─────────────────────
+
+    @Test
+    @DisplayName("E2E-19: POST /posts/analyze without intent returns 4xx")
+    void e2e_analyzeWithoutIntent_returns4xx() throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of(
+                "postText", "Some post text here."
+        ));
+
+        mockMvc.perform(post("/api/v1/posts/analyze")
+                        .header("Authorization", AUTH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().is4xxClientError());
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private UserPost buildPost(IntentType intent) {
+        return UserPost.builder()
+                .cognitoSub(ME)
+                .intent(intent)
+                .postText("Test post text for matching purposes only.")
+                .answersJson("[]")
+                .inferredCategory(intent.name())
+                .status(PostStatus.ACTIVE)
+                .matchCount(0)
+                .expiresAt(LocalDateTime.now().plusDays(30))
+                .profileUpdated(false)
+                .build();
+    }
 
     private MatchResult saveMatch(String subA, String subB, MatchStatus status) {
         return matchRepo.save(MatchResult.builder()

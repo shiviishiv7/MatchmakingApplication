@@ -43,4 +43,6 @@ public interface MatchResultRepository extends JpaRepository<MatchResult, Intege
     Optional<MatchResult> findMatchByCognitoSubAOrCognitoSubB(String userId, String userId1);
 
     List<MatchResult> findByStatus(MatchStatus matchStatus);
+
+    List<MatchResult> findByPostId(Long postId);
 }

@@ -191,15 +191,15 @@ class MatrimonialScorerTest {
         // Perfect match on all dimensions
         PartnerPreference pref = PartnerPreference.builder()
                 .religionPref("Hindu")
-                .castePref("Brahmin")
+                
                 .dietaryPref("Vegetarian")
-                .manglikPref("Any")
+                
                 .preferredStates("Tamil Nadu")
                 .ageMin(25).ageMax(32)
                 .build();
         MatrimonialExtProfile me        = extProfile(USER_A, "Hindu", "Tamil", "Vegetarian", pref);
-        me.setCaste("Brahmin");
-        me.setGotram("Vatsa");
+        
+        
         me.setHighestEducation("MBA");
 
         MatrimonialExtProfile candidate = extProfile(USER_B, "Hindu", "Tamil", "Vegetarian", null);

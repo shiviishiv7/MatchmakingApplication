@@ -22,21 +22,16 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
-    /**
-     * Sent to the user who submitted the post when no candidate is currently online.
-     * Tells them their match has been saved and they'll be notified when the match comes online.
-     */
-    public void sendMatchSavedEmail(String toEmail, String toName, String matchedUserName) {
-        send(toEmail, "You have a new match on Matchmaking!",
-                matchSavedHtml(toName, matchedUserName));
+    public void sendMeetingScheduledEmail(String toEmail, String toName,
+                                          String matchedName, String zoomJoinUrl,
+                                          String scheduledAtFormatted) {
+        send(toEmail, "Your Zoom meeting is confirmed on Shall We Connect!",
+                meetingScheduledHtml(toName, matchedName, zoomJoinUrl, scheduledAtFormatted));
     }
 
-    /**
-     * Sent to the matched candidate to let them know someone is waiting to connect.
-     */
-    public void sendMatchWaitingEmail(String toEmail, String toName, String requesterName) {
-        send(toEmail, "Someone wants to connect with you!",
-                matchWaitingHtml(toName, requesterName));
+    public void sendMatchSavedEmail(String toEmail, String toName, String matchedUserName) {
+        send(toEmail, "You have a new match on Shall We Connect!",
+                matchSavedHtml(toName, matchedUserName));
     }
 
     // ── private ───────────────────────────────────────────────────────────────
@@ -64,18 +59,37 @@ public class EmailService {
         return """
                 <p>Hi %s,</p>
                 <p>Great news! We found a match for you: <strong>%s</strong>.</p>
-                <p>They are not online right now, but we will notify you as soon as they come online so you can connect via a live video call.</p>
-                <p>You can also open the app at any time and request your next match.</p>
-                <br/><p>— The Matchmaking Team</p>
+                <p>We'll notify you by email once a Zoom meeting is scheduled.</p>
+                <br/><p>— The Shall We Connect Team</p>
                 """.formatted(name, matchedName);
     }
 
-    private String matchWaitingHtml(String name, String requesterName) {
+    private String meetingScheduledHtml(String name, String matchedName,
+                                         String zoomJoinUrl, String scheduledAt) {
         return """
-                <p>Hi %s,</p>
-                <p><strong>%s</strong> has been matched with you and is looking to connect!</p>
-                <p>Open the app and click <strong>"Next Match"</strong> to start a live video call.</p>
-                <br/><p>— The Matchmaking Team</p>
-                """.formatted(name, requesterName);
+                <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+                  <h2 style="color:#6366f1">Your meeting is confirmed!</h2>
+                  <p>Hi <strong>%s</strong>,</p>
+                  <p>We've matched you with <strong>%s</strong> on Shall We Connect.</p>
+                  <p>Your Zoom meeting is scheduled for:</p>
+                  <p style="font-size:1.2em;font-weight:bold;color:#1e1b4b">%s (IST)</p>
+                  <div style="margin:24px 0">
+                    <a href="%s"
+                       style="background:#6366f1;color:white;padding:12px 24px;
+                              text-decoration:none;border-radius:6px;font-weight:bold">
+                      Join Zoom Meeting
+                    </a>
+                  </div>
+                  <p style="color:#666;font-size:0.9em">
+                    Or copy this link: <a href="%s">%s</a>
+                  </p>
+                  <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
+                  <p style="color:#999;font-size:0.8em">
+                    After the meeting, submit your feedback in the app.
+                    If both of you want to connect again, we'll schedule another meeting.
+                  </p>
+                  <p>— The Shall We Connect Team</p>
+                </div>
+                """.formatted(name, matchedName, scheduledAt, zoomJoinUrl, zoomJoinUrl, zoomJoinUrl);
     }
 }
