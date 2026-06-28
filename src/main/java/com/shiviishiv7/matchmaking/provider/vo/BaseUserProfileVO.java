@@ -33,6 +33,7 @@ public class BaseUserProfileVO {
     private String aboutMe;
     private List<String> languages = new ArrayList<>();
     private Boolean isProfileVerified;
+    private Boolean isProfileComplete;
     private Boolean isActive;
     private LocalDateTime lastActiveAt;
 

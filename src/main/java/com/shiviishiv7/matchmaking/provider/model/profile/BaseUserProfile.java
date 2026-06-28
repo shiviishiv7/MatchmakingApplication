@@ -74,6 +74,10 @@ public class BaseUserProfile extends BaseEntity {
     @Builder.Default
     private Boolean isProfileVerified = false;
 
+    @Column(name = "isProfileComplete")
+    @Builder.Default
+    private Boolean isProfileComplete = false;
+
     @Column(name = "isActive")
     @Builder.Default
     private Boolean isActive = true;
@@ -100,6 +104,7 @@ public class BaseUserProfile extends BaseEntity {
         this.setAboutMe(vo.getAboutMe());
         this.setLanguages(vo.getLanguages() != null ? vo.getLanguages() : new ArrayList<>());
         this.setIsProfileVerified(vo.getIsProfileVerified());
+        this.setIsProfileComplete(vo.getIsProfileComplete());
         this.setIsActive(vo.getIsActive());
         this.setLastActiveAt(vo.getLastActiveAt());
         return this;
@@ -123,6 +128,7 @@ public class BaseUserProfile extends BaseEntity {
         vo.setAboutMe(this.getAboutMe());
         vo.setLanguages(this.getLanguages());
         vo.setIsProfileVerified(this.getIsProfileVerified());
+        vo.setIsProfileComplete(this.getIsProfileComplete());
         vo.setIsActive(this.getIsActive());
         vo.setLastActiveAt(this.getLastActiveAt());
         vo.setEmail(this.getEmail());

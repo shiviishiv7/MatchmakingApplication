@@ -39,6 +39,7 @@ public class BaseUserProfileProcessor implements IBaseUserProfileProcessor {
             log.trace("Saving base profile for userId: {}", vo.getCognitoSub());
             BaseUserProfile profile = new BaseUserProfile();
             profile.fromVO(vo);
+            profile.setIsProfileComplete(isProfileComplete(profile));
             profile = baseUserProfileRepository.save(profile);
             log.info("Base profile saved successfully for userId: {}", profile.getCognitoSub());
 
@@ -87,8 +88,10 @@ public class BaseUserProfileProcessor implements IBaseUserProfileProcessor {
                 profile.setIsActive(vo.getIsActive());
             }
 
+            profile.setIsProfileComplete(isProfileComplete(profile));
             profile = baseUserProfileRepository.save(profile);
-            log.info("Base profile updated successfully for ID: {}", profile.getId());
+            log.info("Base profile updated successfully for ID: {}, complete={}",
+                    profile.getId(), profile.getIsProfileComplete());
 
             return new BaseVO(SUCCESS, "Base profile updated", "Base profile updated", profile.toVO());
         } catch (MatchmakingException ex) {
@@ -184,11 +187,10 @@ public class BaseUserProfileProcessor implements IBaseUserProfileProcessor {
         }
     }
 
-//    private boolean isProfileComplete(User user) {
-//        return user.getFirstName() != null && !user.getFirstName().isBlank()
-//                && user.getLastName() != null && !user.getLastName().isBlank()
-//                && user.getGender() != null
-//                && user.getDateOfBirth() != null;
-////                && user.getInterests() != null && !user.getInterests().isEmpty();
-//    }
+    private boolean isProfileComplete(BaseUserProfile p) {
+        return p.getDateOfBirth() != null
+                && p.getGender() != null
+                && p.getCurrentCity() != null && !p.getCurrentCity().isBlank()
+                && p.getCurrentState() != null && !p.getCurrentState().isBlank();
+    }
 }
