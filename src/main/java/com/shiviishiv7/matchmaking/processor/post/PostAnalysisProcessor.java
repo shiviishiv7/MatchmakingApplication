@@ -179,10 +179,10 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
     private static final String DATING_FIXED_QUESTIONS = """
             [
               {"id":"d1","label":"Relationship goal","type":"single_choice","options":["Serious relationship","Casual dating","Open to both"]},
-              {"id":"d2","label":"Your age","type":"text","placeholder":"e.g. 27"},
+              {"id":"d2","label":"Your age","type":"range","min":18,"max":60},
               {"id":"d3","label":"Preferred age range of partner","type":"range","min":18,"max":60},
               {"id":"d4","label":"Preferred gender of partner","type":"single_choice","options":["Male","Female","Any"]},
-              {"id":"d5","label":"Current city","type":"text","placeholder":"e.g. Mumbai"},
+              {"id":"d5","label":"Current city","type":"city","placeholder":"e.g. Mumbai"},
               {"id":"d6","label":"Diet preference","type":"dropdown","options":["Vegetarian","Non-Vegetarian","Vegan","Jain","No preference"]},
               {"id":"d7","label":"Smoking habit","type":"single_choice","options":["Non-Smoker","Occasional","Regular"]},
               {"id":"d8","label":"Drinking habit","type":"single_choice","options":["Non-Drinker","Occasional","Regular"]},
@@ -195,34 +195,32 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
 
     private static final String MATRIMONIAL_FIXED_QUESTIONS = """
             [
-              {"id":"m1","label":"Your age","type":"text","placeholder":"e.g. 28"},
+              {"id":"m1","label":"Your age","type":"range","min":18,"max":65},
               {"id":"m2","label":"Height (cm)","type":"range","min":140,"max":220},
-              {"id":"m3","label":"Current city","type":"text","placeholder":"e.g. Delhi"},
-              {"id":"m4","label":"Native city / native place","type":"text","placeholder":"e.g. Jaipur"},
+              {"id":"m3","label":"Current city","type":"city","placeholder":"e.g. Delhi"},
+              {"id":"m4","label":"Native city / native place","type":"city","placeholder":"e.g. Jaipur"},
               {"id":"m5","label":"Mother tongue","type":"dropdown","options":["Hindi","Tamil","Telugu","Kannada","Malayalam","Bengali","Marathi","Gujarati","Punjabi","Odia","Other"]},
               {"id":"m6","label":"Religion","type":"dropdown","options":["Hindu","Muslim","Christian","Sikh","Jain","Buddhist","Other"]},
               {"id":"m7","label":"Highest qualification","type":"dropdown","options":["High School","Graduate","Post Graduate","PhD","Other"]},
-              {"id":"m8","label":"Field of study","type":"text","placeholder":"e.g. Computer Science"},
-              {"id":"m9","label":"Current profession","type":"text","placeholder":"e.g. Software Engineer"},
+              {"id":"m8","label":"Field of study","type":"dropdown","options":["Engineering / Technology","Medicine / Healthcare","Commerce / Accounting","Arts / Humanities","Law","Science","Management / MBA","Other"]},
+              {"id":"m9","label":"Current profession","type":"dropdown","options":["Software Engineer / IT","Doctor / Healthcare","Teacher / Professor","Lawyer","CA / Finance","Business Owner","Government / Civil Services","Other"]},
               {"id":"m10","label":"Sector","type":"dropdown","options":["IT","Government","Business / Self-employed","Healthcare","Education","Finance","Other"]},
               {"id":"m11","label":"Annual income","type":"dropdown","options":["Below 5L","5–10L","10–20L","20–50L","50L+"]},
               {"id":"m12","label":"Working status","type":"single_choice","options":["Employed","Business Owner","Not Working"]},
               {"id":"m13","label":"Family type","type":"single_choice","options":["Nuclear","Joint"]},
               {"id":"m14","label":"Family values","type":"single_choice","options":["Orthodox","Moderate","Liberal"]},
-              {"id":"m15","label":"Father's occupation","type":"text","placeholder":"e.g. Retired government officer"},
-              {"id":"m16","label":"Mother's occupation","type":"text","placeholder":"e.g. Homemaker"},
-              {"id":"m17","label":"Number of siblings","type":"range","min":0,"max":8},
-              {"id":"m18","label":"Diet preference","type":"dropdown","options":["Vegetarian","Non-Vegetarian","Jain","Vegan"]},
-              {"id":"m19","label":"Smoking habit","type":"single_choice","options":["Non-Smoker","Occasional","Regular"]},
-              {"id":"m20","label":"Drinking habit","type":"single_choice","options":["Non-Drinker","Occasional","Regular"]},
-              {"id":"m21","label":"Marital status","type":"dropdown","options":["Never Married","Divorced","Widowed"]},
-              {"id":"m22","label":"Do you have children?","type":"boolean"},
-              {"id":"m23","label":"When are you looking to get married?","type":"single_choice","options":["Immediately","Within 6 months","Within 1 year","No rush"]},
-              {"id":"m24","label":"Type of marriage","type":"single_choice","options":["Arranged","Love-Arranged"]},
-              {"id":"m25","label":"Want children?","type":"single_choice","options":["Yes","No","Open"]},
-              {"id":"m26","label":"Living preference after marriage","type":"single_choice","options":["Joint family","Independent","Flexible"]},
-              {"id":"m27","label":"OK with partner working after marriage?","type":"boolean"},
-              {"id":"m28","label":"Willing to relocate after marriage?","type":"boolean"}
+              {"id":"m15","label":"Number of siblings","type":"range","min":0,"max":8},
+              {"id":"m16","label":"Diet preference","type":"dropdown","options":["Vegetarian","Non-Vegetarian","Jain","Vegan"]},
+              {"id":"m17","label":"Smoking habit","type":"single_choice","options":["Non-Smoker","Occasional","Regular"]},
+              {"id":"m18","label":"Drinking habit","type":"single_choice","options":["Non-Drinker","Occasional","Regular"]},
+              {"id":"m19","label":"Marital status","type":"dropdown","options":["Never Married","Divorced","Widowed"]},
+              {"id":"m20","label":"Do you have children?","type":"boolean"},
+              {"id":"m21","label":"When are you looking to get married?","type":"single_choice","options":["Immediately","Within 6 months","Within 1 year","No rush"]},
+              {"id":"m22","label":"Type of marriage","type":"single_choice","options":["Arranged","Love-Arranged"]},
+              {"id":"m23","label":"Want children?","type":"single_choice","options":["Yes","No","Open"]},
+              {"id":"m24","label":"Living preference after marriage","type":"single_choice","options":["Joint family","Independent","Flexible"]},
+              {"id":"m25","label":"OK with partner working after marriage?","type":"boolean"},
+              {"id":"m26","label":"Willing to relocate after marriage?","type":"boolean"}
             ]
             """;
 
@@ -242,11 +240,17 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
                 FIXED QUESTION LIST:
                 %s
 
-                Rules:
-                - Return ONLY unanswered questions from the list above — never invent new questions.
-                - If all are answered, return an empty questions array.
-                - Preserve the original id, label, type, options, min, max from the list.
-                - Rename "label" to "question" in your output.
+                STRICT RULES — follow exactly:
+                1. Return ONLY unanswered questions from the fixed list above. Never invent new questions.
+                2. If all are answered, return an empty questions array.
+                3. Preserve EXACTLY the original id, label, type, options, min, max from the list.
+                4. Rename "label" to "question" in your output.
+                5. NEVER change a question's type — if the list says "dropdown", output "dropdown".
+                6. NEVER output type="text" — the only allowed text-like type is "city" (for city/place fields).
+                7. ALL non-city attributes use structured types: single_choice, dropdown, range, boolean.
+                8. For type="city" include the placeholder. For type="range" include min and max.
+                   For type="single_choice" or "dropdown" include the options array exactly as given.
+                9. Do NOT include options for boolean or range types.
 
                 Respond ONLY with valid JSON — no preamble, no markdown:
 
@@ -255,11 +259,11 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
                     {
                       "id": "<from fixed list>",
                       "question": "<label from fixed list>",
-                      "type": "<from fixed list>",
-                      "options": ["..."],
-                      "placeholder": "<only for type=text>",
-                      "min": <only for type=range>,
-                      "max": <only for type=range>
+                      "type": "<from fixed list — single_choice|multi_choice|dropdown|range|boolean|city>",
+                      "options": ["only for single_choice or dropdown"],
+                      "placeholder": "only for city type",
+                      "min": "only for range",
+                      "max": "only for range"
                     }
                   ]
                 }
