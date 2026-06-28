@@ -30,6 +30,6 @@ public class MatchmakingApplication extends SpringBootServletInitializer  implem
 
 	@Override
 	public void run(String... args) throws Exception {
-	//	postMatchingScheduler.findAndScoreMatches();
+		postMatchingScheduler.sendDailyTopMatch();
 	}
 }
