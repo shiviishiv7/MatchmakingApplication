@@ -369,11 +369,11 @@ public class PostMatchingScheduler {
         }
 
         // Wants children mutual (5 pts)
-        if (myPref != null && theirPref != null
-                && myPref.getWantsChildrenPref() != null && theirPref.getWantsChildrenPref() != null
-                && myPref.getWantsChildrenPref().equals(theirPref.getWantsChildrenPref())) {
-            score += 5;
-        }
+//        if (myPref != null && theirPref != null
+//                && myPref.getWantsChildrenPref() != null && theirPref.getWantsChildrenPref() != null
+//                && myPref.getWantsChildrenPref().equals(theirPref.getWantsChildrenPref())) {
+//            score += 5;
+//        }
 
         return Math.min(score, 100);
     }

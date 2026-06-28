@@ -75,7 +75,7 @@ public class PartnerPreferenceProcessor implements IPartnerPreferenceProcessor {
             profile.setDrinkingPref(vo.getDrinkingPref());
             profile.setFamilyTypePref(vo.getFamilyTypePref());
             profile.setFamilyValuesPref(vo.getFamilyValuesPref());
-            profile.setWantsChildrenPref(vo.getWantsChildrenPref());
+//            profile.setWantsChildrenPref(vo.getWantsChildrenPref());
             profile.setMarriageTimelinePref(vo.getMarriageTimelinePref());
             profile.setOkWithPartnerWorkingPref(vo.getOkWithPartnerWorkingPref());
             profile.setRelationshipGoalPref(vo.getRelationshipGoalPref());

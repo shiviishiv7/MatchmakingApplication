@@ -169,14 +169,13 @@ public class PostAnalysisProcessor implements IPostAnalysisProcessor {
               {"id":"d9","label":"Willing to relocate for partner?","type":"boolean"},
               {"id":"d10","label":"Religious practice level","type":"single_choice","options":["Very religious","Moderate","Non-religious"]},
               {"id":"d11","label":"Partner working preference","type":"single_choice","options":["Working","Non-working","No preference"]},
-              {"id":"d12","label":"Want children?","type":"single_choice","options":["Yes","No","Already have children","Open"]}
             ]
             """;
 
     private static final String MATRIMONIAL_FIXED_QUESTIONS = """
             [
-              {"id":"m1","pairGroup":"g1","label":"Your age","type":"range","min":18,"max":70},
-              {"id":"p1","pairGroup":"g1","label":"Partner's age range","type":"range","min":18,"max":70},
+              {"id":"m1","pairGroup":"g1","label":"Your age","type":"range","min":18,"max":25},
+              {"id":"p1","pairGroup":"g1","label":"Partner's age range","type":"range","min":18,"max":25},
               {"id":"m2","pairGroup":"g2","label":"Your height (cm)","type":"range","min":140,"max":210},
               {"id":"p2","pairGroup":"g2","label":"Partner's height range (cm)","type":"range","min":140,"max":210},
               {"id":"m3","pairGroup":"g3","label":"Your current city","type":"city","placeholder":"e.g. Delhi"},

@@ -99,9 +99,6 @@ public class PartnerPreference extends BaseEntity {
     @Column(name = "familyValuesPref", length = 20)
     private FamilyValues familyValuesPref;
 
-    @Column(name = "wantsChildrenPref")
-    private Boolean wantsChildrenPref;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "marriageTimelinePref", length = 20)
     private MarriageTimeline marriageTimelinePref;
@@ -141,7 +138,7 @@ public class PartnerPreference extends BaseEntity {
         this.setDrinkingPref(vo.getDrinkingPref());
         this.setFamilyTypePref(vo.getFamilyTypePref());
         this.setFamilyValuesPref(vo.getFamilyValuesPref());
-        this.setWantsChildrenPref(vo.getWantsChildrenPref());
+//        this.setWantsChildrenPref(vo.getWantsChildrenPref());
         this.setMarriageTimelinePref(vo.getMarriageTimelinePref());
         this.setOkWithPartnerWorkingPref(vo.getOkWithPartnerWorkingPref());
         this.setRelationshipGoalPref(vo.getRelationshipGoalPref());
@@ -174,7 +171,7 @@ public class PartnerPreference extends BaseEntity {
         vo.setDrinkingPref(this.getDrinkingPref());
         vo.setFamilyTypePref(this.getFamilyTypePref());
         vo.setFamilyValuesPref(this.getFamilyValuesPref());
-        vo.setWantsChildrenPref(this.getWantsChildrenPref());
+//        vo.setWantsChildrenPref(this.getWantsChildrenPref());
         vo.setMarriageTimelinePref(this.getMarriageTimelinePref());
         vo.setOkWithPartnerWorkingPref(this.getOkWithPartnerWorkingPref());
         vo.setRelationshipGoalPref(this.getRelationshipGoalPref());
