@@ -45,7 +45,7 @@ public class UserPost extends BaseEntity {
     @Builder.Default
     private Integer matchCount = 0;
 
-    @Column(name = "expiresAt", nullable = false)
+    @Column(name = "expiresAt")
     private LocalDateTime expiresAt;
 
     @Column(name = "profileUpdated")
